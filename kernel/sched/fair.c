@@ -6526,6 +6526,7 @@ struct sg_lb_stats {
 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
 	unsigned long load_per_task;
 	unsigned long group_capacity;
+	unsigned long group_usage; /* Total usage of the group */
 	unsigned int sum_nr_running; /* Nr tasks running in the group */
 	unsigned int idle_cpus;
 	unsigned int group_weight;
@@ -6547,6 +6548,7 @@ struct sd_lb_stats {
 	struct sched_group *local;	/* Local group in this sd */
 	unsigned long total_load;	/* Total load of all groups in sd */
 	unsigned long total_capacity;	/* Total capacity of all groups in sd */
+	unsigned long group_usage; 
 	unsigned long avg_load;	/* Average load across all groups in sd */
 
 	struct sg_lb_stats busiest_stat;/* Statistics of the busiest group */
@@ -6727,11 +6729,9 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 
 			capacity += sgc->capacity;
 			max_capacity = max(sgc->max_capacity, max_capacity);
-			group = group->next;
 		} while (group != child->groups);
 	}
 
-	sdg->sgc->capacity_orig = capacity_orig;
 	sdg->sgc->capacity = capacity;
 	sdg->sgc->max_capacity = max_capacity;
 }
@@ -6828,6 +6828,17 @@ group_is_overloaded(struct lb_env *env, struct sg_lb_stats *sgs)
 	return false;
 }
 
+/*
+ * group_smaller_cpu_capacity: Returns true if sched_group sg has smaller
+ * per-cpu capacity than sched_group ref.
+ */
+static inline bool
+group_smaller_cpu_capacity(struct sched_group *sg, struct sched_group *ref)
+{
+	return sg->sgc->max_capacity + capacity_margin - SCHED_LOAD_SCALE <
+							ref->sgc->max_capacity;
+}
+
 static enum group_type group_classify(struct lb_env *env,
 		struct sched_group *group,
 		struct sg_lb_stats *sgs)
@@ -6840,7 +6851,6 @@ static enum group_type group_classify(struct lb_env *env,
 
 	if (sgs->group_misfit_task)
 		return group_misfit_task;
-
 	return group_other;
 }
 
@@ -6973,17 +6983,6 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 	}
 
 	return false;
-}
-
-/*
- * group_smaller_cpu_capacity: Returns true if sched_group sg has smaller
- * per-cpu capacity than sched_group ref.
- */
-static inline bool
-group_smaller_cpu_capacity(struct sched_group *sg, struct sched_group *ref)
-{
-	return sg->sgc->max_capacity + capacity_margin - SCHED_LOAD_SCALE <
-							ref->sgc->max_capacity;
 }
 
 #ifdef CONFIG_NUMA_BALANCING
@@ -8462,7 +8461,6 @@ static inline int nohz_kick_needed(struct rq *rq)
 
 need_kick_unlock:
 	rcu_read_unlock();
-need_kick:
 	return 1;
 }
 #else
