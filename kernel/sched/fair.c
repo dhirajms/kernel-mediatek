@@ -4271,6 +4271,11 @@ static unsigned long capacity_of(int cpu)
 
 unsigned long capacity_orig_of(int cpu)
 {
+	return cpu_rq(cpu)->cpu_capacity_orig;
+}
+
+static unsigned long cpu_avg_load_per_task(int cpu)
+{
 	struct rq *rq = cpu_rq(cpu);
 	unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
 	unsigned long load_avg = rq->cfs.runnable_load_avg;
@@ -6103,7 +6108,6 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
 
 	return task_faults(p, dst_nid) > task_faults(p, src_nid);
 }
-
 
 static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
 {
