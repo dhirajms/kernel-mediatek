@@ -5791,19 +5791,6 @@ unsigned long __weak arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
 	return default_scale_capacity(sd, cpu);
 }
 
-static unsigned long default_scale_cpu_capacity(struct sched_domain *sd, int cpu)
-{
-	if ((sd->flags & SD_SHARE_CPUCAPACITY) && (sd->span_weight > 1))
-		return sd->smt_gain / sd->span_weight;
-
-	return SCHED_CAPACITY_SCALE;
-}
-
-unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
-{
-	return default_scale_cpu_capacity(sd, cpu);
-}
-
 static unsigned long scale_rt_capacity(int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
@@ -5840,24 +5827,10 @@ static unsigned long scale_rt_capacity(int cpu)
 
 static void update_cpu_capacity(struct sched_domain *sd, int cpu)
 {
-	unsigned long capacity = SCHED_CAPACITY_SCALE;
+	unsigned long capacity = arch_scale_cpu_capacity(sd, cpu);
 	struct sched_group *sdg = sd->groups;
 
-	if (sched_feat(ARCH_CAPACITY))
-		capacity *= arch_scale_cpu_capacity(sd, cpu);
-	else
-		capacity *= default_scale_cpu_capacity(sd, cpu);
-
-	capacity >>= SCHED_CAPACITY_SHIFT;
-
-	sdg->sgc->capacity_orig = capacity;
-
-	if (sched_feat(ARCH_CAPACITY))
-		capacity *= arch_scale_freq_capacity(sd, cpu);
-	else
-		capacity *= default_scale_capacity(sd, cpu);
-
-	capacity >>= SCHED_CAPACITY_SHIFT;
+	cpu_rq(cpu)->cpu_capacity_orig = capacity;
 
 	capacity *= scale_rt_capacity(cpu);
 	capacity >>= SCHED_CAPACITY_SHIFT;
