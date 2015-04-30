@@ -54,6 +54,7 @@
 #endif
 #include <mt-plat/mtk_ram_console.h>
 
+#include <trace/events/power.h>
 #define CREATE_TRACE_POINTS
 #include <trace/events/ipi.h>
 
@@ -956,8 +957,10 @@ static int cpufreq_callback(struct notifier_block *nb,
 					freq->new);
 	}
 
-	if (val == CPUFREQ_PRECHANGE)
+	if (val == CPUFREQ_PRECHANGE) {
 		scale_freq_capacity(cpu, freq->new, max);
+		trace_cpu_capacity(capacity_curr_of(cpu), cpu);
+	}
 
 	return NOTIFY_OK;
 }
