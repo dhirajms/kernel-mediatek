@@ -4209,6 +4209,18 @@ static unsigned long capacity_of(int cpu)
 	return cpu_rq(cpu)->cpu_capacity;
 }
 
+unsigned long capacity_orig_of(int cpu)
+{
+	struct rq *rq = cpu_rq(cpu);
+	unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
+	unsigned long load_avg = rq->cfs.runnable_load_avg;
+
+	if (nr_running)
+		return load_avg / nr_running;
+
+	return 0;
+}
+
 static unsigned long cpu_avg_load_per_task(int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
