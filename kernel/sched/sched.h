@@ -1281,6 +1281,13 @@ unsigned long arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
 }
 #endif
 
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+void cpufreq_sched_set_cap(int cpu, unsigned long util);
+#else
+static inline void cpufreq_sched_set_cap(int cpu, unsigned long util)
+{ }
+#endif
+
 static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
 {
 	rq->rt_avg += rt_delta * arch_scale_freq_capacity(NULL, cpu_of(rq));
@@ -1405,6 +1412,7 @@ static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
 #else
 static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta) { }
 static inline void sched_avg_update(struct rq *rq) { }
+static inline void gov_cfs_update_cpu(int cpu) {}
 #endif
 
 extern void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period);
