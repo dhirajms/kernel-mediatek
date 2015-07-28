@@ -5783,6 +5783,7 @@ struct lb_env {
 	unsigned int		loop_max;
 
 	enum fbq_type		fbq_type;
+	enum group_type		busiest_group_type;
 	struct list_head	tasks;
 };
 
@@ -6692,6 +6693,25 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 	if (sgs->avg_load <= busiest->avg_load)
 		return false;
 
+	/*
+	 * Candidate sg doesn't face any serious load-balance problems
+	 * so don't pick it if the local sg is already filled up.
+	 */
+	if (sgs->group_type == group_other &&
+	    !group_has_capacity(env, &sds->local_stat))
+		return false;
+
+	if (sgs->avg_load <= busiest->avg_load)
+		return false;
+
+	/*
+	 * Candiate sg has no more than one task per cpu and has higher
+	 * per-cpu capacity. No reason to pull tasks to less capable cpus.
+	 */
+	if (sgs->sum_nr_running <= sgs->group_weight &&
+	    group_smaller_cpu_capacity(sds->local, sg))
+		return false;
+
 	/* This is the busiest node in its class. */
 	if (!(env->sd->flags & SD_ASYM_PACKING))
 		return true;
@@ -6710,6 +6730,17 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 	}
 
 	return false;
+}
+
+/*
+ * group_smaller_cpu_capacity: Returns true if sched_group sg has smaller
+ * per-cpu capacity than sched_group ref.
+ */
+static inline bool
+group_smaller_cpu_capacity(struct sched_group *sg, struct sched_group *ref)
+{
+	return sg->sgc->max_capacity + capacity_margin - SCHED_LOAD_SCALE <
+							ref->sgc->max_capacity;
 }
 
 #ifdef CONFIG_NUMA_BALANCING
@@ -6793,6 +6824,15 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 		if (prefer_sibling && sds->local &&
 		    sds->local_stat.group_has_free_capacity)
 			sgs->group_capacity_factor = min(sgs->group_capacity_factor, 1U);
+
+		/*
+		 * Ignore task groups with misfit tasks if local group has no
+		 * capacity or if per-cpu capacity isn't higher.
+		 */
+		if (sgs->group_type == group_misfit_task &&
+		    (!group_has_capacity(env, &sds->local_stat) ||
+		     !group_smaller_cpu_capacity(sg, sds->local)))
+			sgs->group_type = group_other;
 
 		if (update_sd_pick_busiest(env, sds, sg, sgs)) {
 			sds->busiest = sg;
@@ -6970,6 +7010,22 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
 	 */
 	if (busiest->avg_load <= sds->avg_load ||
 	    local->avg_load >= sds->avg_load) {
+		/* Misfitting tasks should be migrated in any case */
+		if (busiest->group_type == group_misfit_task) {
+			env->imbalance = busiest->group_misfit_task;
+			return;
+		}
+
+		/*
+		 * Busiest group is overloaded, local is not, use the spare
+		 * cycles to maximize throughput
+		 */
+		if (busiest->group_type == group_overloaded &&
+		    local->group_type <= group_misfit_task) {
+			env->imbalance = busiest->load_per_task;
+			return;
+		}
+
 		env->imbalance = 0;
 		return fix_small_imbalance(env, sds);
 	}
@@ -7001,6 +7057,11 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
 		max_pull * busiest->group_capacity,
 		(sds->avg_load - local->avg_load) * local->group_capacity
 	) / SCHED_CAPACITY_SCALE;
+
+	/* Boost imbalance to allow misfit task to be balanced. */
+	if (busiest->group_type == group_misfit_task)
+		env->imbalance = max_t(long, env->imbalance,
+				     busiest->group_misfit_task);
 
 	/*
 	 * if *imbalance is less than the average load per runnable task
@@ -7074,6 +7135,11 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	    !busiest->group_has_free_capacity)
 		goto force_balance;
 
+	/* Misfitting tasks should be dealt with regardless of the avg load */
+	if (busiest->group_type == group_misfit_task) {
+		goto force_balance;
+	}
+
 	/*
 	 * If the local group is busier than the selected busiest group
 	 * don't try and pull any tasks.
@@ -7097,7 +7163,8 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 		 * might end up to just move the imbalance on another group
 		 */
 		if ((busiest->group_type != group_overloaded) &&
-				(local->idle_cpus <= (busiest->idle_cpus + 1)))
+		    (local->idle_cpus <= (busiest->idle_cpus + 1)) &&
+		    !group_smaller_cpu_capacity(sds.busiest, sds.local))
 			goto out_balanced;
 	} else {
 		/*
@@ -7110,6 +7177,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	}
 
 force_balance:
+	env->busiest_group_type = busiest->group_type;
 	/* Looks like there is an imbalance. Compute it */
 	calculate_imbalance(env, &sds);
 	return sds.busiest;
@@ -7169,7 +7237,10 @@ static struct rq *find_busiest_queue(struct lb_env *env,
 		 * When comparing with imbalance, use weighted_cpuload()
 		 * which is not scaled with the cpu capacity.
 		 */
-		if (capacity_factor && rq->nr_running == 1 && wl > env->imbalance)
+
+		if (rq->nr_running == 1 && wl > env->imbalance &&
+		    !check_cpu_capacity(rq, env->sd) &&
+		    env->busiest_group_type != group_misfit_task)
 			continue;
 
 		/*
