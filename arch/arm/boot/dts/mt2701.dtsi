@@ -129,6 +129,13 @@
 			reg = <0 0x10005000 0 0x1000>;
 		};
 
+		pwrap: pwrap@1000d000 {
+			compatible = "mediatek,mt2701-pwrap";
+			reg = <0 0x1000d000 0 0x1000>;
+			reg-names = "pwrap-base";
+			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
 		intpol: intpol@10200100 {
 			compatible = "mediatek,mt6577-intpol";
 			reg = <0 0x10200100 0 0x1c>;
