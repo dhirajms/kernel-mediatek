@@ -89,11 +89,6 @@
 		compatible = "simple-bus";
 		ranges;
 
-		syscfg_pctl_a: syscfg_pctl_a@10005000 {
-			compatible = "mediatek,mt2701-pctl-a-syscfg", "syscon";
-			reg = <0 0x10005000 0 0x1000>;
-		};
-
 		infracfg: syscon@10001000 {
 			#address-cells = <1>;
 			#size-cells = <1>;
@@ -113,6 +108,25 @@
 			#size-cells = <1>;
 			compatible = "mediatek,mt2701-pericfg", "syscon";
 			reg = <0 0x10003000 0 0x1000>;
+		};
+
+		pio: pinctrl@10005000 {
+			compatible = "mediatek,mt2701-pinctrl";
+			reg = <0 0x1000b000 0 0x1000>;
+			mediatek,pctl-regmap = <&syscfg_pctl_a>;
+			pins-are-numbered;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>,
+					<GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>,
+					<GIC_SPI 115  IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		syscfg_pctl_a: syscfg_pctl_a@10005000 {
+			compatible = "mediatek,mt2701-pctl-a-syscfg", "syscon";
+			reg = <0 0x10005000 0 0x1000>;
 		};
 
 		intpol: intpol@10200100 {
@@ -157,20 +171,5 @@
 			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
 		};
-
-		pio: pinctrl@0x10005000 {
-			compatible = "mediatek,mt2701-pinctrl";
-			reg = <0 0x1000B000 0 0x1000>;
-			mediatek,pctl-regmap = <&syscfg_pctl_a>;
-			pins-are-numbered;
-			gpio-controller;
-			#gpio-cells = <2>;
-			interrupt-controller;
-			#interrupt-cells = <2>;
-			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>,
-					<GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>,
-					<GIC_SPI 115  IRQ_TYPE_LEVEL_HIGH>;
-		};
-
 	};
 };
