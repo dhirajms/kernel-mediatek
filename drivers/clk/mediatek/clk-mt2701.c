@@ -50,6 +50,86 @@ static void mtk_clk_enable_critical(void)
 	clk_prepare_enable(peri_data->clks[CLK_PERI_UART0]);
 }
 
+static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
+{
+	struct mtk_clk_gate *cg = to_clk_gate(hw);
+	u32 val;
+
+	regmap_read(cg->regmap, cg->sta_ofs, &val);
+
+	val &= BIT(cg->bit);
+
+	return val == 0;
+}
+
+static int mtk_cg_bit_is_set(struct clk_hw *hw)
+{
+	struct mtk_clk_gate *cg = to_clk_gate(hw);
+	u32 val;
+
+	regmap_read(cg->regmap, cg->sta_ofs, &val);
+
+	val &= BIT(cg->bit);
+
+	return val != 0;
+}
+
+static void mtk_cg_set_bit_no_setclr(struct clk_hw *hw)
+{
+	u32 val;
+	struct mtk_clk_gate *cg = to_clk_gate(hw);
+
+	regmap_read(cg->regmap, cg->sta_ofs, &val);
+	val |= BIT(cg->bit);
+	regmap_write(cg->regmap, cg->sta_ofs, val);
+}
+
+static void mtk_cg_clr_bit_no_setclr(struct clk_hw *hw)
+{
+	u32 val;
+	struct mtk_clk_gate *cg = to_clk_gate(hw);
+
+	regmap_read(cg->regmap, cg->sta_ofs, &val);
+	val &= ~(BIT(cg->bit));
+	regmap_write(cg->regmap, cg->sta_ofs, val);
+}
+
+static int mtk_cg_enable_no_setclr(struct clk_hw *hw)
+{
+	mtk_cg_clr_bit_no_setclr(hw);
+
+	return 0;
+}
+
+static void mtk_cg_disable_no_setclr(struct clk_hw *hw)
+{
+	mtk_cg_set_bit_no_setclr(hw);
+}
+
+static int mtk_cg_enable_inv_no_setclr(struct clk_hw *hw)
+{
+	mtk_cg_set_bit_no_setclr(hw);
+
+	return 0;
+}
+
+static void mtk_cg_disable_inv_no_setclr(struct clk_hw *hw)
+{
+	mtk_cg_clr_bit_no_setclr(hw);
+}
+
+const struct clk_ops mtk_clk_gate_ops_no_setclr = {
+	.is_enabled	= mtk_cg_bit_is_cleared,
+	.enable		= mtk_cg_enable_no_setclr,
+	.disable	= mtk_cg_disable_no_setclr,
+};
+
+const struct clk_ops mtk_clk_gate_ops_no_setclr_inv = {
+	.is_enabled	= mtk_cg_bit_is_set,
+	.enable		= mtk_cg_enable_inv_no_setclr,
+	.disable	= mtk_cg_disable_inv_no_setclr,
+};
+
 /* This root clock derived from:
  * 1. some PADs
  * 2. AD parts from PLLGP
@@ -71,7 +151,7 @@ static const struct mtk_fixed_factor root_clk_alias[] __initconst = {
 	FACTOR(CLK_TOP_WBG_DIG_416M, "wbg_dig_ck_416m", "clk_null", 1, 1),
 };
 
-static const struct mtk_fixed_factor top_divs[] __initconst = {
+static const struct mtk_fixed_factor top_fixed_divs[] __initconst = {
 	FACTOR(CLK_TOP_SYSPLL, "syspll_ck", "mainpll", 1, 1),
 	FACTOR(CLK_TOP_SYSPLL_D2, "syspll_d2", "mainpll", 1, 2),
 	FACTOR(CLK_TOP_SYSPLL_D3, "syspll_d3", "mainpll", 1, 3),
@@ -564,10 +644,10 @@ static const struct mtk_composite top_muxes[] __initconst = {
 	MUX_GATE(CLK_TOP_AUD2DVD_SEL, "aud2dvd_sel", aud2dvd_parents,
 							0x00F0, 16, 1, 23),
 
-	MUX_GATE(CLK_TOP_AUD_MUX1_SEL, "aud_mux1_sel", aud_mux_parents,
-							0x012c, 0, 3, 21),
-	MUX_GATE(CLK_TOP_AUD_MUX2_SEL, "aud_mux2_sel", aud_mux_parents,
-							0x012c, 3, 3, 22),
+	MUX(CLK_TOP_AUD_MUX1_SEL, "aud_mux1_sel", aud_mux_parents,
+							0x012c, 0, 3),
+	MUX(CLK_TOP_AUD_MUX2_SEL, "aud_mux2_sel", aud_mux_parents,
+							0x012c, 3, 3),
 	MUX(CLK_TOP_AUDPLL_MUX_SEL, "audpll_sel", aud_mux_parents,
 							0x012c, 6, 3),
 	MUX_GATE(CLK_TOP_AUD_K1_SRC_SEL, "aud_k1_src_sel", aud_src_parents,
@@ -607,26 +687,26 @@ struct mtk_clk_divider {
 		.clk_divider_flags = CLK_DIVIDER_POWER_OF_TWO,	\
 }
 
-static const struct mtk_clk_divider top_dividers[] __initconst = {
+static const struct mtk_clk_divider top_adj_divs[] __initconst = {
 	DIV_ADJ(CLK_TOP_AUD_EXTCK1_DIV, "audio_ext1_ck", "aud_ext_ck1",
 						0x0120, 0, 8),
 	DIV_ADJ(CLK_TOP_AUD_EXTCK2_DIV, "audio_ext2_ck", "aud_ext_ck2",
 						0x0120, 8, 8),
-	DIV_ADJ(CLK_TOP_AUD_MUX1_DIV, "a1sys_hp_ck", "aud_mux1_sel",
+	DIV_ADJ(CLK_TOP_AUD_MUX1_DIV, "aud_mux1_div", "aud_mux1_sel",
 						0x0120, 16, 8),
-	DIV_ADJ(CLK_TOP_AUD_MUX2_DIV, "a2sys_hp_ck", "aud_mux2_sel",
+	DIV_ADJ(CLK_TOP_AUD_MUX2_DIV, "aud_mux2_div", "aud_mux2_sel",
 						0x0120, 24, 8),
-	DIV_ADJ(CLK_TOP_AUD_K1_SRC_DIV, "i2s1_mclk", "aud_k1_src_sel",
+	DIV_ADJ(CLK_TOP_AUD_K1_SRC_DIV, "aud_k1_src_div", "aud_k1_src_sel",
 						0x0124, 0, 8),
-	DIV_ADJ(CLK_TOP_AUD_K2_SRC_DIV, "i2s2_mclk", "aud_k2_src_sel",
+	DIV_ADJ(CLK_TOP_AUD_K2_SRC_DIV, "aud_k2_src_div", "aud_k2_src_sel",
 						0x0124, 8, 8),
-	DIV_ADJ(CLK_TOP_AUD_K3_SRC_DIV, "i2s3_mclk", "aud_k3_src_sel",
+	DIV_ADJ(CLK_TOP_AUD_K3_SRC_DIV, "aud_k3_src_div", "aud_k3_src_sel",
 						0x0124, 16, 8),
-	DIV_ADJ(CLK_TOP_AUD_K4_SRC_DIV, "i2s4_mclk", "aud_k4_src_sel",
+	DIV_ADJ(CLK_TOP_AUD_K4_SRC_DIV, "aud_k4_src_div", "aud_k4_src_sel",
 						0x0124, 24, 8),
-	DIV_ADJ(CLK_TOP_AUD_K5_SRC_DIV, "i2s5_mclk", "aud_k5_src_sel",
+	DIV_ADJ(CLK_TOP_AUD_K5_SRC_DIV, "aud_k5_src_div", "aud_k5_src_sel",
 						0x0128, 0, 8),
-	DIV_ADJ(CLK_TOP_AUD_K6_SRC_DIV, "i2s6_mclk", "aud_k6_src_sel",
+	DIV_ADJ(CLK_TOP_AUD_K6_SRC_DIV, "aud_k6_src_div", "aud_k6_src_sel",
 						0x0128, 8, 8),
 };
 
@@ -654,6 +734,72 @@ void mtk_clk_register_dividers(const struct mtk_clk_divider *mcds, int num,
 			clk_data->clks[mcd->id] = clk;
 	}
 }
+
+static const struct mtk_gate_regs top_aud_cg_regs = {
+	.sta_ofs = 0x012C,
+};
+
+#define GATE_TOP_AUD(_id, _name, _parent, _shift) {	\
+		.id = _id,					\
+		.name = _name,					\
+		.parent_name = _parent,				\
+		.regs = &top_aud_cg_regs,			\
+		.shift = _shift,				\
+		.ops = &mtk_clk_gate_ops_no_setclr,		\
+	}
+
+static const struct mtk_gate top_clks[] __initconst = {
+	GATE_TOP_AUD(CLK_TOP_AUD_48K_TIMING, "a1sys_hp_ck", "aud_mux1_div",
+					21),
+	GATE_TOP_AUD(CLK_TOP_AUD_44K_TIMING, "a2sys_hp_ck", "aud_mux2_div",
+					22),
+	GATE_TOP_AUD(CLK_TOP_AUD_I2S1_MCLK, "aud_i2s1_mclk", "aud_k1_src_div",
+					23),
+	GATE_TOP_AUD(CLK_TOP_AUD_I2S2_MCLK, "aud_i2s2_mclk", "aud_k2_src_div",
+					24),
+	GATE_TOP_AUD(CLK_TOP_AUD_I2S3_MCLK, "aud_i2s3_mclk", "aud_k3_src_div",
+					25),
+	GATE_TOP_AUD(CLK_TOP_AUD_I2S4_MCLK, "aud_i2s4_mclk", "aud_k4_src_div",
+					26),
+	GATE_TOP_AUD(CLK_TOP_AUD_I2S5_MCLK, "aud_i2s5_mclk", "aud_k5_src_div",
+					27),
+	GATE_TOP_AUD(CLK_TOP_AUD_I2S6_MCLK, "aud_i2s6_mclk", "aud_k6_src_div",
+					28),
+};
+
+static void __init mtk_topckgen_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return;
+	}
+
+	top_data = clk_data = mtk_alloc_clk_data(CLK_TOP_NR);
+
+	mtk_clk_register_factors(root_clk_alias, ARRAY_SIZE(root_clk_alias),
+								clk_data);
+	mtk_clk_register_factors(top_fixed_divs, ARRAY_SIZE(top_fixed_divs),
+								clk_data);
+	mtk_clk_register_composites(top_muxes, ARRAY_SIZE(top_muxes),
+				base, &lock, clk_data);
+	mtk_clk_register_dividers(top_adj_divs, ARRAY_SIZE(top_adj_divs),
+				base, &lock, clk_data);
+	mtk_clk_register_gates(node, top_clks, ARRAY_SIZE(top_clks),
+						clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+	if (r)
+		pr_err("%s(): could not register clock provider: %d\n",
+			__func__, r);
+
+	mtk_clk_enable_critical();
+}
+CLK_OF_DECLARE(mtk_topckgen, "mediatek,mt2701-topckgen", mtk_topckgen_init);
 
 static const struct mtk_gate_regs infra_cg_regs = {
 	.set_ofs = 0x0040,
@@ -684,12 +830,31 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	GATE_ICG(CLK_INFRA_M4U, "m4u_ck", "mem_sel", 8),
 	GATE_ICG(CLK_INFRA_L2C_SRAM, "l2c_sram_ck", "mm_sel", 7),
 	GATE_ICG(CLK_INFRA_EFUSE, "efuse_ck", "clk26m", 6),
-	GATE_ICG(CLK_INFRA_AUDIO, "audio_ck", "a1sys_hp_ck", 5),
+	GATE_ICG(CLK_INFRA_AUDIO, "audio_ck", "clk_null", 5),
 	GATE_ICG(CLK_INFRA_AUD_SPLIN_B, "audio_splin_bck", "hadds2_294m_ck", 4),
 	GATE_ICG(CLK_INFRA_QAXI_CM4, "cm4_ck", "axi_sel", 2),
 	GATE_ICG(CLK_INFRA_SMI, "smi_ck", "mm_sel", 1),
 	GATE_ICG(CLK_INFRA_DBG, "dbgclk", "axi_sel", 0),
 };
+
+static void __init mtk_infrasys_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	int r;
+
+	infra_data = clk_data = mtk_alloc_clk_data(CLK_INFRA_NR);
+
+	mtk_clk_register_gates(node, infra_clks, ARRAY_SIZE(infra_clks),
+						clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+	if (r)
+		pr_err("%s(): could not register clock provider: %d\n",
+			__func__, r);
+
+	mtk_clk_enable_critical();
+}
+CLK_OF_DECLARE(mtk_infrasys, "mediatek,mt2701-infracfg", mtk_infrasys_init);
 
 static const struct mtk_gate_regs peri0_cg_regs = {
 	.set_ofs = 0x0008,
@@ -769,56 +934,6 @@ static const struct mtk_gate peri_clks[] __initconst = {
 	GATE_PERI1(CLK_PERI_USB1_MCU, "usb1_mcu_ck", "axi_sel", 0),
 };
 
-static void __init mtk_topckgen_init(struct device_node *node)
-{
-	struct clk_onecell_data *clk_data;
-	void __iomem *base;
-	int r;
-
-	base = of_iomap(node, 0);
-	if (!base) {
-		pr_err("%s(): ioremap failed\n", __func__);
-		return;
-	}
-
-	top_data = clk_data = mtk_alloc_clk_data(CLK_TOP_NR);
-
-	mtk_clk_register_factors(root_clk_alias, ARRAY_SIZE(root_clk_alias),
-								clk_data);
-	mtk_clk_register_factors(top_divs, ARRAY_SIZE(top_divs), clk_data);
-	mtk_clk_register_composites(top_muxes, ARRAY_SIZE(top_muxes),
-				base, &lock, clk_data);
-	mtk_clk_register_dividers(top_dividers, ARRAY_SIZE(top_dividers),
-				base, &lock, clk_data);
-
-	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
-	if (r)
-		pr_err("%s(): could not register clock provider: %d\n",
-			__func__, r);
-
-	mtk_clk_enable_critical();
-}
-CLK_OF_DECLARE(mtk_topckgen, "mediatek,mt2701-topckgen", mtk_topckgen_init);
-
-static void __init mtk_infrasys_init(struct device_node *node)
-{
-	struct clk_onecell_data *clk_data;
-	int r;
-
-	infra_data = clk_data = mtk_alloc_clk_data(CLK_INFRA_NR);
-
-	mtk_clk_register_gates(node, infra_clks, ARRAY_SIZE(infra_clks),
-						clk_data);
-
-	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
-	if (r)
-		pr_err("%s(): could not register clock provider: %d\n",
-			__func__, r);
-
-	mtk_clk_enable_critical();
-}
-CLK_OF_DECLARE(mtk_infrasys, "mediatek,mt2701-infracfg", mtk_infrasys_init);
-
 static void __init mtk_pericfg_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
@@ -837,231 +952,6 @@ static void __init mtk_pericfg_init(struct device_node *node)
 	mtk_clk_enable_critical();
 }
 CLK_OF_DECLARE(mtk_pericfg, "mediatek,mt2701-pericfg", mtk_pericfg_init);
-
-static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
-{
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
-	u32 val;
-
-	regmap_read(cg->regmap, cg->sta_ofs, &val);
-
-	val &= BIT(cg->bit);
-
-	return val == 0;
-}
-
-static int mtk_cg_bit_is_set(struct clk_hw *hw)
-{
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
-	u32 val;
-
-	regmap_read(cg->regmap, cg->sta_ofs, &val);
-
-	val &= BIT(cg->bit);
-
-	return val != 0;
-}
-
-static void mtk_cg_set_bit_no_setclr(struct clk_hw *hw)
-{
-	u32 val;
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
-
-	regmap_read(cg->regmap, cg->sta_ofs, &val);
-	val |= BIT(cg->bit);
-	regmap_write(cg->regmap, cg->sta_ofs, val);
-}
-
-static void mtk_cg_clr_bit_no_setclr(struct clk_hw *hw)
-{
-	u32 val;
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
-
-	regmap_read(cg->regmap, cg->sta_ofs, &val);
-	val &= ~(BIT(cg->bit));
-	regmap_write(cg->regmap, cg->sta_ofs, val);
-}
-
-static int mtk_cg_enable_no_setclr(struct clk_hw *hw)
-{
-	mtk_cg_clr_bit_no_setclr(hw);
-
-	return 0;
-}
-
-static void mtk_cg_disable_no_setclr(struct clk_hw *hw)
-{
-	mtk_cg_set_bit_no_setclr(hw);
-}
-
-static int mtk_cg_enable_inv_no_setclr(struct clk_hw *hw)
-{
-	mtk_cg_set_bit_no_setclr(hw);
-
-	return 0;
-}
-
-static void mtk_cg_disable_inv_no_setclr(struct clk_hw *hw)
-{
-	mtk_cg_clr_bit_no_setclr(hw);
-}
-
-const struct clk_ops mtk_clk_gate_ops_no_setclr = {
-	.is_enabled	= mtk_cg_bit_is_cleared,
-	.enable		= mtk_cg_enable_no_setclr,
-	.disable	= mtk_cg_disable_no_setclr,
-};
-
-const struct clk_ops mtk_clk_gate_ops_no_setclr_inv = {
-	.is_enabled	= mtk_cg_bit_is_set,
-	.enable		= mtk_cg_enable_inv_no_setclr,
-	.disable	= mtk_cg_disable_inv_no_setclr,
-};
-
-static const struct mtk_gate_regs aud0_cg_regs = {
-	.sta_ofs = 0x0000,
-};
-
-static const struct mtk_gate_regs aud4_cg_regs = {
-	.sta_ofs = 0x0010,
-};
-
-static const struct mtk_gate_regs aud5_cg_regs = {
-	.sta_ofs = 0x0014,
-};
-
-static const struct mtk_gate_regs pwr2_cg_regs = {
-	.sta_ofs = 0x0634,
-};
-
-#define GATE_AUD0(_id, _name, _parent, _shift) {	\
-		.id = _id,					\
-		.name = _name,					\
-		.parent_name = _parent,				\
-		.regs = &aud0_cg_regs,				\
-		.shift = _shift,				\
-		.ops = &mtk_clk_gate_ops_no_setclr,		\
-	}
-
-#define GATE_AUD4(_id, _name, _parent, _shift) {	\
-		.id = _id,					\
-		.name = _name,					\
-		.parent_name = _parent,				\
-		.regs = &aud4_cg_regs,				\
-		.shift = _shift,				\
-		.ops = &mtk_clk_gate_ops_no_setclr,		\
-	}
-
-#define GATE_AUD5(_id, _name, _parent, _shift) {	\
-		.id = _id,					\
-		.name = _name,					\
-		.parent_name = _parent,				\
-		.regs = &aud5_cg_regs,				\
-		.shift = _shift,				\
-		.ops = &mtk_clk_gate_ops_no_setclr,		\
-	}
-
-#define GATE_PWR2(_id, _name, _parent, _shift) {	\
-		.id = _id,					\
-		.name = _name,					\
-		.parent_name = _parent,				\
-		.regs = &pwr2_cg_regs,				\
-		.shift = _shift,				\
-		.ops = &mtk_clk_gate_ops_no_setclr,		\
-	}
-
-static const struct mtk_gate aud_clks[] __initconst = {
-	GATE_AUD0(CLK_AUD_AFE, "aud_afe", "audio_sel", 2),
-	GATE_AUD0(CLK_AUD_LRCK_DETECT, "aud_lrck_det", "a1sys_hp_ck", 4),
-	GATE_AUD0(CLK_AUD_I2S, "aud_i2s", "f2w_clk", 6),
-	GATE_AUD0(CLK_AUD_APLL_TUNER, "aud_apll_tuner", "a1sys_hp_ck", 19),
-	GATE_AUD0(CLK_AUD_HDMI, "aud_hdmi", "a1sys_hp_ck", 20),
-	GATE_AUD0(CLK_AUD_SPDF, "aud_spdf", "a1sys_hp_ck", 21),
-	GATE_AUD0(CLK_AUD_SPDF2, "aud_spdf2", "audio_sel", 22),
-	GATE_AUD0(CLK_AUD_APLL, "aud_apll", "audio_sel", 23),
-	GATE_AUD0(CLK_AUD_TML, "aud_tml", "audio_sel", 27),
-	GATE_AUD0(CLK_AUD_AHB_IDLE_EXT, "aud_ahb_idle_ext", "axi_sel", 29),
-	GATE_AUD0(CLK_AUD_AHB_IDLE_INT, "aud_ahb_idle_int", "axi_sel", 30),
-
-	GATE_AUD4(CLK_AUD_I2SIN1, "aud_i2sin1", "audio_sel", 0),
-	GATE_AUD4(CLK_AUD_I2SIN2, "aud_i2sin2", "audio_sel", 1),
-	GATE_AUD4(CLK_AUD_I2SIN3, "aud_i2sin3", "audio_sel", 2),
-	GATE_AUD4(CLK_AUD_I2SIN4, "aud_i2sin4", "audio_sel", 3),
-	GATE_AUD4(CLK_AUD_I2SIN5, "aud_i2sin5", "audio_sel", 4),
-	GATE_AUD4(CLK_AUD_I2SIN6, "aud_i2sin6", "audio_sel", 5),
-	GATE_AUD4(CLK_AUD_I2SO1, "aud_i2so1", "audio_sel", 6),
-	GATE_AUD4(CLK_AUD_I2SO2, "aud_i2so2", "audio_sel", 7),
-	GATE_AUD4(CLK_AUD_I2SO3, "aud_i2so3", "audio_sel", 8),
-	GATE_AUD4(CLK_AUD_I2SO4, "aud_i2so4", "audio_sel", 9),
-	GATE_AUD4(CLK_AUD_I2SO5, "aud_i2so5", "audio_sel", 10),
-	GATE_AUD4(CLK_AUD_I2SO6, "aud_i2so6", "audio_sel", 11),
-	GATE_AUD4(CLK_AUD_ASRCI1, "aud_asrci1", "asm_i_sel", 12),
-	GATE_AUD4(CLK_AUD_ASRCI2, "aud_asrci2", "asm_i_sel", 13),
-	GATE_AUD4(CLK_AUD_ASRCO1, "aud_asrco1", "asm_i_sel", 14),
-	GATE_AUD4(CLK_AUD_ASRCO2, "aud_asrco2", "asm_i_sel", 15),
-	GATE_AUD4(CLK_AUD_ASRC11, "aud_asrc11", "asm_i_sel", 16),
-	GATE_AUD4(CLK_AUD_ASRC12, "aud_asrc12", "asm_i_sel", 17),
-	GATE_AUD4(CLK_AUD_HDMIRX, "aud_hdmirx", "audio_sel", 19),
-	GATE_AUD4(CLK_AUD_INTDIR, "aud_intdir", "audio_sel", 20),
-	GATE_AUD4(CLK_AUD_A1SYS, "aud_a1sys", "audio_sel", 21),
-	GATE_AUD4(CLK_AUD_A2SYS, "aud_a2sys", "audio_sel", 22),
-	GATE_AUD4(CLK_AUD_AFE_CONN, "aud_afe_conn", "audio_sel", 23),
-	GATE_AUD4(CLK_AUD_AFE_PCMIF, "aud_afe_pcmif", "audio_sel", 24),
-	GATE_AUD4(CLK_AUD_AFE_MRGIF, "aud_afe_mrgif", "audio_sel", 25),
-
-	GATE_AUD5(CLK_AUD_MMIF_UL1, "aud_mmif_ul1", "audio_sel", 0),
-	GATE_AUD5(CLK_AUD_MMIF_UL2, "aud_mmif_ul2", "audio_sel", 1),
-	GATE_AUD5(CLK_AUD_MMIF_UL3, "aud_mmif_ul3", "audio_sel", 2),
-	GATE_AUD5(CLK_AUD_MMIF_UL4, "aud_mmif_ul4", "audio_sel", 3),
-	GATE_AUD5(CLK_AUD_MMIF_UL5, "aud_mmif_ul5", "audio_sel", 4),
-	GATE_AUD5(CLK_AUD_MMIF_UL6, "aud_mmif_ul6", "audio_sel", 5),
-	GATE_AUD5(CLK_AUD_MMIF_DL1, "aud_mmif_dl1", "audio_sel", 6),
-	GATE_AUD5(CLK_AUD_MMIF_DL2, "aud_mmif_dl2", "audio_sel", 7),
-	GATE_AUD5(CLK_AUD_MMIF_DL3, "aud_mmif_dl3", "audio_sel", 8),
-	GATE_AUD5(CLK_AUD_MMIF_DL4, "aud_mmif_dl4", "audio_sel", 9),
-	GATE_AUD5(CLK_AUD_MMIF_DL5, "aud_mmif_dl5", "audio_sel", 10),
-	GATE_AUD5(CLK_AUD_MMIF_DL6, "aud_mmif_dl6", "audio_sel", 11),
-	GATE_AUD5(CLK_AUD_MMIF_DLMCH, "aud_mmif_dlmch", "audio_sel", 12),
-	GATE_AUD5(CLK_AUD_MMIF_ARB1, "aud_mmif_arb1", "audio_sel", 13),
-	GATE_AUD5(CLK_AUD_MMIF_AWB1, "aud_mmif_awb1", "audio_sel", 14),
-	GATE_AUD5(CLK_AUD_MMIF_AWB2, "aud_mmif_awb2", "audio_sel", 15),
-	GATE_AUD5(CLK_AUD_MMIF_DAI, "aud_mmif_dai", "audio_sel", 16),
-
-	GATE_PWR2(CLK_AUD_DMIC1, "aud_tml", "audio_sel", 0),
-	GATE_PWR2(CLK_AUD_DMIC2, "aud_tml", "audio_sel", 1),
-	GATE_PWR2(CLK_AUD_ASRCI3, "aud_tml", "asm_i_sel", 2),
-	GATE_PWR2(CLK_AUD_ASRCI4, "aud_tml", "asm_i_sel", 3),
-	GATE_PWR2(CLK_AUD_ASRCI5, "aud_tml", "asm_i_sel", 4),
-	GATE_PWR2(CLK_AUD_ASRCI6, "aud_tml", "asm_i_sel", 5),
-	GATE_PWR2(CLK_AUD_ASRCO3, "aud_tml", "asm_i_sel", 6),
-	GATE_PWR2(CLK_AUD_ASRCO4, "aud_tml", "asm_i_sel", 7),
-	GATE_PWR2(CLK_AUD_ASRCO5, "aud_tml", "asm_i_sel", 8),
-	GATE_PWR2(CLK_AUD_ASRCO6, "aud_tml", "asm_i_sel", 9),
-	GATE_PWR2(CLK_AUD_MEM_ASRC1, "aud_tml", "asm_i_sel", 10),
-	GATE_PWR2(CLK_AUD_MEM_ASRC2	, "aud_tml", "asm_i_sel", 11),
-	GATE_PWR2(CLK_AUD_MEM_ASRC3, "aud_tml", "asm_i_sel", 12),
-	GATE_PWR2(CLK_AUD_MEM_ASRC4	, "aud_tml", "asm_i_sel", 13),
-	GATE_PWR2(CLK_AUD_MEM_ASRC5	, "aud_tml", "asm_i_sel", 14),
-	GATE_PWR2(CLK_AUD_DSD_ENC, "aud_tml", "audio_sel", 15),
-	GATE_PWR2(CLK_AUD_ASRC_BRG, "aud_tml", "axi_sel", 16),
-};
-
-static void __init mtk_audsys_init(struct device_node *node)
-{
-	struct clk_onecell_data *clk_data;
-	int r;
-
-	clk_data = mtk_alloc_clk_data(CLK_AUD_NR);
-
-	mtk_clk_register_gates(node, aud_clks, ARRAY_SIZE(aud_clks),
-						clk_data);
-
-	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
-	if (r)
-		pr_err("%s(): could not register clock provider: %d\n",
-			__func__, r);
-}
-CLK_OF_DECLARE(mtk_audsys, "mediatek,mt2701-audsys", mtk_audsys_init);
 
 static const struct mtk_gate_regs disp0_cg_regs = {
 	.set_ofs = 0x0104,
