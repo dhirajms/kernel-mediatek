@@ -270,6 +270,24 @@
 			status = "disabled";
 		};
 
+		usb0: usb@11200000 {
+			compatible = "mediatek,USB0";
+			reg = <0 0x11200000 0 0x1000>,
+				  <0 0x11210000 0 0x1000>;
+			interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_LOW>;
+			mode = <2>;
+			multipoint = <1>;
+			dyn_fifo = <1>;
+			soft_con = <1>;
+			dma = <1>;
+			num_eps = <16>;
+			dma_channels = <8>;
+			clocks = <&pericfg CLK_PERI_USB0>,
+							<&pericfg CLK_PERI_USB0_MCU>,
+							<&pericfg CLK_PERI_USB_SLV>;
+			clock-names = "usb0_main","usb0_mcu","usb_slv";
+			usb-power-supply = <&mt6323_vusb_reg>;
+		};
 		m4u: M4U@0x10205000 {
 			compatible = "mediatek,mt2701-m4u";
 			reg = <0 0x10205000 0 0x1000>,
