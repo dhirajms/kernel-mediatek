@@ -14,6 +14,7 @@
 
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/clock/mt2701-clk.h>
 #include "skeleton64.dtsi"
 #include "mt2701-pinfunc.h"
 
@@ -89,6 +90,12 @@
 		compatible = "simple-bus";
 		ranges;
 
+		topckgen: syscon@10000000 {
+			compatible = "mediatek,mt2701-topckgen", "syscon";
+			reg = <0 0x10000000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
 		infracfg: syscon@10001000 {
 			#address-cells = <1>;
 			#size-cells = <1>;
@@ -108,6 +115,7 @@
 			#size-cells = <1>;
 			compatible = "mediatek,mt2701-pericfg", "syscon";
 			reg = <0 0x10003000 0 0x1000>;
+			#clock-cells = <1>;
 		};
 
 		pio: pinctrl@10005000 {
@@ -163,6 +171,12 @@
 		intpol: intpol@10200100 {
 			compatible = "mediatek,mt6577-intpol";
 			reg = <0 0x10200100 0 0x1c>;
+		};
+
+		apmixedsys: syscon@10209000 {
+			compatible = "mediatek,mt2701-apmixedsys", "syscon";
+			reg = <0 0x10209000 0 0x1000>;
+			#clock-cells = <1>;
 		};
 
 		gic: interrupt-controller@10211000 {
