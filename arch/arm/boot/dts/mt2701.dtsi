@@ -130,30 +130,6 @@
 			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>,
 					<GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>,
 					<GIC_SPI 115  IRQ_TYPE_LEVEL_HIGH>;
-
-			i2c0_pins_a: i2c0@0 {
-				pins1 {
-					pinmux = <MT2701_PIN_75_SDA0__FUNC_SDA0>,
-						 <MT2701_PIN_76_SCL0__FUNC_SCL0>;
-					bias-disable;
-				};
-			};
-
-			i2c1_pins_a: i2c1@0 {
-				pins1 {
-					pinmux = <MT2701_PIN_57_SDA1__FUNC_SDA1>,
-						 <MT2701_PIN_58_SCL1__FUNC_SCL1>;
-					bias-disable;
-				};
-			};
-
-			i2c2_pins_a: i2c2@0 {
-				pins1 {
-					pinmux = <MT2701_PIN_77_SDA2__FUNC_SDA2>,
-						 <MT2701_PIN_78_SCL2__FUNC_SCL2>;
-					bias-disable;
-				};
-			};
 		};
 
 		syscfg_pctl_a: syscfg_pctl_a@10005000 {
