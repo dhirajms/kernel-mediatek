@@ -131,6 +131,7 @@
 			compatible = "mediatek,mt2701-mmsys", "syscon";
 			reg = <0 0x14000000 0 0x1000>;
 			#clock-cells = <1>;
+			power-domains = <&scpsys MT2701_POWER_DOMAIN_DISP>;
 		};
 
 		pio: pinctrl@10005000 {
@@ -633,6 +634,51 @@
 
 		mediatek,pcm5102a {
 			compatible = "mediatek,pcm5102a";
+		};
+
+		imgsys: syscon@15000000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "mediatek,mt2701-imgsys", "syscon";
+			reg = <0 0x15000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT2701_POWER_DOMAIN_MFG>;
+		};
+
+		vdecsys: syscon@16000000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "mediatek,mt2701-vdecsys", "syscon";
+			reg = <0 0x16000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT2701_POWER_DOMAIN_VDEC>;
+		};
+
+		hifsys: syscon@1a000000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "mediatek,mt2701-hifsys", "syscon";
+			reg = <0 0x1a000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT2701_POWER_DOMAIN_HIF>;
+		};
+
+		ethsys: syscon@1b000000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "mediatek,mt2701-ethsys", "syscon";
+			reg = <0 0x1b000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT2701_POWER_DOMAIN_ETH>;
+		};
+
+		bdpsys: syscon@1c000000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "mediatek,mt2701-bdpsys", "syscon";
+			reg = <0 0x1c000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT2701_POWER_DOMAIN_BDP>;
 		};
 
 	};
