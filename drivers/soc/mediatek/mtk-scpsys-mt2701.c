@@ -84,20 +84,21 @@ static const struct scp_domain_data scp_domain_data[] = {
 		.sta_mask = MFG_PWR_STA_MASK,
 		.ctl_offs = SPM_MFG_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
-		.sram_pdn_ack_bits = GENMASK(15, 12),
+		.sram_pdn_ack_bits = GENMASK(12, 12),
 	}, {
 		.id = MT2701_POWER_DOMAIN_VDEC,
 		.name = "vdec",
 		.sta_mask = VDE_PWR_STA_MASK,
 		.ctl_offs = SPM_VDE_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
-		.sram_pdn_ack_bits = GENMASK(15, 12),
+		.sram_pdn_ack_bits = GENMASK(12, 12),
 		.clk_name = "mm",
 	}, {
 		.id = MT2701_POWER_DOMAIN_BDP,
 		.name = "bdp",
 		.sta_mask = BDP_PWR_STA_MASK,
 		.ctl_offs = SPM_BDP_PWR_CON,
+		.sram_pdn_bits = GENMASK(11, 8),
 	}, {
 		.id = MT2701_POWER_DOMAIN_ETH,
 		.name = "eth",
