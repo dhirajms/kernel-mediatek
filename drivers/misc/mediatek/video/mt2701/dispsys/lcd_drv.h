@@ -25,13 +25,6 @@ extern "C" {
 	extern LCM_PARAMS *lcm_params;
 	extern unsigned int isAEEEnabled;
 	extern struct mutex OverlaySettingMutex;
-
-#ifdef MTK_DISPLAY_ENABLE_MMU
-	int m4u_invalid_tlb_all_stub(M4U_MODULE_ID_ENUM eModuleID);
-	int m4u_manual_insert_entry_stub(M4U_MODULE_ID_ENUM eModuleID, unsigned int EntryMVA,
-					 bool Lock);
-#endif
-
 /* --------------------------------------------------------------------------- */
 
 	enum LCD_STATUS {

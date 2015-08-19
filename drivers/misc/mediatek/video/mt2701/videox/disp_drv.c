@@ -154,9 +154,9 @@ static void disp_dump_lcm_parameters(LCM_PARAMS *lcm_params)
 	if (lcm_params == NULL)
 		return;
 
-	pr_info("[mtkfb] LCM TYPE: %s\n", LCM_TYPE_NAME[lcm_params->type]);
-	pr_info("[mtkfb] LCM INTERFACE: %s\n", LCM_CTRL_NAME[lcm_params->ctrl]);
-	pr_info("[mtkfb] LCM resolution: %d x %d\n", lcm_params->width, lcm_params->height);
+	pr_info("[DISP/DDP]LCM TYPE: %s\n", LCM_TYPE_NAME[lcm_params->type]);
+	pr_info("[DISP/DDP]LCM INTERFACE: %s\n", LCM_CTRL_NAME[lcm_params->ctrl]);
+	pr_info("[DISP/DDP]LCM resolution: %d x %d\n", lcm_params->width, lcm_params->height);
 }
 
 char disp_lcm_name[256] = { 0 };
@@ -285,6 +285,10 @@ DISP_STATUS DISP_Init(uint32_t fbVA, uint32_t fbPA, bool isLcmInited)
 {
 	DISP_STATUS r = DISP_STATUS_OK;
 
+#ifdef MTK_BRINGUP_FOR_MT2701
+	/*isLcmInited = false;*/
+#endif
+
 	captureovl_task = kthread_create(_DISP_CaptureOvlKThread, NULL, "disp_captureovl_kthread");
 	if (IS_ERR(captureovl_task))
 		DISP_LOG("DISP_InitVSYNC(): Cannot create capture ovl kthread\n");
@@ -302,10 +306,6 @@ DISP_STATUS DISP_Init(uint32_t fbVA, uint32_t fbPA, bool isLcmInited)
 
 	disphal_init_ctrl_if();
 	disp_path_clock_on("mtkfb");
-	/* TODO: Fixit!!!!! */
-	/* xuecheng's workaround for 82 video mode */
-	/* if(lcm_params->type==LCM_TYPE_DSI && lcm_params->dsi.mode!=CMD_MODE) */
-	/* isLcmInited = 0; */
 
 	r = (disp_if_drv->init) ?
 	    (disp_if_drv->init(fbVA, fbPA, isLcmInited)) : DISP_STATUS_NOT_IMPLEMENTED;
@@ -337,7 +337,7 @@ DISP_STATUS DISP_Init(uint32_t fbVA, uint32_t fbPA, bool isLcmInited)
 			dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayType = DISPIF_TYPE_DBI;
 			dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayMode = DISPIF_MODE_COMMAND;
 			dispif_info[MTKFB_DISPIF_PRIMARY_LCD].isHwVsyncAvailable = 1;
-			pr_info("DISP Info: DBI, CMD Mode, HW Vsync enable\n");
+			DISP_MSG("DISP Info: DBI, CMD Mode, HW Vsync enable\n");
 			break;
 		}
 	case LCM_TYPE_DPI:
@@ -345,7 +345,7 @@ DISP_STATUS DISP_Init(uint32_t fbVA, uint32_t fbPA, bool isLcmInited)
 			dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayType = DISPIF_TYPE_DPI;
 			dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayMode = DISPIF_MODE_VIDEO;
 			dispif_info[MTKFB_DISPIF_PRIMARY_LCD].isHwVsyncAvailable = 1;
-			pr_info("DISP Info: DPI, VDO Mode, HW Vsync enable\n");
+			DISP_MSG("DISP Info: DPI, VDO Mode, HW Vsync enable\n");
 			break;
 		}
 	case LCM_TYPE_DSI:
@@ -355,12 +355,12 @@ DISP_STATUS DISP_Init(uint32_t fbVA, uint32_t fbPA, bool isLcmInited)
 				dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayMode =
 				    DISPIF_MODE_COMMAND;
 				dispif_info[MTKFB_DISPIF_PRIMARY_LCD].isHwVsyncAvailable = 1;
-				pr_info("DISP Info: DSI, CMD Mode, HW Vsync enable\n");
+				DISP_MSG("DISP Info: DSI, CMD Mode, HW Vsync enable\n");
 			} else {
 				dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayMode =
 				    DISPIF_MODE_VIDEO;
 				dispif_info[MTKFB_DISPIF_PRIMARY_LCD].isHwVsyncAvailable = 1;
-				pr_info("DISP Info: DSI, VDO Mode, HW Vsync enable\n");
+				DISP_MSG("DISP Info: DSI, VDO Mode, HW Vsync enable\n");
 			}
 
 			break;
@@ -1426,7 +1426,7 @@ uint32_t DISP_GetActiveHeight(void)
 {
 	disp_drv_init_context();
 	if (lcm_params) {
-		pr_info("lcm_parms->active_height = %d\n", lcm_params->physical_height);
+		DISP_MSG("lcm_parms->active_height = %d\n", lcm_params->physical_height);
 		return lcm_params->physical_height;
 	}
 
@@ -1438,7 +1438,7 @@ uint32_t DISP_GetActiveWidth(void)
 {
 	disp_drv_init_context();
 	if (lcm_params) {
-		pr_info("lcm_parms->active_width = %d\n", lcm_params->physical_width);
+		DISP_MSG("lcm_parms->active_width = %d\n", lcm_params->physical_width);
 		return lcm_params->physical_width;
 	}
 

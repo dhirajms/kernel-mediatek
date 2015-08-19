@@ -66,7 +66,7 @@ unsigned int dbg_log = 0;
 /* must disable irq level log by default, else will block uart output, open it only for debug use */
 unsigned int irq_log = 0;
 unsigned int irq_err_log = 0;
-unsigned int disp_log_level = 0;/*(DISPLOG_ALL & (~DISPLOG_IRQ));*/
+unsigned int disp_log_level = 0;/*DISPLOG_MSG;*//*(DISPLOG_ALL & (~DISPLOG_IRQ));*/
 /* device and driver */
 static dev_t disp_devno;
 static struct cdev *disp_cdev;
@@ -314,7 +314,7 @@ static int disp_irq_log_kthread_func(void *data)
 		/* reset wakeup flag */
 		module = disp_irq_log_module;
 		disp_irq_log_module = 0;
-		DISP_MSG
+		DISP_NOTICE
 		    ("disp_irq_log_kthread_func dump intr register: disp_irq_log_module=0x%X\n",
 		     module);
 		for (i = 0; i < DISP_MODULE_MAX; i++)
@@ -741,7 +741,7 @@ static /*__tcmfunc*/ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		MMProfileLogEx(DDP_MMP_Events.RDMA0_IRQ, MMProfileFlagPulse, reg_val, 0);
 		disp_invoke_irq_callbacks(DISP_MODULE_RDMA0, reg_val);
 	} else if (irq == disp_dev.irq[DISP_REG_RDMA1]) {
-		reg_val = DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + 0xa000);
+		reg_val = DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + DISP_RDMA_OFFSET);
 		if (reg_val & (1 << 0))
 			DISP_IRQ("RDMA1 reg update done!\n");
 		if (reg_val & (1 << 1)) {
@@ -800,7 +800,7 @@ static /*__tcmfunc*/ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 		}
 		/* clear intr */
-		DISP_REG_SET(DISP_REG_RDMA_INT_STATUS + 0xa000, ~reg_val);
+		DISP_REG_SET(DISP_REG_RDMA_INT_STATUS + DISP_RDMA_OFFSET, ~reg_val);
 		MMProfileLogEx(DDP_MMP_Events.RDMA1_IRQ, MMProfileFlagPulse, reg_val, 0);
 		disp_invoke_irq_callbacks(DISP_MODULE_RDMA1, reg_val);
 	} else if (irq == disp_dev.irq[DISP_REG_COLOR]) {
@@ -1044,7 +1044,7 @@ int ConfColorFunc(int i4NotUsed)
 		}
 	} else {
 		if (ncs_tuning_mode == 0) {	/* normal mode */
-			DpEngine_COLORonInit();
+			DpEngine_COLORonInit(DISP_GetScreenWidth(), DISP_GetScreenHeight());
 			/* DpEngine_COLORonConfig(fb_width,fb_height); */
 			DpEngine_COLORonConfig(DISP_GetScreenWidth(), DISP_GetScreenHeight());
 		} else
@@ -1275,7 +1275,7 @@ static const char *disp_clk_name_spy(DISP_DTS_REG_ENUM regs, unsigned int index)
 {
 	switch (regs) {
 	case DISP_REG_CONFIG:
-		return "CLK_MM_CONFIG";
+		return "CLK_TOP_MM_SEL";
 	case DISP_REG_MDP_RDMA:
 		return "CLK_MM_MDP_RDMA";
 	case DISP_REG_MDP_RSZ0:
@@ -1314,13 +1314,13 @@ static const char *disp_clk_name_spy(DISP_DTS_REG_ENUM regs, unsigned int index)
 		else
 			return "CLK_MM_MUTEX";
 	case DISP_REG_CMDQ:
-		return "CLK_MM_CLK_MM_CMDQ";
+		return "CLK_MM_CMDQ";
 	case DISP_REG_SMI_LARB0:
 		return "CLK_MM_SMI_LARB0";
 	case DISP_REG_SMI_COMMON:
 		return "CLK_MM_SMI_COMMON";
 	case DISP_REG_RDMA1:
-		return "CLK_MM_DISP_RMDA1";
+		return "CLK_MM_DISP_RDMA1";
 	case DISP_REG_UFOE:
 		return "CLK_MM_DISP_UFOE";
 	case DISP_REG_DPI1:
@@ -1454,7 +1454,7 @@ void disp_request_irq_init(void)
 					("Unable to request %s IRQ, request_irq fail, i=%d, irq=%d\n",
 					 disp_reg_name_spy(i), i, disp_dev.irq[i]);
 			else
-				DISP_NOTICE("disp_request_irq_init: %s\n", disp_reg_name_spy(i));
+				DISP_MSG("disp_request_irq_init: %s\n", disp_reg_name_spy(i));
 		}
 	}
 }
@@ -1498,6 +1498,8 @@ int disp_dump_reg(DISP_MODULE_ENUM module)
 {
 	unsigned int i = 0;
 	unsigned int idx = 0;
+
+	DISP_NOTICE("disp_dump_reg: %d\n", module);
 
 #ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
 	if ((gBitbltSecure == 1) &&
@@ -1688,36 +1690,35 @@ int disp_dump_reg(DISP_MODULE_ENUM module)
 		else if (module == DISP_MODULE_RDMA1)
 			idx = 1;
 
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_CON + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_SRC_PITCH + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_0 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_SLOW_CON + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_1 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_FIFO_CON + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_00 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_01 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_02 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_10 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_11 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_12 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_20 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_21 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_22 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_PRE_ADD0 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_PRE_ADD1 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_PRE_ADD2 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_POST_ADD0 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_POST_ADD1 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_POST_ADD2 + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_DUMMY + 0xa000 * idx);
-		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_DEBUG_OUT_SEL + 0xa000 * idx);
-
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_CON + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_SRC_PITCH + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_0 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_SLOW_CON + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_1 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_FIFO_CON + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_00 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_01 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_02 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_10 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_11 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_12 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_20 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_21 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_22 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_PRE_ADD0 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_PRE_ADD1 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_PRE_ADD2 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_POST_ADD0 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_POST_ADD1 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_CF_POST_ADD2 + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_DUMMY + DISP_RDMA_OFFSET * idx);
+		g_reg_rdma[i++] = DISP_REG_GET(DISP_REG_RDMA_DEBUG_OUT_SEL + DISP_RDMA_OFFSET * idx);
 		break;
 
 	case DISP_MODULE_DPI0:
@@ -1742,6 +1743,7 @@ int disp_dump_reg(DISP_MODULE_ENUM module)
 		g_reg_cfg[i++] = DISP_REG_GET(DISP_REG_CONFIG_MDP_WROT_SEL);
 		g_reg_cfg[i++] = DISP_REG_GET(DISP_REG_CONFIG_MDP_WDMA_SEL);
 		g_reg_cfg[i++] = DISP_REG_GET(DISP_REG_CONFIG_DISP_OUT_SEL);	/* 0x4c */
+		g_reg_cfg[i++] = DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_SEL);	/* 0x50 */
 		g_reg_cfg[i++] = DISP_REG_GET(DISP_REG_CONFIG_DPI0_SEL);	/* 0x54 */
 		g_reg_cfg[i++] = DISP_REG_GET(DISP_REG_CONFIG_DPI1_SEL);	/* 0x64 */
 		g_reg_cfg[i++] = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0);
@@ -1819,10 +1821,8 @@ int disp_dump_reg(DISP_MODULE_ENUM module)
 		break;
 	}
 
-	if (disp_irq_log_module == 0) {
-		disp_irq_log_module |= (1 << module);
-		wake_up_interruptible(&disp_irq_log_wq);
-	}
+	disp_irq_log_module |= (1 << module);
+	wake_up_interruptible(&disp_irq_log_wq);
 	return 0;
 }
 
@@ -2066,8 +2066,9 @@ void disp_print_reg(DISP_MODULE_ENUM module)
 		DISP_MSG("(0x044)MDP_WROT_SEL            =0x%x\n", g_reg_cfg[i++]);
 		DISP_MSG("(0x048)MDP_WDMA_SEL            =0x%x\n", g_reg_cfg[i++]);
 		DISP_MSG("(0x04c)DISP_OUT_SEL            =0x%x\n", g_reg_cfg[i++]);
-		DISP_MSG("(0x054)DPI0_SEL		 =0x%x\n", g_reg_cfg[i++]);
-		DISP_MSG("(0x064)DPI1_SEL		 =0x%x\n", g_reg_cfg[i++]);
+		DISP_MSG("(0x050)DISP_UFOE_SEL           =0x%x\n", g_reg_cfg[i++]);
+		DISP_MSG("(0x054)DPI0_SEL                =0x%x\n", g_reg_cfg[i++]);
+		DISP_MSG("(0x064)DPI1_SEL                =0x%x\n", g_reg_cfg[i++]);
 		DISP_MSG("(0x100)MMSYS_CG_CON0           =0x%x\n", g_reg_cfg[i++]);
 		DISP_MSG("(0x104)MMSYS_CG_SET0           =0x%x\n", g_reg_cfg[i++]);
 		DISP_MSG("(0x108)MMSYS_CG_CLR0           =0x%x\n", g_reg_cfg[i++]);
@@ -2214,16 +2215,18 @@ void disp_dump_all_reg_info(void)
 	disp_dump_reg(DISP_MODULE_BLS);
 	msleep(50);
 
-	DPI_DumpRegisters();
+	/*DPI_DumpRegisters();*/
 	DSI_DumpRegisters();
 
 	/*for debug */
 	/*BLS pattern */
+	disp_path_get_mutex();
 	DISP_REG_SET(DISP_REG_BLS_PATTERN, 0x41);
 	/*dpi0 pattern */
 	DISP_REG_SET(DISPSYS_DPI0_BASE + 0xF00, 0x41);
 	/*dpi1 pattern */
 	DISP_REG_SET(DISPSYS_DPI1_BASE + 0xF00, 0x41);
+	disp_path_release_mutex();
 }
 
 int disp_module_clock_on(DISP_MODULE_ENUM module, char *caller_name)
@@ -3246,9 +3249,11 @@ static int disp_probe(struct platform_device *pdev)
 	for (i = 0; i < clk_num; i++)
 		disp_dev.clk_map[id][i] = clk[i];
 
-	DISP_NOTICE("DT, i=%d, module=%s, reg_pa=0x%x, map_addr=0x%x, map_irq=%d, clk_num=%d\n",
+	DISP_MSG("DT, i=%d, module=%s, reg_pa=0x%x, map_addr=0x%x, map_irq=%d, clk_num=%d\n",
 		 id, disp_reg_name_spy(id), disp_dev.regs_pa[id], disp_dev.regs_va[id],
 		 disp_dev.irq[id], clk_num);
+
+	DSI_InitRegbase();
 #endif
 
 
@@ -3316,10 +3321,6 @@ static int disp_probe(struct platform_device *pdev)
 	disp_irq_err_timer.expires = jiffies + 5 * HZ;
 	disp_irq_err_timer.function = disp_irq_err_timer_handler;
 	add_timer(&disp_irq_err_timer);
-
-	/*disp_bls_init(DISP_GetScreenWidth(), DISP_GetScreenHeight());*/
-	/*DpEngine_COLORonInit();*/
-	/*DpEngine_COLORonConfig(DISP_GetScreenWidth(), DISP_GetScreenHeight());*/
 
 	DISP_MSG("DISP Probe Done\n");
 	/*NOT_REFERENCED(class_dev);*/

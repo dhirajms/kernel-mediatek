@@ -5,7 +5,7 @@
 #include "disp_ovl_engine_core.h"
 
 #ifdef MTK_DISPLAY_ENABLE_MMU
-#include <mach/m4u.h>
+#include <m4u.h>
 #endif
 
 

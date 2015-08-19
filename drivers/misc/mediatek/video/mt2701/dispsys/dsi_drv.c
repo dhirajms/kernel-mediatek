@@ -589,14 +589,17 @@ static DSI_STATUS DSI_TE_Setting(void)
 	return DSI_STATUS_OK;
 }
 
-DSI_STATUS DSI_Init(bool isDsiPoweredOn)
+void DSI_InitRegbase(void)
 {
-	DSI_STATUS ret = DSI_STATUS_OK;
-
 	DSI_REG = (PDSI_REGS) (DDP_REG_BASE_DSI);
 	DSI_VM_CMD_REG = (PDSI_VM_CMDQ_REGS) (DDP_REG_BASE_DSI + 0x134);
 	DSI_PHY_REG = (PDSI_PHY_REGS) (DDP_REG_BASE_MIPI);
 	DSI_CMDQ_REG = (PDSI_CMDQ_REGS) (DDP_REG_BASE_DSI + 0x180);
+}
+
+DSI_STATUS DSI_Init(bool isDsiPoweredOn)
+{
+	DSI_STATUS ret = DSI_STATUS_OK;
 
 	memset(&_dsiContext, 0, sizeof(_dsiContext));
 	OUTREG32(DDP_REG_BASE_MMSYS_CONFIG + 0x4C, 0x0);
@@ -606,12 +609,9 @@ DSI_STATUS DSI_Init(bool isDsiPoweredOn)
 		_ResetBackupedDSIRegisterValues();
 
 	ret = DSI_PowerOn();
-
 	DSI_TE_Setting();
 	OUTREG32(&DSI_REG->DSI_MEM_CONTI, DSI_WMEM_CONTI);
-
 	ASSERT(ret == DSI_STATUS_OK);
-
 #if ENABLE_DSI_INTERRUPT
 	init_waitqueue_head(&_dsi_wait_queue);
 	init_waitqueue_head(&_dsi_dcs_read_wait_queue);
@@ -619,7 +619,7 @@ DSI_STATUS DSI_Init(bool isDsiPoweredOn)
 	init_waitqueue_head(&_dsi_wait_ext_te);
 	init_waitqueue_head(&_dsi_wait_vm_done_queue);
 	if (request_irq(disp_dev.irq[DISP_REG_DSI], _DSI_InterruptHandler,
-			IRQF_TRIGGER_LOW, MTKFB_DRIVER, NULL) < 0) {
+			IRQF_TRIGGER_LOW, "DSI", NULL) < 0) {
 		DISP_LOG_PRINT(ANDROID_LOG_ERROR, "DSI", "fail to request DSI irq\n");
 		return DSI_STATUS_ERROR;
 	}
@@ -631,13 +631,9 @@ DSI_STATUS DSI_Init(bool isDsiPoweredOn)
 	OUTREGBIT(DSI_INT_ENABLE_REG, DSI_REG->DSI_INTEN, RD_RDY, 1);
 	OUTREGBIT(DSI_INT_ENABLE_REG, DSI_REG->DSI_INTEN, TE_RDY, 1);
 	OUTREGBIT(DSI_INT_ENABLE_REG, DSI_REG->DSI_INTEN, EXT_TE, 1);
-
-	init_waitqueue_head(&_vsync_wait_queue);
-	/* DSI_REG->DSI_INTEN.VM_DONE = 1; */
 	OUTREGBIT(DSI_INT_ENABLE_REG, DSI_REG->DSI_INTEN, VM_DONE, 1);
 	init_waitqueue_head(&_vsync_wait_queue);
-
-
+	init_waitqueue_head(&_vsync_wait_queue);
 #endif
 	if (lcm_params->dsi.mode == (LCM_DSI_MODE_CON) DSI_CMD_MODE)
 		disp_register_irq(DISP_MODULE_RDMA0, _DSI_RDMA0_IRQ_Handler);
@@ -655,42 +651,6 @@ DSI_STATUS DSI_Deinit(void)
 	return DSI_STATUS_OK;
 }
 
-#ifdef BUILD_UBOOT
-DSI_STATUS DSI_PowerOn(void)
-{
-	if (!s_isDsiPowerOn) {
-		MASKREG32(0x14000110, 0x3, 0x0);
-		printf("[DISP] - uboot - DSI_PowerOn. 0x%8x,0x%8x,0x%8x\n",
-		       DISP_REG_GET(0x14000110), DISP_REG_GET(0x14000114), DISP_REG_GET(0x14000118));
-
-		DSI_RestoreRegisters();
-		/* DSI_WaitForEngineNotBusy(); */
-		s_isDsiPowerOn = true;
-	}
-
-	return DSI_STATUS_OK;
-}
-
-
-DSI_STATUS DSI_PowerOff(void)
-{
-	if (s_isDsiPowerOn) {
-		bool ret = true;
-		/* DSI_WaitForEngineNotBusy(); */
-		DSI_BackupRegisters();
-
-		OUTREG32(&DSI_REG->DSI_INTSTA, 0);
-		MASKREG32(0x14000110, 0x3, 0x3);
-		printf("[DISP] - uboot - DSI_PowerOff. 0x%8x,0x%8x,0x%8x\n",
-		       DISP_REG_GET(0x14000110), DISP_REG_GET(0x14000114), DISP_REG_GET(0x14000118));
-
-		s_isDsiPowerOn = false;
-	}
-
-	return DSI_STATUS_OK;
-}
-
-#else
 DSI_STATUS DSI_PowerOn(void)
 {
 	if (!s_isDsiPowerOn) {
@@ -741,7 +701,6 @@ DSI_STATUS DSI_PowerOff(void)
 	}
 	return DSI_STATUS_OK;
 }
-#endif
 
 DSI_STATUS DSI_WaitForNotBusy(void)
 {
@@ -1726,7 +1685,7 @@ void DSI_PHY_clk_setting(LCM_PARAMS *lcm_params)
 		else if (data_Rate >= 50)
 			txdiv = 16;
 		else {
-			pr_info("[dsi_drv.c Error]: dataRate is too low,%d!!!\n", __LINE__);
+			pr_err("[dsi_drv.c Error]: dataRate is too low,%d!!!\n", __LINE__);
 			ASSERT(0);
 		}
 		/* PLL txdiv config */
@@ -1807,7 +1766,7 @@ void DSI_PHY_clk_setting(LCM_PARAMS *lcm_params)
 				  RG_DSI0_MPPLL_SDM_SSC_DELTA1, pdelta1);
 			/* OUTREGBIT(MIPITX_DSI_PLL_CON1_REG,DSI_PHY_REG->MIPITX_DSI_PLL_CON1,
 			   RG_DSI0_MPPLL_SDM_FRA_EN,1); */
-			pr_info
+			pr_debug
 			    ("[dsi_drv.c] PLL config:data_rate=%d,txdiv=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
 			     data_Rate, txdiv, DISP_REG_GET(&DSI_PHY_REG->MIPITX_DSI_PLL_CON2), delta1,
 			     pdelta1);
@@ -1996,7 +1955,7 @@ void DSI_PHY_TIMCONFIG(LCM_PARAMS *lcm_params)
 		ui = 1000 / (lcm_params->dsi.PLL_CLOCK * 2) + 0x01;
 		cycle_time = 8000 / (lcm_params->dsi.PLL_CLOCK * 2) + 0x01;
 		DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
-			       "[DISP] - kernel - DSI_PHY_TIMCONFIG, Cycle Time = %d(ns), Unit Interval = %d(ns). , lane# = %d\n",
+			       "DSI_PHY, Cycle Time: %d(ns), Unit Interval: %d(ns). , lane#: %d\n",
 			       cycle_time, ui, lane_no);
 	} else {
 		div1 = lcm_params->dsi.pll_div1;
@@ -2102,7 +2061,7 @@ void DSI_PHY_TIMCONFIG(LCM_PARAMS *lcm_params)
 
 		ui = (1000 * div2 * div1) / (fbk_div * 26 * 0x2) + 0x01;
 		DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
-			       "[DISP] - kernel - DSI_PHY_TIMCONFIG, Cycle Time = %d(ns), Unit Interval = %d(ns). div1 = %d, div2 = %d, fbk_div = %d, lane# = %d\n",
+"DSI_PHY, Cycle Time: %d(ns), Unit Interval: %d(ns). div1: %d, div2: %d, fbk_div: %d, lane#: %d\n",
 			       cycle_time, ui, div1, div2, fbk_div, lane_no);
 	}
 
@@ -2180,9 +2139,12 @@ void DSI_PHY_TIMCONFIG(LCM_PARAMS *lcm_params)
 	    dsi.CLK_HS_POST;
 
 	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
-		       "[DISP] - kernel - DSI_PHY_TIMCONFIG, HS_TRAIL = %d, HS_ZERO = %d, HS_PRPR = %d, LPX = %d, TA_GET = %d, TA_SURE = %d, TA_GO = %d, CLK_TRAIL = %d, CLK_ZERO = %d, CLK_HS_PRPR = %d\n",
+		       "DSI_PHY, HS_TRAIL:%d, HS_ZERO:%d, HS_PRPR:%d, LPX:%d, TA_GET:%d, TA_SURE:%d\n",
 		       timcon0.HS_TRAIL, timcon0.HS_ZERO, timcon0.HS_PRPR, timcon0.LPX,
-		       timcon1.TA_GET, timcon1.TA_SURE, timcon1.TA_GO, timcon2.CLK_TRAIL,
+		       timcon1.TA_GET, timcon1.TA_SURE);
+	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
+		       "DSI_PHY, TA_GO:%d, CLK_TRAIL:%d, CLK_ZERO:%d, CLK_HS_PRPR:%d\n",
+		       timcon1.TA_GO, timcon2.CLK_TRAIL,
 		       timcon2.CLK_ZERO, timcon3.CLK_HS_PRPR);
 
 	OUTREGBIT(DSI_PHY_TIMCON0_REG, DSI_REG->DSI_PHY_TIMECON0, LPX, timcon0.LPX);
@@ -2202,7 +2164,7 @@ void DSI_PHY_TIMCONFIG(LCM_PARAMS *lcm_params)
 	OUTREGBIT(DSI_PHY_TIMCON3_REG, DSI_REG->DSI_PHY_TIMECON3, CLK_HS_PRPR, timcon3.CLK_HS_PRPR);
 	OUTREGBIT(DSI_PHY_TIMCON3_REG, DSI_REG->DSI_PHY_TIMECON3, CLK_HS_POST, timcon3.CLK_HS_POST);
 	OUTREGBIT(DSI_PHY_TIMCON3_REG, DSI_REG->DSI_PHY_TIMECON3, CLK_HS_EXIT, timcon3.CLK_HS_EXIT);
-	pr_info("%s, 0x%08x,0x%08x,0x%08x,0x%08x\n", __func__, DISP_REG_GET(DDP_REG_BASE_DSI + 0x110),
+	pr_debug("%s, 0x%08x,0x%08x,0x%08x,0x%08x\n", __func__, DISP_REG_GET(DDP_REG_BASE_DSI + 0x110),
 		DISP_REG_GET(DDP_REG_BASE_DSI + 0x114), DISP_REG_GET(DDP_REG_BASE_DSI + 0x118),
 		DISP_REG_GET(DDP_REG_BASE_DSI + 0x11c));
 }
@@ -3041,12 +3003,8 @@ DSI_STATUS DSI_TXRX_Control(bool cksm_en,
 			    bool dis_eotp_en, bool hstx_cklp_en, unsigned int max_return_size)
 {
 	DSI_TXRX_CTRL_REG tmp_reg;
-
 	tmp_reg = DSI_REG->DSI_TXRX_CTRL;
 
-	/* /TODO: parameter checking */
-/* tmp_reg.CKSM_EN=cksm_en; */
-/* tmp_reg.ECC_EN=ecc_en; */
 	switch (lane_num) {
 	case LCM_ONE_LANE:
 		tmp_reg.LANE_NUM = 1;
@@ -3062,7 +3020,6 @@ DSI_STATUS DSI_TXRX_Control(bool cksm_en,
 		break;
 	}
 	tmp_reg.VC_NUM = vc_num;
-/* tmp_reg.CORR_EN = err_correction_en; */
 	tmp_reg.DIS_EOT = dis_eotp_en;
 	tmp_reg.NULL_EN = null_packet_en;
 	tmp_reg.MAX_RTN_SIZE = max_return_size;
@@ -3159,17 +3116,17 @@ void DSI_Config_VDO_Timing(LCM_PARAMS *lcm_params)
 	_dsiContext.vsa_ve_period_us = LINE_PERIOD_US * 1 / 1000;
 	_dsiContext.vbp_period_us = LINE_PERIOD_US * lcm_params->dsi.vertical_backporch / 1000;
 
-	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "[DISP] kernel - video timing, mode = %d\n",
+	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "video timing, mode = %d\n",
 		       lcm_params->dsi.mode);
-	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "[DISP] kernel - VSA : %d %d(us)\n",
+	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "VSA : %d %d(us)\n",
 		       *(unsigned int *)&DSI_REG->DSI_VSA_NL,
 		       (_dsiContext.vsa_vs_period_us + _dsiContext.vsa_hs_period_us +
 			_dsiContext.vsa_ve_period_us));
-	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "[DISP] kernel - VBP : %d %d(us)\n",
+	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "VBP : %d %d(us)\n",
 		       *(unsigned int *)&DSI_REG->DSI_VBP_NL, _dsiContext.vbp_period_us);
-	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "[DISP] kernel - VFP : %d %d(us)\n",
+	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "VFP : %d %d(us)\n",
 		       *(unsigned int *)&DSI_REG->DSI_VFP_NL, _dsiContext.vfp_period_us);
-	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "[DISP] kernel - VACT: %d\n",
+	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "VACT: %d\n",
 		       *(unsigned int *)&DSI_REG->DSI_VACT_NL);
 }
 
@@ -4138,6 +4095,10 @@ void fbconfig_DSI_set_timing(MIPI_TIMING timing)
 DSI_STATUS DSI_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp, bool cmd_mode)
 {
 	unsigned int mva;
+#ifdef MTK_DISPLAY_ENABLE_MMU
+	unsigned int ret = 0;
+	M4U_PORT_STRUCT portStruct;
+#endif
 
 	struct disp_path_config_mem_out_struct mem_out = { 0 };
 
@@ -4156,9 +4117,6 @@ DSI_STATUS DSI_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp, bool cm
 		lcm_params->height * lcm_params->width * bpp / 8);
 
 #ifdef MTK_DISPLAY_ENABLE_MMU
-	unsigned int ret = 0;
-	M4U_PORT_STRUCT portStruct;
-
 	ret =
 	    m4u_alloc_mva(DISP_WDMA, pvbuf, lcm_params->height * lcm_params->width * bpp / 8, 0, 0,
 			  &mva);

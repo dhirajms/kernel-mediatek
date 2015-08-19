@@ -4,6 +4,7 @@
 #include "ddp_reg.h"
 #include "ddp_path.h"
 #include "ddp_color.h"
+#include "disp_drv_log.h"
 
 #ifdef MTK_ANDROID_SUPPORT
 #include <mach/xlog.h>
@@ -769,6 +770,21 @@ static DISP_AAL_STATISTICS gHist;
 static unsigned long gHistIndicator;
 static DEFINE_SPINLOCK(gHistLock);
 
+void dispsys_bypass_color(unsigned int width, unsigned int height)
+{
+	DISP_MSG("dispsys_bypass_color, width=%d, height=%d\n", width, height);
+
+	DISP_REG_SET(DISPSYS_COLOR_BASE + 0xf50, width);
+	DISP_REG_SET(DISPSYS_COLOR_BASE + 0xf54, height);
+	DISP_REG_SET(DISPSYS_COLOR_BASE + 0x400, 0x2000323c);
+	DISP_REG_SET(DISPSYS_COLOR_BASE + 0xf00, 0x00000001);
+
+	DISP_MSG("dispsys_bypass_color, 0x%x, 0x%x, 0x%x, 0x%x\n",
+			DISP_REG_GET(DISPSYS_COLOR_BASE + 0x400),
+			DISP_REG_GET(DISPSYS_COLOR_BASE + 0xf00),
+			DISP_REG_GET(DISPSYS_COLOR_BASE + 0xf50),
+			DISP_REG_GET(DISPSYS_COLOR_BASE + 0xf54));
+}
 
 void disp_set_hist_readlock(unsigned long bLock)
 {
@@ -868,11 +884,12 @@ DISPLAY_PQ_T *get_Color_index()
 }
 
 
-void DpEngine_COLORonInit(void)
+void DpEngine_COLORonInit(unsigned int srcWidth, unsigned int srcHeight)
 {
-	/* printk("===================init COLOR =======================\n"); */
-
-
+#ifdef MTK_BRINGUP_FOR_MT2701
+	DISP_DDP("color bypass\n");
+	dispsys_bypass_color(srcWidth, srcHeight);
+#else
 	DISP_REG_SET(CFG_MAIN, (1 << 29));	/* color enable */
 
 	DISP_REG_SET((DISPSYS_COLOR_BASE + 0x420), 0);
@@ -889,6 +906,8 @@ void DpEngine_COLORonInit(void)
 	/* config cboost */
 	DISP_REG_SET((DISPSYS_COLOR_BASE + 0x428), 0xFF402280);
 	DISP_REG_SET((DISPSYS_COLOR_BASE + 0x42c), 0x00000000);
+#endif
+
 #endif
 }
 

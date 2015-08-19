@@ -45,6 +45,7 @@
 #define DDP_REG_BASE_MIPI	       (disp_dev.regs_va[DISP_REG_MIPI])
 #endif
 
+#define DISP_RDMA_OFFSET (DDP_REG_BASE_DISP_RDMA1-DDP_REG_BASE_DISP_RDMA0)
 
 
 #define DISPSYS_CONFIG_BASE     DDP_REG_BASE_MMSYS_CONFIG
@@ -96,9 +97,9 @@
 
 void DISP_REG_SET_FIELD(unsigned long field, unsigned long reg32, unsigned long val);
 
-/*#define OUTREG32(x, y) mt_reg_sync_writel(y, x)
+#define OUTREG32(x, y) mt_reg_sync_writel(y, x)
 #define OUTREG16(x, y) mt_reg_sync_writew(y, x)
-#define OUTREG8(x, y) mt_reg_sync_writeb(y, x)*/
+#define OUTREG8(x, y) mt_reg_sync_writeb(y, x)
 
 #define READ_REGISTER_UINT32(reg) \
 	(*(volatile uint32_t * const)(reg))
@@ -119,19 +120,19 @@ void DISP_REG_SET_FIELD(unsigned long field, unsigned long reg32, unsigned long 
 	((*(volatile uint8_t * const)(reg)) = (val))
 
 #define INREG8(x)           READ_REGISTER_UINT8((uint8_t *)((void *)(x)))
-#define OUTREG8(x, y)       WRITE_REGISTER_UINT8((uint8_t *)((void *)(x)), (uint8_t)(y))
+/*#define OUTREG8(x, y)       WRITE_REGISTER_UINT8((uint8_t *)((void *)(x)), (uint8_t)(y))*/
 #define SETREG8(x, y)       OUTREG8(x, INREG8(x)|(y))
 #define CLRREG8(x, y)       OUTREG8(x, INREG8(x)&~(y))
 #define MASKREG8(x, y, z)   OUTREG8(x, (INREG8(x)&~(y))|(z))
 
 #define INREG16(x)          READ_REGISTER_UINT16((uint16_t *)((void *)(x)))
-#define OUTREG16(x, y)      WRITE_REGISTER_UINT16((uint16_t *)((void *)(x)), (uint16_t)(y))
+/*#define OUTREG16(x, y)      WRITE_REGISTER_UINT16((uint16_t *)((void *)(x)), (uint16_t)(y))*/
 #define SETREG16(x, y)      OUTREG16(x, INREG16(x)|(y))
 #define CLRREG16(x, y)      OUTREG16(x, INREG16(x)&~(y))
 #define MASKREG16(x, y, z)  OUTREG16(x, (INREG16(x)&~(y))|(z))
 
 #define INREG32(x)          READ_REGISTER_UINT32((uint32_t *)((void *)(x)))
-#define OUTREG32(x, y)		WRITE_REGISTER_UINT32((uint32_t *)((void *)(x)), (uint32_t)(y))
+/*#define OUTREG32(x, y)		WRITE_REGISTER_UINT32((uint32_t *)((void *)(x)), (uint32_t)(y))*/
 #define SETREG32(x, y)		OUTREG32(x, INREG32(x)|(y))
 #define CLRREG32(x, y)		OUTREG32(x, INREG32(x)&~(y))
 #define MASKREG32(x, y, z)	OUTREG32(x, (INREG32(x)&~(y))|(z))
@@ -209,7 +210,8 @@ void DISP_REG_SET_FIELD(unsigned long field, unsigned long reg32, unsigned long 
 #define DISP_REG_CONFIG_MDP_WROT_SEL              (DISPSYS_CONFIG_BASE + 0x044)
 #define DISP_REG_CONFIG_MDP_WDMA_SEL              (DISPSYS_CONFIG_BASE + 0x048)
 #define DISP_REG_CONFIG_DISP_OUT_SEL              (DISPSYS_CONFIG_BASE + 0x04c)
-#define DISP_REG_CONFIG_DPI0_SEL		  (DISPSYS_CONFIG_BASE + 0x054)
+#define DISP_REG_CONFIG_DISP_UFOE_SEL             (DISPSYS_CONFIG_BASE + 0x050)
+#define DISP_REG_CONFIG_DPI0_SEL                  (DISPSYS_CONFIG_BASE + 0x054)
 #define DISP_REG_CONFIG_DPI1_SEL                  (DISPSYS_CONFIG_BASE + 0x064)
 #define DISP_REG_CONFIG_MMSYS_CG_CON0             (DISPSYS_CONFIG_BASE + 0x100)
 #define DISP_REG_CONFIG_MMSYS_CG_SET0             (DISPSYS_CONFIG_BASE + 0x104)

@@ -66,7 +66,7 @@ extern unsigned char pq_debug_flag;
 
 /*---------------------------------------------------------------------------*/
 void DpEngine_COLORonConfig(unsigned int srcWidth, unsigned int srcHeight);
-void DpEngine_COLORonInit(void);
+void DpEngine_COLORonInit(unsigned int srcWidth, unsigned int srcHeight);
 
 
 /*

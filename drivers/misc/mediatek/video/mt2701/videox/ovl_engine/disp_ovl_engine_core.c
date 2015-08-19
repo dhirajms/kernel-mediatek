@@ -14,7 +14,7 @@
 #endif
 
 #ifdef MTK_DISPLAY_ENABLE_MMU
-#include <mach/m4u.h>
+#include <m4u.h>
 #endif
 
 /* Ovl_engine parameter */

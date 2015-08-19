@@ -112,10 +112,7 @@ static void dsi_IsGlitchWorkaroundEnabled(void)
 
 void init_dsi(bool isDsiPoweredOn)
 {
-	/* xuecheng's workaround for 82 dsi video mode */
-	if (lcm_params->dsi.mode == CMD_MODE)
-		DSI_PHY_clk_setting(lcm_params);
-
+	/*DSI_PHY_clk_setting(lcm_params);*/
 	DSI_CHECK_RET(DSI_Init(isDsiPoweredOn));
 	dsi_IsGlitchWorkaroundEnabled();
 
@@ -128,8 +125,6 @@ void init_dsi(bool isDsiPoweredOn)
 					       false,	/* err_correction_en */
 					       false,	/* dis_eotp_en */
 					       false, 0));	/* max_return_size */
-/* DSI_set_noncont_clk(false,0); */
-/* DSI_Detect_glitch_enable(true); */
 	} else {
 		DSI_CHECK_RET(DSI_TXRX_Control(true,	/* cksm_en */
 					       true,	/* ecc_en */
@@ -151,12 +146,10 @@ void init_dsi(bool isDsiPoweredOn)
 	if (lcm_params->dsi.mode != CMD_MODE) {
 		DSI_Config_VDO_Timing(lcm_params);
 		DSI_Set_VM_CMD(lcm_params);
-/* if(0 < lcm_params->dsi.compatibility_for_nvk) */
-/* DSI_Config_VDO_FRM_Mode(); */
 	}
 
 	DSI_CHECK_RET(DSI_enable_MIPI_txio(true));
-
+	DSI_EnableClk();
 
 }
 
@@ -166,46 +159,41 @@ void init_dsi(bool isDsiPoweredOn)
 /* ------------------------------------------------------------ */
 static DISP_STATUS dsi_config_ddp(uint32_t fbPA)
 {
-	struct disp_path_config_struct config = { 0 };
+	struct disp_path_config_struct config;
 
-	if (DISP_IsDecoupleMode())
-		config.srcModule = DISP_MODULE_RDMA0;
-	else
+	memset(&config, 0, sizeof(struct disp_path_config_struct));
+
+#ifndef MTK_BRINGUP_FOR_MT2701
+		config.srcModule = DISP_MODULE_RDMA0;/*DISP_MODULE_RDMA0;*/
+		config.inFormat = eARGB8888;
+#else
 		config.srcModule = DISP_MODULE_OVL;
-
+#endif
 
 	config.bgROI.x = 0;
 	config.bgROI.y = 0;
 	config.bgROI.width = lcm_params->width;
 	config.bgROI.height = lcm_params->height;
-	config.bgColor = 0x0;	/* background color */
-
+	config.bgColor = 0x0;
 	config.pitch = lcm_params->width * 2;
+	config.srcWidth = lcm_params->width;
+	config.srcHeight = lcm_params->height;
 	config.srcROI.x = 0;
 	config.srcROI.y = 0;
 	config.srcROI.height = lcm_params->height;
 	config.srcROI.width = lcm_params->width;
 	config.ovl_config.source = OVL_LAYER_SOURCE_MEM;
+	config.addr = fbPA;
+	config.outFormat = RDMA_OUTPUT_FORMAT_ARGB;
 
 	if (lcm_params->dsi.mode != CMD_MODE) {
+		config.ovl_config.layer_en = 0;
 		config.ovl_config.layer = DDP_OVL_LAYER_MUN - 1;
-		config.ovl_config.layer_en = 0;
-		/* disp_path_get_mutex(); */
 		disp_path_config_layer(&config.ovl_config);
-		/* disp_path_release_mutex(); */
-		/* disp_path_wait_reg_update(); */
-	}
-#if 1
-	/* Disable LK UI layer (Layer2) */
-	if (lcm_params->dsi.mode != CMD_MODE) {
-		config.ovl_config.layer = DDP_OVL_LAYER_MUN - 1 - 1;
-		config.ovl_config.layer_en = 0;
-		/* disp_path_get_mutex(); */
+		config.ovl_config.layer = DDP_OVL_LAYER_MUN - 2;
 		disp_path_config_layer(&config.ovl_config);
-		/* disp_path_release_mutex(); */
-		/* disp_path_wait_reg_update(); */
 	}
-#endif
+
 	config.ovl_config.layer = DDP_OVL_LAYER_MUN - 1;
 	config.ovl_config.layer_en = 1;
 	config.ovl_config.fmt = eRGB565;
@@ -213,50 +201,34 @@ static DISP_STATUS dsi_config_ddp(uint32_t fbPA)
 	config.ovl_config.source = OVL_LAYER_SOURCE_MEM;
 	config.ovl_config.src_x = 0;
 	config.ovl_config.src_y = 0;
-	config.ovl_config.dst_x = 0;	/* ROI */
+	config.ovl_config.dst_x = 0;
 	config.ovl_config.dst_y = 0;
 	config.ovl_config.dst_w = lcm_params->width;
 	config.ovl_config.dst_h = lcm_params->height;
 	config.ovl_config.src_pitch = ALIGN_TO(lcm_params->width, MTK_FB_ALIGNMENT) * 2;
 	config.ovl_config.keyEn = 0;
-	config.ovl_config.key = 0xFF;	/* color key */
-	config.ovl_config.aen = 0;	/* alpha enable */
+	config.ovl_config.key = 0xFF;
+	config.ovl_config.aen = 0;
 	config.ovl_config.alpha = 0;
 
 	LCD_LayerSetAddress(DDP_OVL_LAYER_MUN - 1, fbPA);
 	LCD_LayerSetFormat(DDP_OVL_LAYER_MUN - 1, LCD_LAYER_FORMAT_RGB565);
 	LCD_LayerSetOffset(DDP_OVL_LAYER_MUN - 1, 0, 0);
 	LCD_LayerSetSize(DDP_OVL_LAYER_MUN - 1, lcm_params->width, lcm_params->height);
-
 	LCD_LayerSetPitch(DDP_OVL_LAYER_MUN - 1, ALIGN_TO(lcm_params->width, MTK_FB_ALIGNMENT) * 2);
-
 	LCD_LayerEnable(DDP_OVL_LAYER_MUN - 1, true);
 
 	if (lcm_params->dsi.mode == CMD_MODE)
-		config.dstModule = DISP_MODULE_DSI_CMD;	/* DISP_MODULE_WDMA1 */
+		config.dstModule = DISP_MODULE_DSI_CMD;
 	else
-		config.dstModule = DISP_MODULE_DSI_VDO;	/* DISP_MODULE_WDMA1 */
-	config.outFormat = RDMA_OUTPUT_FORMAT_ARGB;
+		config.dstModule = DISP_MODULE_DSI_VDO;
+
 	disp_path_config(&config);
 
 	if (lcm_params->dsi.mode != CMD_MODE) {
 		/* DSI_Wait_VDO_Idle(); */
 		disp_path_get_mutex();
 	}
-#ifdef MTK_DISPLAY_ENABLE_MMU
-	/* Config FB_Layer port to be physical. */
-	{
-		M4U_PORT_STRUCT portStruct;
-
-		portStruct.ePortID = DISP_OVL_0;
-		portStruct.Virtuality = 1;
-		portStruct.Security = 0;
-		portStruct.domain = 3;	/* domain : 0 1 2 3 */
-		portStruct.Distance = 1;
-		portStruct.Direction = 0;
-		m4u_config_port(&portStruct);
-	}
-#endif
 
 	if (lcm_params->dsi.mode != CMD_MODE) {
 		disp_path_release_mutex();
@@ -264,12 +236,13 @@ static DISP_STATUS dsi_config_ddp(uint32_t fbPA)
 		/* UFOE_Start(); */
 		/* DSI_Start(); */
 	}
-	pr_info("%s, config done\n", __func__);
+	DISP_MSG("%s, config done\n", __func__);
 	return DISP_STATUS_OK;
 }
 #endif
 
 bool DDMS_capturing = 0;
+static DISP_STATUS dsi_enable_power(bool enable);
 
 static DISP_STATUS dsi_init(uint32_t fbVA, uint32_t fbPA, bool isLcmInited)
 {
@@ -285,26 +258,16 @@ static DISP_STATUS dsi_init(uint32_t fbVA, uint32_t fbPA, bool isLcmInited)
 		}
 
 		DSI_clk_HS_mode(1);
-
 		DSI_SetMode(lcm_params->dsi.mode);
 	} else {
-		if (!isLcmInited) {
-			/* DSI_SetMode(0); */
-			/* mdelay(100); */
-			/* DSI_Stop(); */
-		} else {
-			is_video_mode_running = true;
-		}
-
 		init_dsi(isLcmInited);
-
-		MASKREG32(DDP_REG_BASE_DSI + 0x10, 0x2, 0x2);
-		if (NULL != lcm_drv->init && !isLcmInited) {
+		if (NULL != lcm_drv->init && !isLcmInited)
 			lcm_drv->init();
-			DSI_LP_Reset();
-		}
 
 		DSI_SetMode(lcm_params->dsi.mode);
+
+		if (isLcmInited)
+			is_video_mode_running = true;
 	}
 
 #if !defined(MTK_OVERLAY_ENGINE_SUPPORT)

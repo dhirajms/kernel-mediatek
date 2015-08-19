@@ -47,8 +47,8 @@
 #endif
 
 #ifdef MTK_DISPLAY_ENABLE_MMU
-#include <mach/m4u.h>
-#include <mach/m4u_port.h>
+#include <m4u.h>
+#include <m4u_port.h>
 #endif
 
 static int fill_buffer_rgb(void *addr, unsigned int size)

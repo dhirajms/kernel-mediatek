@@ -1178,6 +1178,11 @@ DPI_STATUS DPI_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp)
 
 #else
 	unsigned int mva;
+#ifdef MTK_DISPLAY_ENABLE_MMU
+	unsigned int ret = 0;
+	M4U_PORT_STRUCT portStruct;
+#endif
+
 
 	struct disp_path_config_mem_out_struct mem_out = { 0 };
 
@@ -1196,9 +1201,6 @@ DPI_STATUS DPI_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp)
 		lcm_params->height * lcm_params->width * bpp / 8);
 
 #ifdef MTK_DISPLAY_ENABLE_MMU
-	unsigned int ret = 0;
-	M4U_PORT_STRUCT portStruct;
-
 	ret =
 	    m4u_alloc_mva(DISP_WDMA, pvbuf, lcm_params->height * lcm_params->width * bpp / 8, 0, 0,
 			  &mva);

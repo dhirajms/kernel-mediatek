@@ -15,7 +15,7 @@
 #include "disp_drv.h"
 
 #ifdef MTK_DISPLAY_ENABLE_MMU
-#include <mach/m4u.h>
+#include <m4u.h>
 #endif
 
 #ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
@@ -923,7 +923,7 @@ int ddp_dump_info(DISP_MODULE_ENUM module)
 	unsigned int index = 0;
 	unsigned int i = 0;
 	unsigned int j = 0;
-	unsigned int DISP_INDEX_OFFSET = 0xA000;
+	unsigned int DISP_INDEX_OFFSET = DISP_RDMA_OFFSET;
 
 	switch (module) {
 		/* Dump WDMA Reg */

@@ -13,7 +13,7 @@
 #include "disp_drv_platform.h"
 
 #ifdef MTK_DISPLAY_ENABLE_MMU
-#include <mach/m4u.h>
+#include <m4u.h>
 #endif
 
 

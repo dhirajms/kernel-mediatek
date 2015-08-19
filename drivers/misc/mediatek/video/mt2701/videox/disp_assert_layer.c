@@ -163,7 +163,7 @@ int DAL_address_burst_align(void)
 	if (burst_8mod < 4)
 		align = 0x40;
 
-	pr_notice("dal address align 0x%x\n", align);
+	DISP_MSG("dal address align 0x%x\n", align);
 	return align;
 }
 
@@ -202,7 +202,7 @@ DAL_STATUS DAL_Init(uint32_t layerVA, uint32_t layerPA)
 {
 	int align;
 
-	pr_info("%s", __func__);
+	DISP_MSG("%s", __func__);
 	align = DAL_address_burst_align();
 	dal_fb_addr = (void *)(layerVA + align);
 	dal_fb_pa = layerPA + align;

@@ -158,6 +158,7 @@ extern "C" {
 	};
 #define DSI_PLL_CONFIG    struct DSI_PLL_CONFIG
 
+	void DSI_InitRegbase(void);
 	DSI_STATUS DSI_Init(bool isDsiPoweredOn);
 	DSI_STATUS DSI_Deinit(void);
 

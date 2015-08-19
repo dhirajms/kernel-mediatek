@@ -55,8 +55,8 @@
 #endif
 
 #ifdef MTK_DISPLAY_ENABLE_MMU
-#include <mach/m4u.h>
-#include <mach/m4u_port.h>
+#include <m4u.h>
+#include <m4u_port.h>
 #endif
 
 /* for MTK_HDMI_MAIN_PATH */
@@ -109,8 +109,8 @@ static size_t mtkfb_log_on;
 	} while (0)
 
 #define MTKFB_MSG(fmt, arg...) \
-		pr_err("[MTKFB] "fmt, ##arg)
-#define PRNERR(fmt, args...)   \
+		pr_err("[DISP/MTKFB] "fmt, ##arg)
+#define MTKFB_ERR(fmt, args...)   \
 		DISP_LOG_PRINT(ANDROID_LOG_INFO, "MTKFB", fmt, ##args)
 
 #ifdef MTK_ANDROID_SUPPORT
@@ -721,13 +721,12 @@ EXIT:
 
 		ret = mtkfb_set_par(mtkfb_fbi);
 		if (ret != 0)
-			PRNERR("failed to mtkfb_set_par\n");
+			MTKFB_ERR("failed to mtkfb_set_par\n");
 	}
 }
 
 static bool first_update;
 static bool first_enable_esd = true;
-static int cnt = 3;
 static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info *info)
 {
 	uint32_t offset;
@@ -741,12 +740,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	}
 	MMProfileLogStructure(MTKFB_MMP_Events.PanDisplay, MMProfileFlagStart, var,
 			      struct fb_var_screeninfo);
-	if (0 != cnt) {
-		pr_info("LCD:%dx%d\n", MTK_FB_XRES, MTK_FB_YRES);
-		cnt--;
-	}
 	MTKFB_FUNC();
-
 	MSG_FUNC_ENTER();
 
 	MSG(ARGU, "xoffset=%u, yoffset=%u, xres=%u, yres=%u, xresv=%u, yresv=%u\n",
@@ -788,7 +782,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 			layerInfo.src_fmt = MTK_FB_FORMAT_ARGB8888;
 			break;
 		default:
-			PRNERR("Invalid color format bpp: 0x%d\n", var->bits_per_pixel);
+			MTKFB_ERR("Invalid color format bpp: 0x%d\n", var->bits_per_pixel);
 			return -1;
 		}
 		layerInfo.src_use_color_key = 0;
@@ -858,7 +852,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 			cached_layer_config[FB_LAYER].aen = true;
 			break;
 		default:
-			PRNERR("Invalid color format bpp: 0x%d\n", var->bits_per_pixel);
+			MTKFB_ERR("Invalid color format bpp: 0x%d\n", var->bits_per_pixel);
 			return -1;
 		}
 		cached_layer_config[FB_LAYER].alpha = 0xFF;
@@ -1705,7 +1699,7 @@ static int mtkfb_set_overlay_layer(struct mtkfb_device *fbdev, struct fb_overlay
 		layerbpp = 32;
 		break;
 	default:
-		PRNERR("Invalid color format: 0x%x\n", layerInfo->src_fmt);
+		MTKFB_ERR("Invalid color format: 0x%x\n", layerInfo->src_fmt);
 		ret = -EFAULT;
 		goto LeaveOverlayMode;
 	}
@@ -2813,7 +2807,7 @@ static int mtkfb_fbinfo_init(struct fb_info *info)
 
 	r = fb_alloc_cmap(&info->cmap, 16, 0);
 	if (r != 0)
-		PRNERR("unable to allocate color map memory\n");
+		MTKFB_ERR("unable to allocate color map memory\n");
 
 	/* setup the initial video mode (RGB565) */
 
@@ -2840,13 +2834,13 @@ static int mtkfb_fbinfo_init(struct fb_info *info)
 
 	r = mtkfb_check_var(&var, info);
 	if (r != 0)
-		PRNERR("failed to mtkfb_check_var\n");
+		MTKFB_ERR("failed to mtkfb_check_var\n");
 
 	info->var = var;
 
 	r = mtkfb_set_par(info);
 	if (r != 0)
-		PRNERR("failed to mtkfb_set_par\n");
+		MTKFB_ERR("failed to mtkfb_set_par\n");
 
 	MSG_FUNC_LEAVE();
 	return r;
@@ -3049,13 +3043,13 @@ static int mtkfb_fbinfo_modify(struct fb_info *info)
 
 	r = mtkfb_check_var(&var, info);
 	if (r != 0)
-		PRNERR("failed to mtkfb_check_var\n");
+		MTKFB_ERR("failed to mtkfb_check_var\n");
 
 	info->var = var;
 
 	r = mtkfb_set_par(info);
 	if (r != 0)
-		PRNERR("failed to mtkfb_set_par\n");
+		MTKFB_ERR("failed to mtkfb_set_par\n");
 
 	return r;
 }
@@ -3074,10 +3068,10 @@ static void mtkfb_fb_565_to_8888(struct fb_info *fb_info)
 	int j = 0;
 	int k = 0;
 
-	pr_notice
+	MTKFB_LOG
 	    ("mtkfb_fb_565_to_8888 xres=%d yres=%d fbsize=0x%X x_virtual=%d s=0x%p d=0x%p\n",
 	     xres, yres, fbsize, x_virtual, s, d);
-	pr_notice("[boot_logo]normal\n");
+	MTKFB_LOG("[boot_logo]normal\n");
 	for (j = 0; j < yres; ++j) {
 		for (k = 0; k < xres; ++k) {
 			src_rgb565 = *s++;
@@ -3090,7 +3084,7 @@ static void mtkfb_fb_565_to_8888(struct fb_info *fb_info)
 	d = (unsigned int *)(fb_info->screen_base + fbsize * 2);
 	memcpy(s, d, fbsize * 2);
 
-	pr_notice("[boot_logo] loop copy color over\n");
+	MTKFB_LOG("[boot_logo] loop copy color over\n");
 #else
 	memset(fb_info->screen_base, 0, fbsize * 2);
 #endif
@@ -3098,7 +3092,7 @@ static void mtkfb_fb_565_to_8888(struct fb_info *fb_info)
 	wait_ret =
 	    wait_event_interruptible_timeout(disp_reg_update_wq,
 					     atomic_read(&OverlaySettingApplied), HZ / 10);
-	pr_info("[WaitQ] wait_event_interruptible() ret = %d, %d\n", wait_ret, __LINE__);
+	MTKFB_LOG("[WaitQ] wait_event_interruptible() ret = %d, %d\n", wait_ret, __LINE__);
 }
 
 struct tag_videolfb {
@@ -3125,9 +3119,9 @@ unsigned long fb_base_va = 0;
 
 static int fb_early_init_dt_get_chosen(unsigned long node, const char *uname, int depth, void *data)
 {
-	pr_notice("uname:%s\n", uname);
+	MTKFB_LOG("uname:%s\n", uname);
 	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0)) {
-		pr_err("get chosen fail\n");
+		MTKFB_ERR("get chosen fail\n");
 		return 0;
 	}
 
@@ -3164,15 +3158,16 @@ static int mtkfb_parse_tag_videolfb(void)
 		return -1;
 	}
 /* #else */
-	fb_base_pa = 0xbf300000;
+	/* fb_base_pa = 0xbf300000; */
+	fb_base_pa = 0xb8100000;
 	vramsize = 0xd00000;
 #endif
 
 	is_videofb_parse_done = 1;
-	MTKFB_MSG("[videolfb] fps        = %d\n", lcd_fps);
-	MTKFB_MSG("[videolfb] fb_base_pa = 0x%x\n", fb_base_pa);
-	MTKFB_MSG("[videolfb] vram       = 0x%x\n", vramsize);
-	MTKFB_MSG("[videolfb] lcmname    = %s\n", mtkfb_lcm_name);
+	MTKFB_LOG("[videolfb] fps        = %d\n", lcd_fps);
+	MTKFB_LOG("[videolfb] fb_base_pa = 0x%x\n", fb_base_pa);
+	MTKFB_LOG("[videolfb] vram       = 0x%x\n", vramsize);
+	MTKFB_LOG("[videolfb] lcmname    = %s\n", mtkfb_lcm_name);
 	return 0;
 }
 
@@ -3189,7 +3184,7 @@ static void _mtkfb_draw_block(unsigned long addr, unsigned int x, unsigned int y
 	int j = 0;
 	unsigned long start_addr = addr + MTK_FB_XRESV * 4 * y + x * 4;
 
-	pr_debug("@(%d,%d)addr=0x%lx, MTK_FB_XRESV=%d, draw_block start addr=0x%lx, w=%d, h=%d\n",
+	MTKFB_LOG("@(%d,%d)addr=0x%lx, MTK_FB_XRESV=%d, draw_block start addr=0x%lx, w=%d, h=%d\n",
 		 x, y, addr, MTK_FB_XRESV, start_addr, w, h);
 
 	for (j = 0; j < h; j++) {
@@ -3206,31 +3201,26 @@ static int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h
 	int _internal_test_block_size;
 	unsigned int *pAddr = (unsigned int *)va;
 
-	pr_notice("UT starts @ va=0x%lx, w=%d, h=%d\n", va, w, h);
-
-	/* mtkfb_fbinfo_init default config as RGBA-->0xAABBGGRR */
-	pr_notice("R\n");
+	MTKFB_LOG("UT starts @ va=0x%lx, w=%d, h=%d\n", va, w, h);
+	MTKFB_LOG("R\n");
 	for (i = 0; i < h; i++) {
 		for (j = 0; j < w; j++)
 			*(pAddr + i * w + j) = 0xFFFF0000U;
 	}
-	/* primary_display_trigger(1, NULL, 0); */
 	msleep(1000);
 
-	pr_notice("G\n");
+	MTKFB_LOG("G\n");
 	for (i = 0; i < h; i++) {
 		for (j = 0; j < w; j++)
 			*(pAddr + i * w + j) = 0xFF00FF00U;
 	}
-	/* primary_display_trigger(1, NULL, 0); */
 	msleep(1000);
 
-	pr_notice("B\n");
+	MTKFB_LOG("B\n");
 	for (i = 0; i < h; i++) {
 		for (j = 0; j < w; j++)
 			*(pAddr + i * w + j) = 0xFF0000FFU;
 	}
-	/* primary_display_trigger(1, NULL, 0); */
 	msleep(1000);
 
 	for (num = w / 8; num <= w / 4; num += w / 8) {
@@ -3247,7 +3237,6 @@ static int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h
 					  _internal_test_block_size, _internal_test_block_size,
 					  _internal_test_block_size, color);
 		}
-		/* primary_display_trigger(1, NULL, 0); */
 		msleep(1000);
 	}
 
@@ -3292,7 +3281,7 @@ static int mtkfb_probe(struct device *dev)
 	fb_yres_update = MTK_FB_YRES;
 	MTK_FB_BPP = DISP_GetScreenBpp();
 	MTK_FB_PAGES = DISP_GetPages();
-	MTKFB_MSG("[MTKFB] XRES=%d, YRES=%d\n", MTK_FB_XRES, MTK_FB_YRES);
+	MTKFB_LOG("XRES=%d, YRES=%d\n", MTK_FB_XRES, MTK_FB_YRES);
 
 	init_state = 0;
 	pdev = to_platform_device(dev);
@@ -3370,7 +3359,7 @@ static int mtkfb_probe(struct device *dev)
 	}
 
 	disp_ovl_engine_indirect_link_overlay(fbdev->fb_va_base);
-#endif				/* defined(MTK_OVERLAY_ENGINE_SUPPORT) */
+#endif
 
 	/* Android native fence support */
 	fbdev->update_ovls_wq = alloc_workqueue("mtkfb_ovls_wq",
@@ -3417,20 +3406,14 @@ static int mtkfb_probe(struct device *dev)
 
 	fbdev->state = MTKFB_ACTIVE;
 
-    /********************************************/
-
 	mtkfb_fb_565_to_8888(fbi);
-
-    /********************************************/
-	pr_notice("MTK framebuffer initialized vram=%lu\n", fbdev->fb_size_in_byte);
-
-	/*disp_dump_all_reg_info(); */
 
 #ifdef MTKFB_UT
 	/* check BGRA color format */
 	_mtkfb_internal_test((unsigned long)fbdev->fb_va_base, MTK_FB_XRES, MTK_FB_YRES);
 #endif
 
+	/* disp_dump_all_reg_info(); */
 
 	MSG_FUNC_LEAVE();
 	return 0;
@@ -3759,7 +3742,7 @@ int __init mtkfb_init(void)
 	/* Register the driver with LDM */
 
 	if (platform_driver_register(&mtkfb_driver)) {
-		PRNERR("failed to register mtkfb driver\n");
+		MTKFB_ERR("failed to register mtkfb driver\n");
 		r = -ENODEV;
 		goto exit;
 	}

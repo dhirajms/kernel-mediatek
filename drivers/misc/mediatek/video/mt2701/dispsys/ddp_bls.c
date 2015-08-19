@@ -19,7 +19,7 @@
 
 #define POLLING_TIME_OUT 1000
 
-#define PWM_DEFAULT_DIV_VALUE 0x0
+#define PWM_DEFAULT_DIV_VALUE 0x1
 
 unsigned int bls_dbg_log = 0;
 /* default off, use "adb shell "echo dbg_log:1 > sys/kernel/debug/dispsys" to enable */
@@ -36,10 +36,8 @@ static int gBLSMutexID = 3;
 static int gBLSPowerOn;
 #endif
 static int gMaxLevel = 1023;
-
-#ifndef	MTK_BRINGUP_FOR_MT2701
 static int gPWMDiv = PWM_DEFAULT_DIV_VALUE;
-#endif
+
 static DEFINE_MUTEX(backlight_mutex);
 
 static DISPLAY_PWM_T g_pwm_lut;
@@ -333,13 +331,12 @@ void disp_bls_init(unsigned int srcWidth, unsigned int srcHeight)
 	}
 
 
-	BLS_DBG("disp_bls_init : srcWidth = %d, srcHeight = %d\n", srcWidth, srcHeight);
-	BLS_MSG("disp_bls_init : BLS_EN=0x%x, PWM_DUTY=%d, PWM_DUTY_RD=%d, CG=0x%x, %d, %d\n",
+	BLS_MSG("disp_bls_init : srcWidth = %d, srcHeight = %d\n", srcWidth, srcHeight);
+	BLS_MSG("disp_bls_init : BLS_EN=0x%x, PWM_DUTY=%d, PWM_DUTY_RD=%d, CG=0x%x\n",
 		DISP_REG_GET(DISP_REG_BLS_EN),
 		DISP_REG_GET(DISP_REG_BLS_PWM_DUTY),
 		DISP_REG_GET(DISP_REG_BLS_PWM_DUTY_RD),
-		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
-		clock_is_on(MT_CG_DISP0_MDP_BLS_26M), clock_is_on(MT_CG_DISP0_DISP_BLS));
+		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 
 	DISP_REG_SET(DISP_REG_BLS_SRC_SIZE, (srcHeight << 16) | srcWidth);
 	DISP_REG_SET(DISP_REG_BLS_PWM_CON, 0x0 | (gPWMDiv << 16));
@@ -357,6 +354,11 @@ void disp_bls_init(unsigned int srcWidth, unsigned int srcHeight)
 
 	if (dbg_log)
 		disp_dump_reg(DISP_MODULE_BLS);
+#else
+	DISP_REG_SET(DISP_REG_BLS_SRC_SIZE, (srcHeight << 16) | srcWidth);
+	DISP_REG_SET(DISP_REG_BLS_PWM_DUTY, 0);
+	DISP_REG_SET(DISP_REG_BLS_PWM_CON, 0x0 | (gPWMDiv << 16));
+	DISP_REG_SET(DISP_REG_BLS_EN, 0x00010000);
 #endif
 }
 

@@ -1,6 +1,8 @@
 #include <linux/delay.h>
 #include <linux/types.h>
 #include <linux/types.h>
+#include <linux/slab.h>
+#include <linux/vmalloc.h>
 #include "disp_drv_platform.h"
 #include "lcm_drv.h"
 #include "disp_hal.h"
@@ -12,7 +14,7 @@
 #include "dsi_reg.h"
 
 #ifdef MTK_DISPLAY_ENABLE_MMU
-#include <mach/m4u.h>
+#include <m4u.h>
 #endif
 
 static LCD_IF_ID ctrl_if = LCD_IF_PARALLEL_0;
@@ -586,8 +588,8 @@ LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm_index
 	LCM_DRIVER *lcm = NULL;
 	bool isLCMFound = false;
 
-	pr_info("[LCM Auto Detect], we have %d lcm drivers built in\n", lcm_count);
-	pr_info("[LCM Auto Detect], try to find driver for [%s]\n",
+	DISP_MSG("[LCM Auto Detect], we have %d lcm drivers built in\n", lcm_count);
+	DISP_MSG("[LCM Auto Detect], try to find driver for [%s]\n",
 		(lcm_name == NULL) ? "unknown" : lcm_name);
 
 	if (lcm_count == 1) {
@@ -596,7 +598,7 @@ LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm_index
 		lcm = lcm_driver_list[0];
 		lcm->set_util_funcs(&lcm_utils);
 		*lcm_index = 0;
-		pr_info("[LCM Specified]\t[%s]\n", (lcm->name == NULL) ? "unknown" : lcm->name);
+		pr_notice("[DISP/DDP]LCM: %s\n", (lcm->name == NULL) ? "unknown" : lcm->name);
 		isLCMFound = true;
 		goto done;
 	} else {
@@ -604,7 +606,7 @@ LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm_index
 
 		for (i = 0; i < lcm_count; i++) {
 			lcm = lcm_driver_list[i];
-			pr_info("[LCM Auto Detect] [%d] - [%s]\t", i,
+			DISP_MSG("[LCM Auto Detect] [%d] - [%s]\t", i,
 				(lcm->name == NULL) ? "unknown" : lcm->name);
 			lcm->set_util_funcs(&lcm_utils);
 			memset((void *)&s_lcm_params, 0, sizeof(LCM_PARAMS));
@@ -719,9 +721,44 @@ int disphal_pm_restore_noirq(struct device *device)
 
 int disphal_enable_mmu(bool enable)
 {
+	if (enable)
+		DISP_MSG("display enable mmu\n");
+	else
+		DISP_MSG("display disable mmu\n");
 	disp_use_mmu = enable;
 	return 0;
 }
+
+#if 1
+int disphal_allocate_fb(struct resource *res, unsigned int *pa, unsigned int *va,
+			unsigned int *dma_pa)
+{
+	unsigned int addr;
+	unsigned int page_count;
+	unsigned int i = 0;
+	struct page **pages;
+
+	*pa = res->start;
+	if (1) {
+		page_count = (res->end - res->start + 1 + PAGE_SIZE - 1) / PAGE_SIZE;
+		pages = kmalloc((sizeof(struct page *) * page_count), GFP_KERNEL);
+		DISP_MSG("page count: %d\n", page_count);
+		for (i = 0; i < page_count; i++) {
+			addr = res->start + i * PAGE_SIZE;
+			pages[i] = pfn_to_page(addr >> PAGE_SHIFT);
+		}
+
+		*va = (unsigned int)vmap(pages, page_count, VM_MAP, PAGE_KERNEL);
+		/*kfree(pages);*/
+	} else
+		*va = (unsigned int)ioremap_nocache(res->start, res->end - res->start + 1);
+
+	*dma_pa = *pa;
+
+	return 0;
+}
+
+#else
 
 int disphal_allocate_fb(struct resource *res, unsigned int *pa, unsigned int *va,
 			unsigned int *dma_pa)
@@ -745,6 +782,8 @@ int disphal_allocate_fb(struct resource *res, unsigned int *pa, unsigned int *va
 
 	return 0;
 }
+
+#endif
 
 int disphal_map_overlay_out_buffer(unsigned int va, unsigned int size, unsigned int *dma_pa)
 {
@@ -800,7 +839,6 @@ int disphal_dma_unmap_kernel(unsigned int dma_pa, unsigned int size, unsigned in
 
 int disphal_init_overlay_to_memory(void)
 {
-	disp_module_clock_on(DISP_MODULE_WDMA, "disphal overlay2mem");
 #ifdef MTK_DISPLAY_ENABLE_MMU
 	M4U_PORT_STRUCT portStruct;
 
@@ -812,6 +850,7 @@ int disphal_init_overlay_to_memory(void)
 	portStruct.Direction = 0;
 	m4u_config_port(&portStruct);
 #endif
+	disp_module_clock_on(DISP_MODULE_WDMA, "disphal overlay2mem");
 	return 0;
 }
 

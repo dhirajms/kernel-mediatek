@@ -13,6 +13,8 @@
 #include "dsi_drv.h"
 #include "disp_drv_log.h"
 #include "ddp_reg.h"
+#include "m4u.h"
+#include "m4u_port.h"
 
 #define MTK_LCD_HW_SIF_VERSION      2
 #define MTKFB_NO_M4U
@@ -71,10 +73,7 @@ extern unsigned char *disp_module_name[];
 #define MTK_ANDROID_SUPPORT
 #endif
 
-#ifndef MTK_BRINGUP_FOR_MT2701
 #define MTK_DISPLAY_ENABLE_MMU
-#endif
-
 #define DDP_USE_CLOCK_API
 /* #define DDP_USE_MTK_CLKMGR */
 

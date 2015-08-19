@@ -27,7 +27,8 @@ extern unsigned int disp_log_level;
 #define DISP_TRACE(fmt, args...) \
 	do { \
 		if (disp_log_level & DISPLOG_TRACE) \
-			pr_notice("[DISP/TRACE]"fmt, ##args); \
+			pr_notice("[DISP/TRACE]%s_%d\n", \
+					__fun__, __LINE__); \
 	} while (0)
 
 #define DISP_FB(fmt, args...) \

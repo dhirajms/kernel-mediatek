@@ -40,8 +40,8 @@
 #endif
 
 #ifdef MTK_DISPLAY_ENABLE_MMU
-#include <mach/m4u.h>
-#include <mach/m4u_port.h>
+#include <m4u.h>
+#include <m4u_port.h>
 #endif
 
 #ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
@@ -141,7 +141,7 @@ static void disp_path_reset(void)
 	RDMAReset(0);
 
 	/* Reset Color */
-	DpEngine_COLORonInit();
+	DpEngine_COLORonInit(DISP_GetScreenWidth(), DISP_GetScreenHeight());
 	DpEngine_COLORonConfig(DISP_GetScreenWidth(), DISP_GetScreenHeight());
 
 	/* Reset BLS */
@@ -2186,7 +2186,7 @@ static int disp_reg_restore(void)
 
 	disp_bls_init(DISP_GetScreenWidth(), DISP_GetScreenHeight());
 
-	DpEngine_COLORonInit();
+	DpEngine_COLORonInit(DISP_GetScreenWidth(), DISP_GetScreenHeight());
 	DpEngine_COLORonConfig(DISP_GetScreenWidth(), DISP_GetScreenHeight());
 
 	return 0;
@@ -2223,7 +2223,7 @@ int disp_intr_restore(void)
 #endif
 
 	DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE, disp_intr_status[DISP_MODULE_RDMA0]);
-	/* DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE+0xa000, disp_intr_status[DISP_MODULE_RDMA1]); */
+	/* DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE+DISP_RDMA_OFFSET, disp_intr_status[DISP_MODULE_RDMA1]); */
 	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN, disp_intr_status[DISP_MODULE_MUTEX]);
 
 	disp_register_rdma1_irq();
@@ -2241,7 +2241,7 @@ int disp_intr_disable_and_clear(void)
 	disp_intr_status[DISP_MODULE_WDMA] = DISP_REG_GET(DISP_REG_WDMA_INTEN);
 	/* disp_intr_status[DISP_MODULE_WDMA1] = DISP_REG_GET(DISP_REG_WDMA_INTEN+0x1000); */
 	disp_intr_status[DISP_MODULE_RDMA0] = DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE);
-	/* disp_intr_status[DISP_MODULE_RDMA1] = DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE+0xa000); */
+	/* disp_intr_status[DISP_MODULE_RDMA1] = DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE+DISP_RDMA_OFFSET); */
 	disp_intr_status[DISP_MODULE_MUTEX] = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTEN);
 
 	/* disable intr */
@@ -2311,7 +2311,7 @@ int disp_intr_disable_and_clear(void)
 int disp_rdma1_intr_restore(void)
 {
 	/* restore intr enable reg */
-	DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE + 0xa000, disp_intr_status[DISP_MODULE_RDMA1]);
+	DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE + DISP_RDMA_OFFSET, disp_intr_status[DISP_MODULE_RDMA1]);
 
 	return 0;
 }
@@ -2320,8 +2320,8 @@ int disp_rdma1_intr_restore(void)
 int disp_rdma1_intr_disable_and_clear(void)
 {
 	/* backup intr enable reg */
-	disp_intr_status[DISP_MODULE_RDMA1] = DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE + 0xa000);
-	DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE + 0xa000, 0);
+	disp_intr_status[DISP_MODULE_RDMA1] = DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE + DISP_RDMA_OFFSET);
+	DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE + DISP_RDMA_OFFSET, 0);
 
 	return 0;
 }
@@ -2332,6 +2332,7 @@ int disp_path_clock_on(char *name)
 		DISP_MSG("disp_path_power_on, caller:%s\n", name);
 
 #if defined(DDP_USE_MTK_CLKMGR)
+	DISP_MSG("Use MT CLKMGR\n");
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
 	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
 	enable_clock(MT_CG_DISP0_MUTEX_32K, "DDP");
@@ -2342,6 +2343,8 @@ int disp_path_clock_on(char *name)
 	enable_clock(MT_CG_DISP0_DISP_RDMA, "DDP");
 	enable_clock(MT_CG_DISP0_MDP_BLS_26M, "DDP");
 #else
+	DISP_MSG("Use CCF\n");
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_CONFIG][0]);
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_SMI_COMMON][0]);
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_SMI_LARB0][0]);
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_MUTEX32][0]);
@@ -2350,6 +2353,10 @@ int disp_path_clock_on(char *name)
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_BLS][0]);
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_WDMA][0]);
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_RDMA0][0]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_RDMA1][0]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_MIPI][0]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_MIPI][1]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_MIPI][2]);
 #endif
 
 	if (strncmp(name, "ipoh_mtkfb", 10)) {
@@ -2439,8 +2446,10 @@ int disp_path_clock_off(char *name)
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_BLS][0]);
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_WDMA][0]);
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_RDMA0][0]);
+	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_RDMA1][0]);
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_SMI_LARB0][0]);
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_SMI_COMMON][0]);
+	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_CONFIG][0]);
 #endif
 	/* DISP_MSG("DISP CG:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0)); */
 	return 0;
@@ -2449,14 +2458,17 @@ int disp_path_clock_off(char *name)
 
 int disp_path_clock_on(char *name)
 {
-	DISP_DDP("enable all clock hardly\n");
-	DISP_DDP("DISP_REG_CONFIG_MMSYS_CG_CON0: 0x%x, DISP_REG_CONFIG_MMSYS_CG_CON1: 0x%x\n",
+	DISP_MSG("enable all clock hardly\n");
+	DISP_MSG("DISP_REG_CONFIG_MMSYS_CG_CON0: 0x%x, DISP_REG_CONFIG_MMSYS_CG_CON1: 0x%x\n",
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
-	/*DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CLR0, 0xFFFFFFFF);
+	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CLR0, 0xFFFFFFFF);
 	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CLR1, 0xFFFFFFFF);
-	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CON0, 0xFFF00000);
-	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CON1, 0xFFFFC000);*/
+	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_SET0, 0xFFF00000);
+	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_SET1, 0xFFFFC000);
+	DISP_MSG("DISP_REG_CONFIG_MMSYS_CG_CON0: 0x%x, DISP_REG_CONFIG_MMSYS_CG_CON1: 0x%x\n",
+		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
+		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
 	return 0;
 }
 
@@ -2881,33 +2893,11 @@ int disp_path_config_OVL_WDMA(struct disp_path_config_mem_out_struct *pConfig, i
 	return 0;
 }
 #endif
-int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
+
+
+static int disp_path_config_mutex(struct disp_path_config_struct *pConfig, int mutexId)
 {
 	unsigned int mutexSof;
-
-#if 1				/* MTK_HDMI_MAIN_PATH */
-#if MTK_HDMI_MAIN_PATH
-	/* dump_stack(); */
-#endif
-
-	DISP_MSG
-	    ("%s,srcModule=%d(%s),addr=0x%x,inFormat=%d,pitch=%d,bgROI(%d,%d,%d,%d),bgColor=0x%x",
-	     __func__, pConfig->srcModule, disp_module_name[pConfig->srcModule], pConfig->addr,
-	     pConfig->inFormat, pConfig->pitch, pConfig->bgROI.x, pConfig->bgROI.y,
-	     pConfig->bgROI.width, pConfig->bgROI.height, pConfig->bgColor);
-
-	DISP_MSG
-	    ("%s,outFormat=%d, dstModule=%d(%s), dstAddr=0x%x, dstPitch=%d,mutexId=%d,srcROI(%d,%d,%d,%d)",
-	     __func__, pConfig->outFormat, pConfig->dstModule, disp_module_name[pConfig->dstModule],
-	     pConfig->dstAddr, pConfig->dstPitch, mutexId, pConfig->srcROI.x, pConfig->srcROI.y,
-	     pConfig->srcROI.width, pConfig->srcROI.height);
-
-	DISP_MSG("%s, src(%d %d),dst(%d %d)",
-		 __func__,
-		 pConfig->srcWidth, pConfig->srcHeight, pConfig->dstWidth, pConfig->dstHeight);
-#endif
-
-	g_dst_module = pConfig->dstModule;
 
 	/*config mutex mode */
 	/*mutex sof source 0xf400e030(50,70,90,b0) */
@@ -2937,97 +2927,96 @@ int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
 		return -1;
 	}
 
-
 	if (pConfig->dstModule == DISP_MODULE_WDMA) {
 		/* ovl, wdma0 */
 		DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1 << 3) | (1 << 6));
+		disp_path_init_m4u_port(DISP_MODULE_WDMA);
 	} else if (pConfig->srcModule == DISP_MODULE_OVL) {
 		/* ovl, rdma0, color, bls */
 		DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId),
 			     (1 << 3) | (1 << 10) | (1 << 7) | (1 << 9));
+		disp_path_init_m4u_port(DISP_MODULE_OVL);
 	} else if (pConfig->srcModule == DISP_MODULE_RDMA0) {
 		/* rdma, color, bls */
 		DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1 << 10) | (1 << 7) | (1 << 9));
+		disp_path_init_m4u_port(DISP_MODULE_RDMA0);
 	} else if (pConfig->srcModule == DISP_MODULE_RDMA1) {
 		/* rdma1 */
 		DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1 << 12));
+		disp_path_init_m4u_port(DISP_MODULE_RDMA1);
 	}
 	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(mutexId), mutexSof);
 	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, (1 << mutexId));
 
 	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN, 0x1e0f);	/* bit 0.1.2.3. 9.10.11.12 */
 	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_EN(mutexId), 1);
-	if (DISP_IsDecoupleMode()) {
-		disp_path_init_m4u_port(DISP_MODULE_RDMA0);
-		disp_path_init_m4u_port(DISP_MODULE_WDMA);
-		DISP_REG_SET(DISP_REG_CONFIG_MUTEX_EN(gMemOutMutexID), 1);
-		DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN, 0x0603);
-		/* / config OVL-WDMA data path with mutex0 */
-		/* OVL-->WDMA */
-		DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMemOutMutexID), (1 << 3) | (1 << 6));
-		DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(gMemOutMutexID), 0x0);	/* single mode */
-		DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, (1 << gMemOutMutexID) | (1 << mutexId));
-	}
-	/* /> config config reg */
+
+	return 0;
+}
+
+static void disp_path_config_path(struct disp_path_config_struct *pConfig)
+{
+/*
+0x30 DIPS_OVL_MOUT_EN		0x1   OVL -> output to RDMA0
+							0x2   OVL -> output to WDMA
+
+0x4c DISP_OUT_SEL			0x0   BLS -> output to UFOE
+							0x1   BLS -> output to DPI0
+							0x2   BLS -> output to DPI1
+							0x0   RDMA1 -> output to UFOE
+							0x4   RDMA1 -> output to DPI0
+							0x8   RDMA1 -> output to DPI1
+
+0x50 DISP_UFOE_SEL			0x0	 BLS -> UFOE
+							0x1   RDMA1 -> UFOE
+
+0x54 DPI0_SEL				0x0   BLS -> DPI0
+							0x1   RDMA1 -> DPI0
+
+0x64 DPI1_SEL				0x0   BLS -> DPI1
+							0x1   RDMA1 -> DPI1
+
+0x70 TVE_SEL					0x0   DPI1 -> TVE
+							0x1   DPI0 -> TVE
+*/
+
 	switch (pConfig->dstModule) {
 	case DISP_MODULE_DSI_VDO:
 	case DISP_MODULE_DSI_CMD:
-		if (DISP_IsDecoupleMode())
-			DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1 << 1);	/* OVL-->WDMA0 */
-		else
-			DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1 << 0);	/* OVL-->RDMA */
-		DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0);	/* Output to DSI */
+		pr_notice("[DISP/DDP] dstModule DISP_MODULE_DSI\n");
+		if (pConfig->srcModule == DISP_MODULE_OVL) {
+			DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1 << 0);
+			DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0x80);
+		} else if (pConfig->srcModule == DISP_MODULE_RDMA0) {
+			DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0x80);
+		} else if (pConfig->srcModule == DISP_MODULE_RDMA1) {
+			DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0x1);
+			DISP_REG_SET(DISP_REG_CONFIG_DISP_UFOE_SEL, 0x1);
+			DISP_REG_SET(DISP_REG_CONFIG_DPI0_SEL, 0x0);
+			DISP_REG_SET(DISP_REG_CONFIG_DPI1_SEL, 0x0);
+		}
 		break;
 
 	case DISP_MODULE_DPI0:
-		pr_notice("[DDP] dstModule DISP_MODULE_DPI0\n");
-
-#if MTK_HDMI_MAIN_PATH
-		/*rdma1->dpi0 */
-		DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0x6);	/*[3:2] rdma1 out,[1:0] BLS OUT */
-
-		/*rdma1<-dpi0 */
-		DISP_REG_SET(DISP_REG_CONFIG_DPI0_SEL, 0x1);	/*[0] 0 from bls, 1 from rdma1 */
-
-#else
-		if (DISP_IsDecoupleMode())
-			DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1 << 1);	/* OVL-->WDMA0 */
-		else {
-#ifdef MTK_OVERLAY_ENGINE_SUPPORT
-			/* OVL-->WDMA0 */
-			DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1 << 1);
-			/*[3:2] rdma1 out to DPI1,[1:0] BLS OUT to DPI0 */
-			DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0x9);
-			/*[0] 0 from bls, 1 from rdma1 */
-			DISP_REG_SET(DISP_REG_CONFIG_DPI0_SEL, 0x0);
-#else
-			DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1 << 0);	/* OVL-->RDMA */
-			DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0x1);	/* dpi0 */
-#endif
-		}
+		pr_notice("[DISP/DDP] dstModule DISP_MODULE_DPI0\n");
 		DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 1);	/* Output to DPI0 */
+#ifdef MTK_OVERLAY_ENGINE_SUPPORT
+		/* OVL-->WDMA0 */
+		DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1 << 1);
+		/*[3:2] rdma1 out to DPI1,[1:0] BLS OUT to DPI0 */
+		DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0x9);
+		/*[0] 0 from bls, 1 from rdma1 */
+		DISP_REG_SET(DISP_REG_CONFIG_DPI0_SEL, 0x0);
+#else
+		DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1 << 0);	/* OVL-->RDMA */
+		DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0x1);	/* dpi0 */
 #endif
 		break;
 
 	case DISP_MODULE_DPI1:
-		pr_notice("[DDP] dstModule DISP_MODULE_DPI1\n");
-
-#if MTK_HDMI_MAIN_PATH
-
-		if (DISP_IsDecoupleMode())
-			DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1 << 1);	/* OVL-->WDMA0 */
-		else
-			DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1 << 0);	/* OVL-->RDMA */
-		/*bls->dpi1 0xf400004c */
-		/*0 dis, 1 dpi0, 2 dpi1 */
-		DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0x2);
-		/*bls<-dpi1 0xf4000064 */
-		/* 0 from bls, 1 from rdma1 */
-		DISP_REG_SET(DISP_REG_CONFIG_DPI1_SEL, 0x0);
-#else
+		pr_notice("[DISP/DDP] dstModule DISP_MODULE_DPI1\n");
 		DISP_REG_SET_FIELD(REG_FLD(2, 2), DISP_REG_CONFIG_DISP_OUT_SEL, 0x2);	/* rdma1_mout to dpi1 */
 		DISP_REG_SET(DISP_REG_CONFIG_DPI1_SEL, 0x1);	/* dpi1_sel from rdma1 */
-#endif
 		break;
 
 	case DISP_MODULE_WDMA:
@@ -3037,15 +3026,35 @@ int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
 	default:
 		pr_notice("[DDP] error! unknown dstModule=%d\n", pConfig->dstModule);
 	}
+}
 
-	/* /> config engines */
-	if (
-#if /*MTK_HDMI_MAIN_PATH ||*/ defined(MTK_OVERLAY_ENGINE_SUPPORT)
-		   pConfig->srcModule == DISP_MODULE_OVL
-#else
-		   pConfig->srcModule != DISP_MODULE_RDMA1
-#endif
-	    ) {
+
+int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
+{
+	DISP_MSG
+	    ("%s,srcModule=%d(%s),addr=0x%x,inFormat=%d,pitch=%d,bgROI(%d,%d,%d,%d),bgColor=0x%x",
+	     __func__, pConfig->srcModule, disp_module_name[pConfig->srcModule], pConfig->addr,
+	     pConfig->inFormat, pConfig->pitch, pConfig->bgROI.x, pConfig->bgROI.y,
+	     pConfig->bgROI.width, pConfig->bgROI.height, pConfig->bgColor);
+
+	DISP_MSG
+	    ("%s,outFormat=%d, dstModule=%d(%s), dstAddr=0x%x, dstPitch=%d,mutexId=%d,srcROI(%d,%d,%d,%d)",
+	     __func__, pConfig->outFormat, pConfig->dstModule, disp_module_name[pConfig->dstModule],
+	     pConfig->dstAddr, pConfig->dstPitch, mutexId, pConfig->srcROI.x, pConfig->srcROI.y,
+	     pConfig->srcROI.width, pConfig->srcROI.height);
+
+	DISP_MSG("%s, src(%d %d),dst(%d %d)",
+		 __func__,
+		 pConfig->srcWidth, pConfig->srcHeight, pConfig->dstWidth, pConfig->dstHeight);
+
+	g_dst_module = pConfig->dstModule;
+
+	disp_path_config_mutex(pConfig, mutexId);
+	disp_path_config_path(pConfig);
+
+	/* config engines */
+	if (pConfig->srcModule == DISP_MODULE_OVL) {
+		pr_notice("[DISP/DDP] srcModule from OVL\n");
 		/* config OVL */
 		OVLROI(pConfig->bgROI.width,	/* width */
 		       pConfig->bgROI.height,	/* height */
@@ -3205,9 +3214,8 @@ int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
 			disp_bls_init(pConfig->srcROI.width, pConfig->srcROI.height);
 
 			/* =============================config PQ start================================== */
-			DpEngine_COLORonInit();
-			DpEngine_COLORonConfig(pConfig->srcROI.width,	/* width */
-					       pConfig->srcROI.height);	/* height */
+			DpEngine_COLORonInit(pConfig->srcROI.width, pConfig->srcROI.height);
+			DpEngine_COLORonConfig(pConfig->srcROI.width, pConfig->srcROI.height);
 
 
 			/* =============================config PQ end================================== */
@@ -3272,7 +3280,7 @@ int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
 				RDMAStart(0);
 			} else {
 
-				pr_notice("[DDP] from couple to RDMA0\n");
+				pr_notice("[DISP/DDP] direct link mode\n");
 
 #ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
 				RDMAConfig_(0, RDMA_MODE_DIRECT_LINK,	/* /direct link mode */
@@ -3298,15 +3306,8 @@ int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
 				RDMAStart(0);
 			}
 		}
-	} else {		/* src module is RDMA1 */
-		unsigned rdma_idx = 1;
-		/* DpColorFormat inFormat = eARGB8888; */
-#if MTK_HDMI_MAIN_PATH || defined(MTK_OVERLAY_ENGINE_SUPPORT)
-		if (pConfig->srcModule == DISP_MODULE_RDMA0) {
-			rdma_idx = 0;
-			/* inFormat = eARGB8888; */
-		}
-#endif
+	} else {
+		unsigned rdma_idx = (pConfig->srcModule == DISP_MODULE_RDMA0)?0:1;
 
 		if (pConfig->addr == 0 || pConfig->srcWidth == 0 || pConfig->srcHeight == 0) {
 			DISP_ERR("rdma parameter invalidate, addr=0x%x, w=%d, h=%d\n",
@@ -3314,44 +3315,26 @@ int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
 			return -1;
 		}
 
-		pr_notice("[DDP] srcModule from rdma%d\n", rdma_idx);
-		/* /config RDMA */
-		/* RDMAStop(rdma_idx); */
-		/* RDMAReset(rdma_idx); */
+		pr_notice("[DISP/DDP] srcModule from rdma%d\n", rdma_idx);
 
+		RDMAConfig(rdma_idx,
+				RDMA_MODE_MEMORY,
+				pConfig->inFormat,
+				pConfig->addr,
+				pConfig->outFormat,
+				pConfig->pitch,
+				pConfig->srcWidth,
+				pConfig->srcHeight,
+				0,
+				0);
 
-#if defined(MTK_OVERLAY_ENGINE_SUPPORT)
-		RDMAConfig(rdma_idx, RDMA_MODE_MEMORY,	/* /direct link mode */
-			   eRGB888,	/* inputFormat */
-			   pConfig->addr,	/* address */
-			   pConfig->outFormat,	/* output format */
-			   pConfig->pitch,	/*  */
-			   pConfig->srcWidth, pConfig->srcHeight, 0,	/* uint8_t swap */
-			   0);	/* is RGB swap */
-#else
-		RDMAConfig(rdma_idx, RDMA_MODE_MEMORY,	/* /direct link mode */
-			   eARGB8888,	/* inputFormat */
-			   pConfig->addr,	/* address */
-			   pConfig->outFormat,	/* output format */
-			   pConfig->pitch,	/* pitch */
-			   pConfig->srcWidth,	/* width */
-			   pConfig->srcHeight,	/* height */
-			   0,	/* uint8_t swap */
-			   0);
-#endif
+		if (rdma_idx == 0) {
+			disp_bls_init(pConfig->srcROI.width, pConfig->srcROI.height);
+			DpEngine_COLORonInit(pConfig->srcROI.width, pConfig->srcROI.height);
+			DpEngine_COLORonConfig(pConfig->srcROI.width, pConfig->srcROI.height);
+		}
 
 		RDMAStart(rdma_idx);
-
-		if (rdma_idx == 1) {
-			/*stop rdma1 for main hdmi path */
-			/* RDMAStop(rdma_idx); */
-
-		}
-		/* ///bypass BLS */
-		/* dispsys_bypass_bls(pConfig->srcROI.width, pConfig->srcROI.height); */
-
-		/* ///bypass COLOR */
-		/* dispsys_bypass_color(pConfig->srcROI.width, pConfig->srcROI.height); */
 	}
 
 #if 0
