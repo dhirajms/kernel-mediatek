@@ -145,6 +145,12 @@
 			reg = <0 0x10005000 0 0x1000>;
 		};
 
+		toprgu: toprgu@10007000 {
+			compatible = "mediatek,mt2701-rgu";
+			reg = <0 0x10007000 0 0x1000>;
+			interrupts = <GIC_SPI 88 IRQ_TYPE_EDGE_FALLING>;
+		};
+
 		pwrap: pwrap@1000d000 {
 			compatible = "mediatek,mt2701-pwrap";
 			reg = <0 0x1000d000 0 0x1000>;
