@@ -539,57 +539,63 @@
 			#address-cells = <2>;
 			#size-cells = <2>;
 			 reg = <0 0x11220000 0 0x2000>,
-				<0 0x112A0000 0 0x20000>;
+			       <0 0x112A0000 0 0x20000>;
 			interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>,
-				<GIC_SPI 132 IRQ_TYPE_LEVEL_LOW>;
+				     <GIC_SPI 132 IRQ_TYPE_LEVEL_LOW>;
 
 			clocks = <&infracfg CLK_INFRA_AUDIO>,
-				<&topckgen CLK_TOP_AUD_MUX1_SEL>,
-				<&topckgen CLK_TOP_AUD_MUX2_SEL>,
-				<&topckgen CLK_TOP_AUDPLL_MUX_SEL>,
-				<&topckgen CLK_TOP_APLL_SEL>,
-				<&topckgen CLK_TOP_AUD1PLL_98M>,
-				<&topckgen CLK_TOP_AUD2PLL_90M>,
-				<&topckgen CLK_TOP_HADDS2PLL_98M>,
-				<&topckgen CLK_TOP_HADDS2PLL_294M>,
-				<&topckgen CLK_TOP_AUDPLL>,
-				<&topckgen CLK_TOP_AUDPLL_D4>,
-				<&topckgen CLK_TOP_AUDPLL_D8>,
-				<&topckgen CLK_TOP_AUDPLL_D16>,
-				<&topckgen CLK_TOP_AUDPLL_D24>,
-				<&topckgen CLK_TOP_AUDINTBUS_SEL>;
+				 <&topckgen CLK_TOP_AUD_MUX1_SEL>,
+				 <&topckgen CLK_TOP_AUD_MUX2_SEL>,
+				 <&topckgen CLK_TOP_AUDPLL_MUX_SEL>,
+				 <&topckgen CLK_TOP_APLL_SEL>,
+				 <&topckgen CLK_TOP_AUD1PLL_98M>,
+				 <&topckgen CLK_TOP_AUD2PLL_90M>,
+				 <&topckgen CLK_TOP_HADDS2PLL_98M>,
+				 <&topckgen CLK_TOP_HADDS2PLL_294M>,
+				 <&topckgen CLK_TOP_AUDPLL>,
+				 <&topckgen CLK_TOP_AUDPLL_D4>,
+				 <&topckgen CLK_TOP_AUDPLL_D8>,
+				 <&topckgen CLK_TOP_AUDPLL_D16>,
+				 <&topckgen CLK_TOP_AUDPLL_D24>,
+				 <&topckgen CLK_TOP_AUDINTBUS_SEL>;
 
 			clock-names = "infra_sys_audio_clk",
-					"top_audio_mux1_sel",
-					"top_audio_mux2_sel",
-					"top_audpll_mux_sel",
-					"top_apll_sel",
-					"top_aud1_pll_98M",
-					"top_aud2_pll_90M",
-					"top_hadds2_pll_98M",
-					"top_hadds2_pll_294M",
-					"top_audpll",
-					"top_audpll_d4",
-					"top_audpll_d8",
-					"top_audpll_d16",
-					"top_audpll_d24",
-					"top_audintbus_sel";
+				      "top_audio_mux1_sel",
+				      "top_audio_mux2_sel",
+				      "top_audpll_mux_sel",
+				      "top_apll_sel",
+				      "top_aud1_pll_98M",
+				      "top_aud2_pll_90M",
+				      "top_hadds2_pll_98M",
+				      "top_hadds2_pll_294M",
+				      "top_audpll",
+				      "top_audpll_d4",
+				      "top_audpll_d8",
+				      "top_audpll_d16",
+				      "top_audpll_d24",
+				      "top_audintbus_sel";
 
 		};
+
 		mediatek,dummy_codec {
 			compatible = "mediatek,dummy-codec";
 		};
+
 		mediatek,mt8590_audio {
 			compatible = "mediatek,mt2701-audio";
 		};
+
 		mediatek,mt8590_dai {
 			compatible = "mediatek,mt2701-dai";
 		};
+
 		mediatek,pcm1861 {
 			compatible = "mediatek,pcm1861";
 		};
+
 		mediatek,pcm5102a {
 			compatible = "mediatek,pcm5102a";
 		};
+
 	};
 };
