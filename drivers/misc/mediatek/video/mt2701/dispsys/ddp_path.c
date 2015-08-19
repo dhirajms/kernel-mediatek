@@ -2331,63 +2331,40 @@ int disp_path_clock_on(char *name)
 	if (name != NULL)
 		DISP_MSG("disp_path_power_on, caller:%s\n", name);
 
+#if defined(DDP_USE_MTK_CLKMGR)
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
-	DISP_MSG("%s %d\n", __func__, __LINE__);
 	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
-	DISP_MSG("%s %d\n", __func__, __LINE__);
-	/* enable_clock(MT_CG_DISP0_MUTEX   , "DDP"); */
 	enable_clock(MT_CG_DISP0_MUTEX_32K, "DDP");
-	/* enable_clock(MT_CG_DISP0_MM_CMDQ , "DDP"); */
-/* //enable_clock(MT_CG_DISP0_CMDQ_SMI    , "DDP"); */
-
-/* enable_clock(MT_CG_DISP0_ROT_ENGINE  , "DDP"); */
-/* enable_clock(MT_CG_DISP0_ROT_SMI     , "DDP"); */
-/* enable_clock(MT_CG_DISP0_SCL         , "DDP"); */
-/* enable_clock(MT_CG_DISP0_DISP_WDMA, "DDP"); */
-/* //enable_clock(MT_CG_DISP0_WDMA0_SMI   , "DDP"); */
-
 	enable_clock(MT_CG_DISP0_DISP_OVL, "DDP");
-	/* enable_clock(MT_CG_DISP0_OVL_SMI     , "DDP"); */
 	enable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
-/* enable_clock(MT_CG_DISP0_2DSHP       , "DDP"); */
 	enable_clock(MT_CG_DISP0_DISP_BLS, "DDP");
 	enable_clock(MT_CG_DISP0_DISP_WDMA, "DDP");
-	/* enable_clock(MT_CG_DISP0_WDMA0_SMI   , "DDP"); */
-	/* enable_clock(MT_CG_DISP0_RDMA0_ENGINE, "DDP"); */
-	/* enable_clock(MT_CG_DISP0_RDMA0_SMI   , "DDP"); */
-	/* enable_clock(MT_CG_DISP0_RDMA0_OUTPUT, "DDP"); */
-
 	enable_clock(MT_CG_DISP0_DISP_RDMA, "DDP");
-	/* enable_clock(MT_CG_DISP0_DISP_RMDA1, "DDP"); */
-	/* enable_clock(MT_CG_DISP0_RDMA1_SMI   , "DDP"); */
-	/* enable_clock(MT_CG_DISP0_RDMA1_OUTPUT, "DDP"); */
-	/* enable_clock(MT_CG_DISP0_GAMMA_ENGINE, "DDP"); */
-	/* enable_clock(MT_CG_DISP0_GAMMA_PIXEL , "DDP"); */
-
-	/* enable_clock(MT_CG_DISP0_G2D_ENGINE  , "DDP"); */
-	/* enable_clock(MT_CG_DISP0_G2D_SMI     , "DDP"); */
-
-
-/* Let BLS PWM clock on/off together with dispsy since backlight is configured by event merge thread */
-/* Ennable BLS PWM clock before BLE_EN is set */
-/* #if defined(MTK_AAL_SUPPORT) */
 	enable_clock(MT_CG_DISP0_MDP_BLS_26M, "DDP");
-/* #endif */
+#else
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_SMI_COMMON][0]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_SMI_LARB0][0]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_MUTEX32][0]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_OVL][0]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_COLOR][0]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_BLS][0]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_WDMA][0]);
+	clk_prepare_enable(disp_dev.clk_map[DISP_REG_RDMA0][0]);
+#endif
 
-	/* restore ddp related registers */
 	if (strncmp(name, "ipoh_mtkfb", 10)) {
 		if (*pRegBackup != DDP_UNBACKED_REG_MEM) {
 			disp_reg_restore();
 
 			/* restore intr enable registers */
 			disp_intr_restore();
-		} else
-			DISP_MSG
-			    ("disp_path_clock_on(), dose not call disp_reg_restore, cause mem not inited!\n");
+		}
 	} else
 		disp_aal_reset();
 
-	DISP_MSG("DISP CG:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DISP_MSG("DISP CG0:0x%x CG1:0x%x\n",
+		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
+		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
 	return 0;
 }
 
@@ -2401,23 +2378,6 @@ int disp_path_clock_off(char *name)
 
 	/* backup ddp related registers */
 	disp_reg_backup();
-
-/* Let BLS PWM clock on/off together with dispsy since backlight is configured by event merge thread */
-/* Disable BLS PWM clock before other dispsys clock */
-/* #if defined(MTK_AAL_SUPPORT) */
-	disable_clock(MT_CG_DISP0_MDP_BLS_26M, "DDP");
-/* #endif */
-
-	/* disable_clock(MT_CG_DISP0_MM_CMDQ , "DDP"); */
-/* //disable_clock(MT_CG_DISP0_CMDQ_SMI    , "DDP"); */
-
-/* disable_clock(MT_CG_DISP0_ROT_ENGINE  , "DDP"); */
-/* disable_clock(MT_CG_DISP0_ROT_SMI     , "DDP"); */
-/* disable_clock(MT_CG_DISP0_SCL         , "DDP"); */
-/* disable_clock(MT_CG_DISP0_DISP_WDMA, "DDP"); */
-/* //disable_clock(MT_CG_DISP0_WDMA0_SMI   , "DDP"); */
-
-	/* Better to reset DMA engine before disable their clock */
 	RDMAStop(0);
 	RDMAReset(0);
 #ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
@@ -2452,48 +2412,36 @@ int disp_path_clock_off(char *name)
 	OVLStop();
 	OVLReset();
 
+#if defined(DDP_USE_MTK_CLKMGR)
+	disable_clock(MT_CG_DISP0_MDP_BLS_26M, "DDP");
 	disable_clock(MT_CG_DISP0_DISP_OVL, "DDP");
-	/* disable_clock(MT_CG_DISP0_OVL_SMI     , "DDP"); */
 	disable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
-/* disable_clock(MT_CG_DISP0_2DSHP       , "DDP"); */
 	disable_clock(MT_CG_DISP0_DISP_BLS, "DDP");
 	disable_clock(MT_CG_DISP0_DISP_WDMA, "DDP");
-	/* disable_clock(MT_CG_DISP0_WDMA0_SMI   , "DDP"); */
-	/* disable_clock(MT_CG_DISP0_RDMA0_ENGINE, "DDP"); */
-	/* disable_clock(MT_CG_DISP0_RDMA0_SMI   , "DDP"); */
-	/* disable_clock(MT_CG_DISP0_RDMA0_OUTPUT, "DDP"); */
-
 	disable_clock(MT_CG_DISP0_DISP_RDMA, "DDP");
-	/* disable_clock(MT_CG_DISP0_DISP_RMDA1, "DDP"); */
-	/* disable_clock(MT_CG_DISP0_RDMA1_SMI   , "DDP"); */
-	/* disable_clock(MT_CG_DISP0_RDMA1_OUTPUT, "DDP"); */
-	/* disable_clock(MT_CG_DISP0_GAMMA_ENGINE, "DDP"); */
-	/* disable_clock(MT_CG_DISP0_GAMMA_PIXEL , "DDP"); */
-
-	/* pr_err("0. smi clk=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0)); */
 	if (clk_is_force_on(MT_CG_DISP0_SMI_LARB0)) {
 		pr_err("[DDP] clr MT_CG_DISP0_SMI_LARB0 is forced on\n");
 		clk_clr_force_on(MT_CG_DISP0_SMI_LARB0);
 	}
-	/* pr_err("1. smi clk=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0)); */
 
 	if (clk_is_force_on(MT_CG_DISP0_SMI_COMMON)) {
 		pr_err("[DDP] clr MT_CG_DISP0_SMI_COMMON is forced on\n");
 		clk_clr_force_on(MT_CG_DISP0_SMI_COMMON);
 	}
-	/* pr_err("2. smi clk=0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0)); */
 
-	if (0)			/* if(g_dst_module==DISP_MODULE_DPI0) */
-		DISP_MSG("warning: do not power off MT_CG_DISP0_SMI_LARB0 for DPI resume issue\n");
-	else {
-		/* disable_clock(MT_CG_DISP0_MUTEX   , "DDP"); */
-		disable_clock(MT_CG_DISP0_MUTEX_32K, "DDP");
-		disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
-		disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
-	}
-	/* disable_clock(MT_CG_DISP0_G2D_ENGINE  , "DDP"); */
-	/* disable_clock(MT_CG_DISP0_G2D_SMI     , "DDP"); */
-
+	disable_clock(MT_CG_DISP0_MUTEX_32K, "DDP");
+	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
+	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
+#else
+	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_MUTEX32][0]);
+	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_OVL][0]);
+	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_COLOR][0]);
+	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_BLS][0]);
+	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_WDMA][0]);
+	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_RDMA0][0]);
+	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_SMI_LARB0][0]);
+	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_SMI_COMMON][0]);
+#endif
 	/* DISP_MSG("DISP CG:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0)); */
 	return 0;
 }
@@ -2501,10 +2449,14 @@ int disp_path_clock_off(char *name)
 
 int disp_path_clock_on(char *name)
 {
-	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CLR0, 0xFFFFFFFF);
+	DISP_DDP("enable all clock hardly\n");
+	DISP_DDP("DISP_REG_CONFIG_MMSYS_CG_CON0: 0x%x, DISP_REG_CONFIG_MMSYS_CG_CON1: 0x%x\n",
+		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
+		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
+	/*DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CLR0, 0xFFFFFFFF);
 	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CLR1, 0xFFFFFFFF);
 	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CON0, 0xFFF00000);
-	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CON1, 0xFFFFC000);
+	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CON1, 0xFFFFC000);*/
 	return 0;
 }
 
@@ -2956,15 +2908,6 @@ int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
 #endif
 
 	g_dst_module = pConfig->dstModule;
-
-#ifdef DDP_USE_CLOCK_API
-#else
-	/* TODO: clock manager sholud manager the clock ,not here */
-	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CLR0, 0xFFFFFFFF);
-	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CLR1, 0xFFFFFFFF);
-	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CON0, 0xFFF00000);
-	DISP_REG_SET(DISP_REG_CONFIG_MMSYS_CG_CON1, 0xFFFFC000);
-#endif
 
 	/*config mutex mode */
 	/*mutex sof source 0xf400e030(50,70,90,b0) */

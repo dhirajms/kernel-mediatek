@@ -51,7 +51,7 @@ typedef enum {
 	DISP_REG_COLOR,
 	DISP_REG_DSI,
 	DISP_REG_DPI0,
-	DISP_REG_MUTEX,
+	DISP_REG_MUTEX32,
 	DISP_REG_CMDQ,		/*15 */
 	DISP_REG_SMI_LARB0,
 	DISP_REG_SMI_COMMON,
@@ -368,10 +368,12 @@ typedef struct {
 	unsigned int timeout_ms;	/* timeout, unit is ms */
 } disp_wait_irq_struct;
 
+/*Now the max clock num in one module is 4*/
+#define MAX_CLK_NUM_OF_ONE_MODULE 4
 struct disp_device {
 	unsigned int regs_pa[DISP_REG_NUM];
 	unsigned int regs_va[DISP_REG_NUM];
-	struct clk *clk_map[DISP_REG_NUM];
+	struct clk *clk_map[DISP_REG_NUM][MAX_CLK_NUM_OF_ONE_MODULE];
 	struct device *dev;
 	unsigned int irq[DISP_REG_NUM];
 };

@@ -460,18 +460,6 @@ LCD_STATUS LCD_PowerOn(void)
 	DBI_FUNC();
 	if (!s_isLcdPowerOn) {
 		/* int ret = 0; */
-#if 0
-
-		DBI_LOG("lcd will be power on\n");
-		ret = enable_clock(MT_CG_DISP1_DBI_ENGINE, "LCD");
-		ret += enable_clock(MT_CG_DISP1_DBI_SMI, "LCD");
-		ret += enable_clock(MT_CG_DISP1_DBI_OUTPUT, "LCD");
-		ret += enable_clock(MT_CG_DISP1_LCD, "LCD");
-		ret += enable_clock(MT_CG_DISP1_SLCD, "LCD");
-		if (ret > 0)
-			DBI_LOG("[LCD]power manager API return false\n");
-
-#endif
 		_RestoreLCDRegisters();
 		s_isLcdPowerOn = true;
 	}
@@ -487,17 +475,6 @@ LCD_STATUS LCD_PowerOff(void)
 		_WaitForEngineNotBusy();
 		_BackupLCDRegisters();
 		DBI_LOG("lcd will be power off\n");
-#if 0
-		ret = disable_clock(MT_CG_DISP1_SLCD, "LCD");
-		ret += disable_clock(MT_CG_DISP1_LCD, "LCD");
-		ret += disable_clock(MT_CG_DISP1_DBI_ENGINE, "LCD");
-		ret += disable_clock(MT_CG_DISP1_DBI_SMI, "LCD");
-		ret += disable_clock(MT_CG_DISP1_DBI_OUTPUT, "LCD");
-		if (ret > 0)
-			DBI_LOG("[LCD]power manager API return false\n");
-
-	}
-#endif
 	s_isLcdPowerOn = false;
 }
 

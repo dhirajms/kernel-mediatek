@@ -1117,18 +1117,6 @@ int ddp_dump_info(DISP_MODULE_ENUM module)
 			}
 			pr_notice("\n");
 		}
-		{
-			unsigned int clock = (DISP_REG_GET(DISP_REG_CONFIG_CLOCK_DUMMY) >> 7) & 0x7;
-
-			if (clock == 3)
-				DISP_MSG("clock ok\n");
-			else if (clock == 0)
-				DISP_MSG("clock 80128\n");
-			else if (clock == 1)
-				DISP_MSG("clock 6496\n");
-			else if (clock == 2)
-				DISP_MSG("clock 4886\n");
-		}
 
 		break;
 

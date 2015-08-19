@@ -34,7 +34,7 @@
 #define DDP_REG_BASE_DSI	       (disp_dev.regs_va[DISP_REG_DSI])
 #define DDP_REG_BASE_DPI0	       (disp_dev.regs_va[DISP_REG_DPI0])
 #define DDP_REG_BASE_DPI1	       (disp_dev.regs_va[DISP_REG_DPI1])
-#define DDP_REG_BASE_MM_MUTEX	   (disp_dev.regs_va[DISP_REG_MUTEX])
+#define DDP_REG_BASE_MM_MUTEX	   (disp_dev.regs_va[DISP_REG_MUTEX32])
 #define DDP_REG_BASE_MM_CMDQ	   (disp_dev.regs_va[DISP_REG_CMDQ])
 #define DDP_REG_BASE_SMI_LARB0	   (disp_dev.regs_va[DISP_REG_SMI_LARB0])
 #define DDP_REG_BASE_SMI_COMMON	   (disp_dev.regs_va[DISP_REG_SMI_COMMON])
@@ -96,20 +96,9 @@
 
 void DISP_REG_SET_FIELD(unsigned long field, unsigned long reg32, unsigned long val);
 
-#define OUTREG32(x, y) mt_reg_sync_writel(y, x)
+/*#define OUTREG32(x, y) mt_reg_sync_writel(y, x)
 #define OUTREG16(x, y) mt_reg_sync_writew(y, x)
-#define OUTREG8(x, y) mt_reg_sync_writeb(y, x)
-
-#define AS_UINT32(x)    (*(uint32_t *)((void *)x))
-#define AS_UINT16(x)    (*(uint16_t *)((void *)x))
-#define AS_UINT8(x)     (*(uint8_t  *)((void *)x))
-
-#define OUTREGBIT(TYPE, REG, bit, value)  \
-		    do {    \
-			TYPE r = *((TYPE *)&DISP_REG_GET(&REG));    \
-			r.bit = value;    \
-			OUTREG32(&REG, AS_UINT32(&r));    \
-		    } while (0)
+#define OUTREG8(x, y) mt_reg_sync_writeb(y, x)*/
 
 #define READ_REGISTER_UINT32(reg) \
 	(*(volatile uint32_t * const)(reg))
@@ -130,22 +119,34 @@ void DISP_REG_SET_FIELD(unsigned long field, unsigned long reg32, unsigned long 
 	((*(volatile uint8_t * const)(reg)) = (val))
 
 #define INREG8(x)           READ_REGISTER_UINT8((uint8_t *)((void *)(x)))
-/*#define OUTREG8(x, y)       WRITE_REGISTER_UINT8((uint8_t *)((void*)(x)), (uint8_t)(y))*/
+#define OUTREG8(x, y)       WRITE_REGISTER_UINT8((uint8_t *)((void *)(x)), (uint8_t)(y))
 #define SETREG8(x, y)       OUTREG8(x, INREG8(x)|(y))
 #define CLRREG8(x, y)       OUTREG8(x, INREG8(x)&~(y))
 #define MASKREG8(x, y, z)   OUTREG8(x, (INREG8(x)&~(y))|(z))
 
 #define INREG16(x)          READ_REGISTER_UINT16((uint16_t *)((void *)(x)))
-/*#define OUTREG16(x, y)      WRITE_REGISTER_UINT16((uint16_t *)((void*)(x)),(uint16_t)(y))*/
+#define OUTREG16(x, y)      WRITE_REGISTER_UINT16((uint16_t *)((void *)(x)), (uint16_t)(y))
 #define SETREG16(x, y)      OUTREG16(x, INREG16(x)|(y))
 #define CLRREG16(x, y)      OUTREG16(x, INREG16(x)&~(y))
 #define MASKREG16(x, y, z)  OUTREG16(x, (INREG16(x)&~(y))|(z))
 
 #define INREG32(x)          READ_REGISTER_UINT32((uint32_t *)((void *)(x)))
-/*#define OUTREG32(x, y)		WRITE_REGISTER_UINT32((uint32_t*)((void*)(x)), (uint32_t)(y))*/
+#define OUTREG32(x, y)		WRITE_REGISTER_UINT32((uint32_t *)((void *)(x)), (uint32_t)(y))
 #define SETREG32(x, y)		OUTREG32(x, INREG32(x)|(y))
 #define CLRREG32(x, y)		OUTREG32(x, INREG32(x)&~(y))
 #define MASKREG32(x, y, z)	OUTREG32(x, (INREG32(x)&~(y))|(z))
+
+#define AS_UINT32(x)    (*(uint32_t *)((void *)x))
+#define AS_UINT16(x)    (*(uint16_t *)((void *)x))
+#define AS_UINT8(x)     (*(uint8_t  *)((void *)x))
+
+#define OUTREGBIT(TYPE, REG, bit, value)  \
+		    do {    \
+			TYPE r = *((TYPE *)&INREG32(&REG));    \
+			r.bit = value;    \
+			OUTREG32(&REG, AS_UINT32(&r));    \
+		    } while (0)
+
 
 /* ----------------------------------------------------------------- */
 /* CMDQ */
@@ -238,7 +239,6 @@ void DISP_REG_SET_FIELD(unsigned long field, unsigned long reg32, unsigned long 
 #define DISP_REG_CONFIG_MMSYS_MEM_DELSEL3         (DISPSYS_CONFIG_BASE + 0x82c)
 #define DISP_REG_CONFIG_MMSYS_DEBUG_OUT_SEL       (DISPSYS_CONFIG_BASE + 0x830)
 #define DISP_REG_CONFIG_MMSYS_DUMMY               (DISPSYS_CONFIG_BASE + 0x840)
-#define DISP_REG_CONFIG_CLOCK_DUMMY               (0xf0206040)
 
 #define DISP_REG_CONFIG_VALID               (DISPSYS_CONFIG_BASE + 0x860)
 #define DISP_REG_CONFIG_READY               (DISPSYS_CONFIG_BASE + 0x868)

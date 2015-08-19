@@ -118,6 +118,14 @@
 			#clock-cells = <1>;
 		};
 
+		mmsys: syscon@14000000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "mediatek,mt2701-mmsys", "syscon";
+			reg = <0 0x14000000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
 		pio: pinctrl@10005000 {
 			compatible = "mediatek,mt2701-pinctrl";
 			reg = <0 0x1000b000 0 0x1000>;
@@ -269,84 +277,135 @@
 		DISP_CONFIG: dispsys@14000000 {
 			compatible = "mediatek,DISP_CONFIG";
 			reg = <0 0x14000000 0 0x1000>;
+			clock-count = <0>;
 		};
 
 		DISP_MDP_RDMA: dispsys@14001000 {
 			compatible = "mediatek,DISP_MDP_RDMA";
 			reg = <0 0x14001000 0 0x1000>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_MDP_RDMA>;
+			clock-names = "CLK_MM_MDP_RDMA";
 		};
 
 		DISP_MDP_RSZ0: dispsys@14002000 {
 			compatible = "mediatek,DISP_MDP_RSZ0";
 			reg = <0 0x14002000 0 0x1000>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_MDP_RSZ0>;
+			clock-names = "CLK_MM_MDP_RSZ0";
 		};
 
 		DISP_MDP_RSZ1: dispsys@14003000 {
 			compatible = "mediatek,DISP_MDP_RSZ1";
 			reg = <0 0x14003000 0 0x1000>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_MDP_RSZ1>;
+			clock-names = "CLK_MM_MDP_RSZ1";
 		};
 
 		DISP_MDP_WDMA: dispsys@14004000 {
 			compatible = "mediatek,DISP_MDP_WDMA";
 			reg = <0 0x14004000 0 0x1000>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_MDP_WDMA>;
+			clock-names = "CLK_MM_MDP_WDMA";
 		};
 
 		DISP_MDP_WROT: dispsys@14005000 {
 			compatible = "mediatek,DISP_MDP_WROT";
 			reg = <0 0x14005000 0 0x1000>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_MDP_WROT>;
+			clock-names = "CLK_MM_MDP_WROT";
 		};
 
 		DISP_MDP_TDSHP: dispsys@14006000 {
 			compatible = "mediatek,DISP_MDP_TDSHP";
 			reg = <0 0x14006000 0 0x1000>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_MDP_TDSHP>;
+			clock-names = "CLK_MM_MDP_TDSHP";
 		};
 
 		DISP_OVL: dispsys@14007000 {
 			compatible = "mediatek,DISP_OVL";
 			reg = <0 0x14007000 0 0x1000>;
 			interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_LOW>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_DISP_OVL>;
+			clock-names = "CLK_MM_DISP_OVL";
 		};
 
 		DISP_RDMA0: dispsys: dispsys@14008000 {
 			compatible = "mediatek,DISP_RDMA0";
 			reg = <0 0x14008000 0 0x1000>;
 			interrupts = <GIC_SPI 152 IRQ_TYPE_LEVEL_LOW>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_DISP_RDMA>;
+			clock-names = "CLK_MM_DISP_RDMA";
 		};
 
 		DISP_WDMA: dispsys@14009000 {
 			compatible = "mediatek,DISP_WDMA";
 			reg = <0 0x14009000 0 0x1000>;
 			interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_LOW>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_DISP_WDMA>;
+			clock-names = "CLK_MM_DISP_WDMA";
 		};
 
 		DISP_BLS: dispsys@1400a000 {
 			compatible = "mediatek,DISP_BLS";
 			reg = <0 0x1400a000 0 0x1000>;
 			interrupts = <GIC_SPI 155 IRQ_TYPE_LEVEL_LOW>;
+			clock-count = <2>;
+			clocks = <&mmsys CLK_MM_DISP_BLS>,
+					 <&mmsys CLK_MM_MDP_BLS_26M>;
+			clock-names = "CLK_MM_DISP_BLS",
+						  "CLK_MM_MDP_BLS_26M";
 		};
 
 		DISP_COLOR: dispsys@1400b000 {
 			compatible = "mediatek,DISP_COLOR";
 			reg = <0 0x1400b000 0 0x1000>;
 			interrupts = <GIC_SPI 156 IRQ_TYPE_LEVEL_LOW>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_DISP_COLOR>;
+			clock-names = "CLK_MM_DISP_COLOR";
 		};
 
 		DISP_DSI: dispsys@1400c000 {
 			compatible = "mediatek,DISP_DSI";
 			reg = <0 0x1400c000 0 0x1000>;
 			interrupts = <GIC_SPI 157 IRQ_TYPE_LEVEL_LOW>;
+			clock-count = <2>;
+			clocks = <&mmsys CLK_MM_DSI_ENGINE>,
+					 <&mmsys CLK_MM_DSI_DIG>;
+			clock-names = "CLK_MM_DSI_ENGINE",
+						  "CLK_MM_DSI_DIG";
 		};
 
 		DISP_DPI0: dispsys@1400d000 {
 			compatible = "mediatek,DISP_DPI0";
 			reg = <0 0x1400d000 0 0x1000>;
 			interrupts = <GIC_SPI 158 IRQ_TYPE_LEVEL_LOW>;
+			clock-count = <2>;
+			clocks = <&mmsys CLK_MM_DPI_DIGL>,
+					 <&mmsys CLK_MM_DPI_ENGINE>;
+			clock-names = "CLK_MM_DPI_DIGL",
+						  "CLK_MM_DPI_ENGINE";
 		};
 
 		DISP_MUTEX: dispsys@1400e000 {
 			compatible = "mediatek,DISP_MUTEX";
 			reg = <0 0x1400e000 0 0x1000>;
 			interrupts = <GIC_SPI 161 IRQ_TYPE_LEVEL_LOW>;
+			clock-count = <2>;
+			clocks = <&mmsys CLK_MM_MUTEX_32K>,
+					 <&mmsys CLK_MM_MUTEX>;
+			clock-names = "CLK_MM_MUTEX_32K",
+						  "CLK_MM_MUTEX";
 		};
 
 		DISP_CMDQ: dispsys@1400f000 {
@@ -354,55 +413,99 @@
 			reg = <0 0x1400f000 0 0x1000>;
 			interrupts = <GIC_SPI 159 IRQ_TYPE_LEVEL_LOW>,
 						<GIC_SPI 160 IRQ_TYPE_LEVEL_LOW>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_CLK_MM_CMDQ>;
+			clock-names = "CLK_MM_CLK_MM_CMDQ";
 		};
 
 		DISP_SMI_LARB0: dispsys@14010000 {
 			compatible = "mediatek,DISP_SMI_LARB0";
 			reg = <0 0x14010000 0 0x1000>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_SMI_LARB0>;
+			clock-names = "CLK_MM_SMI_LARB0";
 		};
 
 		DISP_SMI_COMMON: dispsys@14011000 {
 			compatible = "mediatek,DISP_SMI_COMMON";
 			reg = <0 0x14011000 0 0x1000>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_SMI_COMMON>;
+			clock-names = "CLK_MM_SMI_COMMON";
 		};
 
 		DISP_RDMA1: dispsys@14012000 {
 			compatible = "mediatek,DISP_RDMA1";
 			reg = <0 0x14012000 0 0x1000>;
 			interrupts = <GIC_SPI 164 IRQ_TYPE_LEVEL_LOW>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_DISP_RMDA1>;
+			clock-names = "CLK_MM_DISP_RMDA1";
 		};
 
 		DISP_UFOE: dispsys@14013000 {
 			compatible = "mediatek,DISP_UFOE";
 			reg = <0 0x14013000 0 0x1000>;
+			clock-count = <1>;
+			clocks = <&mmsys CLK_MM_DISP_UFOE>;
+			clock-names = "CLK_MM_DISP_UFOE";
 		};
 
 		DISP_DPI1: dispsys@14014000 {
 			compatible = "mediatek,DISP_DPI1";
 			reg = <0 0x14014000 0 0x1000>;
+			clock-count = <2>;
+			clocks = <&mmsys CLK_MM_DPI1_DIGL>,
+					 <&mmsys CLK_MM_DPI1_ENGINE>;
+			clock-names = "CLK_MM_DPI1_DIGL",
+						  "CLK_MM_DPI1_ENGINE";
 		};
 
 		DISP_HDMI: dispsys@14015000 {
 			compatible = "mediatek,DISP_HDMI";
 			reg = <0 0x14015000 0 0x1000>;
+			clock-count = <4>;
+			clocks = <&mmsys CLK_MM_HDMI_PIXEL>,
+					 <&mmsys CLK_MM_HDMI_PLL>,
+					 <&mmsys CLK_MM_HDMI_AUDIO>,
+					 <&mmsys CLK_MM_HDMI_SPDIF>;
+			clock-names = "CLK_MM_HDMI_PIXEL",
+						  "CLK_MM_HDMI_PLL",
+						  "CLK_MM_HDMI_AUDIO",
+						  "CLK_MM_HDMI_SPDIF";
 		};
 
 		DISP_LVDS: dispsys@14016000 {
 			compatible = "mediatek,DISP_LVDS";
 			reg = <0 0x14016000 0 0x1000>;
+			clock-count = <0>;
 		};
 
 		DISP_TVE: dispsys@14017000 {
 			compatible = "mediatek,DISP_TVE";
 			reg = <0 0x14017000 0 0x1000>;
+			clock-count = <3>;
+			clocks = <&mmsys CLK_MM_TVE_OUTPUT>,
+					 <&mmsys CLK_MM_TVE_INPUT>,
+					 <&mmsys CLK_MM_TVE_FMM>;
+			clock-names = "CLK_MM_TVE_OUTPUT",
+						  "CLK_MM_TVE_INPUT",
+						  "CLK_MM_TVE_FMM";
 		};
 
 		DISP_MIPI: dispsys@10010000 {
 			compatible = "mediatek,DISP_MIPI";
 			reg = <0 0x1001000 0 0x1000>;
+			clock-count = <3>;
+			clocks = <&topckgen CLK_TOP_MIPIPLL>,
+					 <&topckgen CLK_TOP_MIPIPLL_D2>,
+					 <&topckgen CLK_TOP_MIPIPLL_D4>;
+			clock-names = "CLK_TOP_MIPIPLL",
+						  "CLK_TOP_MIPIPLL_D2",
+						  "CLK_TOP_MIPIPLL_D4";
 		};
 
-		MTKFB: dispsys{
+		MTKFB: dispsys {
 			compatible = "mediatek,MTKFB";
 			reg = <0 0x80000000 0 0x40000000>;
 		};

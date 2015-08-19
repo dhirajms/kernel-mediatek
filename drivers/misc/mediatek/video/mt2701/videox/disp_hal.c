@@ -569,11 +569,13 @@ int disphal_prepare_suspend(void)
 		DSI_SetMode(CMD_MODE);
 
 #ifdef DDP_USE_CLOCK_API
+#if defined(DDP_USE_MTK_CLKMGR)
 	if (clk_is_force_on(MT_CG_DISP0_SMI_LARB0) || clk_is_force_on(MT_CG_DISP0_SMI_COMMON)) {
 		pr_info("[DDP] MT_CG_DISP0_SMI_LARB0 is forced on\n");
 		clk_clr_force_on(MT_CG_DISP0_SMI_LARB0);
 		clk_clr_force_on(MT_CG_DISP0_SMI_COMMON);
 	}
+#endif
 #endif
 
 	return 0;

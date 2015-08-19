@@ -88,8 +88,8 @@ extern unsigned int disp_log_level;
 			pr_notice("[DISP/OVLENG]"fmt, ##args); \
 	} while (0)
 
-#define DISP_INFO(fmt, args...) pr_info("[DISP/DBG]"fmt, ##args)
-#define DISP_NOTICE(fmt, args...) pr_notice("[DISP/DBG]"fmt, ##args)
+#define DISP_INFO(fmt, args...) pr_info("[DISP/INFO]"fmt, ##args)
+#define DISP_NOTICE(fmt, args...) pr_notice("[DISP/NOTICE]"fmt, ##args)
 #define DISP_DBG(fmt, args...) pr_debug("[DISP/DBG]"fmt, ##args)
 #define DISP_WARN(fmt, args...) pr_warn("[DISP/WARN]"fmt, ##args)
 #define DISP_ERR(fmt, args...) pr_err("[DISP/ERROR]"fmt, ##args)

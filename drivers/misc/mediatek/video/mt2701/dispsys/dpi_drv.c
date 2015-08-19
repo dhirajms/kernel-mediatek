@@ -666,6 +666,7 @@ DPI_STATUS DPI_PowerOn(void)
 #ifdef DDP_USE_CLOCK_API
 		int ret = 0;
 
+#if defined(DDP_USE_MTK_CLKMGR)
 		ret += enable_clock(MT_CG_DISP1_DPI_DIGITAL_LANE, "DPI0");
 		ret += enable_clock(MT_CG_DISP1_DPI_ENGINE, "DPI0");
 
@@ -680,7 +681,10 @@ DPI_STATUS DPI_PowerOn(void)
 			ret += disable_clock(MT_CG_DISP1_LVDS_PIXEL_CLOCK, "DPI0");
 			ret += disable_clock(MT_CG_DISP1_LVDS_CTS_CLOCK, "DPI0");
 		}
-
+#else
+		clk_prepare_enable(disp_dev.clk_map[DISP_REG_DPI0][0]);
+		clk_prepare_enable(disp_dev.clk_map[DISP_REG_DPI0][1]);
+#endif
 		if (ret > 0) {
 			DISP_LOG_PRINT(ANDROID_LOG_ERROR, "DPI",
 				       "power manager API return false\n");
@@ -697,11 +701,12 @@ EXPORT_SYMBOL(DPI_PowerOn);
 
 DPI_STATUS DPI_PowerOff(void)
 {
+	int ret = DPI_STATUS_OK;
+
 	if (s_isDpiPowerOn) {
 		_BackupDPIRegisters();
 #ifdef DDP_USE_CLOCK_API
-		int ret = 0;
-
+#if defined(DDP_USE_MTK_CLKMGR)
 		if (lcm_params->dpi.lvds_tx_en == 1) {
 			ret += disable_clock(MT_CG_DISP1_LVDS_PIXEL_CLOCK, "DPI0");
 			ret += disable_clock(MT_CG_DISP1_LVDS_CTS_CLOCK, "DPI0");
@@ -711,6 +716,10 @@ DPI_STATUS DPI_PowerOff(void)
 
 		ret += disable_clock(MT_CG_DISP1_DPI_DIGITAL_LANE, "DPI0");
 		ret += disable_clock(MT_CG_DISP1_DPI_ENGINE, "DPI0");
+#else
+		clk_disable_unprepare(disp_dev.clk_map[DISP_REG_DPI0][0]);
+		clk_disable_unprepare(disp_dev.clk_map[DISP_REG_DPI0][1]);
+#endif
 
 		if (ret > 0) {
 			DISP_LOG_PRINT(ANDROID_LOG_ERROR, "DPI",
@@ -719,7 +728,8 @@ DPI_STATUS DPI_PowerOff(void)
 #endif
 		s_isDpiPowerOn = false;
 	}
-	return DPI_STATUS_OK;
+
+	return ret;
 }
 #endif
 EXPORT_SYMBOL(DPI_PowerOff);

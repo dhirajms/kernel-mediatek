@@ -3,6 +3,7 @@
 
 #include <linux/dma-mapping.h>
 #include <linux/types.h>
+#include <linux/clk.h>
 /* #include <board-custom.h> */
 #include <disp_assert_layer.h>
 #include "ddp_hal.h"
@@ -74,8 +75,7 @@ extern unsigned char *disp_module_name[];
 #define MTK_DISPLAY_ENABLE_MMU
 #endif
 
-#ifndef MTK_BRINGUP_FOR_MT2701
 #define DDP_USE_CLOCK_API
-#endif
+/* #define DDP_USE_MTK_CLKMGR */
 
 #endif				/* __DISP_DRV_PLATFORM_H__ */

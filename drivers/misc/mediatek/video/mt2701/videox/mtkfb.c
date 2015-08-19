@@ -3169,10 +3169,10 @@ static int mtkfb_parse_tag_videolfb(void)
 #endif
 
 	is_videofb_parse_done = 1;
-	pr_notice("[DT][videolfb] fps        = %d\n", lcd_fps);
-	pr_notice("[DT][videolfb] fb_base_pa = 0x%x\n", fb_base_pa);
-	pr_notice("[DT][videolfb] vram       = 0x%x\n", vramsize);
-	pr_notice("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
+	MTKFB_MSG("[videolfb] fps        = %d\n", lcd_fps);
+	MTKFB_MSG("[videolfb] fb_base_pa = 0x%x\n", fb_base_pa);
+	MTKFB_MSG("[videolfb] vram       = 0x%x\n", vramsize);
+	MTKFB_MSG("[videolfb] lcmname    = %s\n", mtkfb_lcm_name);
 	return 0;
 }
 
@@ -3330,7 +3330,7 @@ static int mtkfb_probe(struct device *dev)
 				    &fb_pa);
 	}
 
-	pr_notice("[FB Driver] fbdev->fb_pa_base = %x, fbdev->fb_va_base = %x\n",
+	MTKFB_MSG("fb_pa_base: 0x%x, fb_va_base: 0x%x\n",
 		  fbdev->fb_pa_base, (unsigned int)(fbdev->fb_va_base));
 
 	if (!fbdev->fb_va_base) {
@@ -3354,7 +3354,7 @@ static int mtkfb_probe(struct device *dev)
 
 	/* Initialize Display Driver PDD Layer */
 	if (DISP_STATUS_OK != DISP_Init((uint32_t) fbdev->fb_va_base, fb_pa, true)) {
-		r = -1;
+		r = -ENOMEM;
 		pr_err("DISP_Init fail\n");
 		goto cleanup;
 	}

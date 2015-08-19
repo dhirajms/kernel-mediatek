@@ -697,9 +697,15 @@ DSI_STATUS DSI_PowerOn(void)
 #ifdef DDP_USE_CLOCK_API
 		int ret = 0;
 
+#if defined(DDP_USE_MTK_CLKMGR)
 		ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 		ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 		ret += enable_clock(MT_CG_DISP0_DISP_UFOE, "UFOE");
+#else
+		clk_prepare_enable(disp_dev.clk_map[DISP_REG_DSI][0]);
+		clk_prepare_enable(disp_dev.clk_map[DISP_REG_DSI][1]);
+		clk_prepare_enable(disp_dev.clk_map[DISP_REG_UFOE][0]);
+#endif
 		if (ret > 0) {
 			DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
 				       "DSI power manager API return false\n");
@@ -717,9 +723,15 @@ DSI_STATUS DSI_PowerOff(void)
 #ifdef DDP_USE_CLOCK_API
 		int ret = 0;
 
+#if defined(DDP_USE_MTK_CLKMGR)
 		ret += disable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 		ret += disable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 		ret += disable_clock(MT_CG_DISP0_DISP_UFOE, "UFOE");
+#else
+		clk_disable_unprepare(disp_dev.clk_map[DISP_REG_DSI][0]);
+		clk_disable_unprepare(disp_dev.clk_map[DISP_REG_DSI][1]);
+		clk_disable_unprepare(disp_dev.clk_map[DISP_REG_UFOE][0]);
+#endif
 		if (ret > 0) {
 			DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
 				       "DSI power manager API return false\n");

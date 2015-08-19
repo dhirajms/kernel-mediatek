@@ -56,6 +56,7 @@ struct ion_mm_data mm_data;
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/clk.h>
 #endif
 
 #define DISP_INDEX_OFFSET 0x0	/* must be consistent with ddp_rdma.c */
@@ -236,6 +237,8 @@ void disp_check_clock_tree(void)
 	unsigned int mutexID = 0;
 	unsigned int mutex_mod = 0;
 	unsigned int mutex_sof = 0;
+
+	return;
 
 	DISP_MSG("0xf0000000=0x%x, 0xf0000050=0x%x, 0xf0000040=0x%x\n",
 		 *(volatile unsigned int *)(0xf0000000),
@@ -690,7 +693,7 @@ static /*__tcmfunc*/ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 3)) {
 			if (cnt_rdma_abnormal % 256 == 0) {
 				DISP_ERR("IRQ: RDMA0 abnormal! cnt=%d\n", cnt_rdma_abnormal++);
-				disp_check_clock_tree();
+				/*disp_check_clock_tree();
 				disp_irq_log_module |= (1 << DISP_MODULE_CONFIG);
 				disp_irq_log_module |= (1 << DISP_MODULE_MUTEX);
 				disp_irq_log_module |= (1 << DISP_MODULE_OVL);
@@ -705,7 +708,7 @@ static /*__tcmfunc*/ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				ddp_dump_info(DISP_MODULE_CONFIG);
 				ddp_dump_info(DISP_MODULE_MUTEX);
 				ddp_dump_info(DISP_MODULE_DPI0);
-				disp_irq_err |= DDP_IRQ_RDMA_ABNORMAL;
+				disp_irq_err |= DDP_IRQ_RDMA_ABNORMAL;*/
 			} else
 				cnt_rdma_abnormal++;
 		}
@@ -818,7 +821,7 @@ static /*__tcmfunc*/ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		/* clear intr */
 		DISP_REG_SET(DISP_REG_BLS_INTSTA, ~reg_val);
 		MMProfileLogEx(DDP_MMP_Events.BLS_IRQ, MMProfileFlagPulse, reg_val, 0);
-	} else if (irq == disp_dev.irq[DISP_REG_MUTEX]) {
+	} else if (irq == disp_dev.irq[DISP_REG_MUTEX32]) {
 		/* can not do reg update done status after release mutex(for ECO requirement), */
 		/* so we have to check update timeout intr here */
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & 0x01e0f;
@@ -1210,7 +1213,7 @@ int disp_secure_intr_callback(void *data)
 
 #endif
 
-const char *disp_reg_name_spy(DISP_DTS_REG_ENUM regs)
+static const char *disp_reg_name_spy(DISP_DTS_REG_ENUM regs)
 {
 	switch (regs) {
 	case DISP_REG_CONFIG:
@@ -1241,7 +1244,7 @@ const char *disp_reg_name_spy(DISP_DTS_REG_ENUM regs)
 		return "mediatek,DISP_DSI";
 	case DISP_REG_DPI0:
 		return "mediatek,DISP_DPI0";
-	case DISP_REG_MUTEX:
+	case DISP_REG_MUTEX32:
 		return "mediatek,DISP_MUTEX";
 	case DISP_REG_CMDQ:
 		return "mediatek,DISP_CMDQ";
@@ -1268,12 +1271,94 @@ const char *disp_reg_name_spy(DISP_DTS_REG_ENUM regs)
 	}
 }
 
+static const char *disp_clk_name_spy(DISP_DTS_REG_ENUM regs, unsigned int index)
+{
+	switch (regs) {
+	case DISP_REG_CONFIG:
+		return "CLK_MM_CONFIG";
+	case DISP_REG_MDP_RDMA:
+		return "CLK_MM_MDP_RDMA";
+	case DISP_REG_MDP_RSZ0:
+		return "CLK_MM_MDP_RSZ0";
+	case DISP_REG_MDP_RSZ1:
+		return "CLK_MM_MDP_RSZ1";
+	case DISP_REG_MDP_WDMA:
+		return "CLK_MM_MDP_WDMA";
+	case DISP_REG_MDP_WROT:
+		return "CLK_MM_MDP_WROT";
+	case DISP_REG_MDP_TDSHP:
+		return "CLK_MM_MDP_TDSHP";
+	case DISP_REG_OVL:
+		return "CLK_MM_DISP_OVL";
+	case DISP_REG_RDMA0:
+		return "CLK_MM_DISP_RDMA";
+	case DISP_REG_WDMA:
+		return "CLK_MM_DISP_WDMA";
+	case DISP_REG_BLS:
+		return "CLK_MM_DISP_BLS";
+	case DISP_REG_COLOR:
+		return "CLK_MM_DISP_COLOR";
+	case DISP_REG_DSI:
+		if (index == 0)
+			return "CLK_MM_DSI_ENGINE";
+		else
+			return "CLK_MM_DSI_DIG";
+	case DISP_REG_DPI0:
+		if (index == 0)
+			return "CLK_MM_DPI_DIGL";
+		else
+			return "CLK_MM_DPI_ENGINE";
+	case DISP_REG_MUTEX32:
+		if (index == 0)
+			return "CLK_MM_MUTEX_32K";
+		else
+			return "CLK_MM_MUTEX";
+	case DISP_REG_CMDQ:
+		return "CLK_MM_CLK_MM_CMDQ";
+	case DISP_REG_SMI_LARB0:
+		return "CLK_MM_SMI_LARB0";
+	case DISP_REG_SMI_COMMON:
+		return "CLK_MM_SMI_COMMON";
+	case DISP_REG_RDMA1:
+		return "CLK_MM_DISP_RMDA1";
+	case DISP_REG_UFOE:
+		return "CLK_MM_DISP_UFOE";
+	case DISP_REG_DPI1:
+		if (index == 0)
+			return "CLK_MM_DPI1_DIGL";
+		else
+			return "CLK_MM_DPI1_ENGINE";
+	case DISP_REG_HDMI:
+		if (index == 0)
+			return "CLK_MM_HDMI_PIXEL";
+		else if (index == 1)
+			return "CLK_MM_HDMI_PLL";
+		else if (index == 2)
+			return "CLK_MM_HDMI_AUDIO";
+		else if (index == 3)
+			return "CLK_MM_HDMI_SPDIF";
+	case DISP_REG_LVDS:
+		return "CLK_MM_LVDS";
+	case DISP_REG_TVE:
+		if (index == 0)
+			return "CLK_MM_TVE_OUTPUT";
+		else if (index == 1)
+			return "CLK_MM_TVE_INPUT";
+		else if (index == 2)
+			return "CLK_MM_TVE_FMM";
+	case DISP_REG_MIPI:
+		return "CLK_TOP_MIPIPLL";
+	default:
+		return "CLK_MM_UNKNOWN";
+	}
+}
+
 static int disp_is_intr_enable(DISP_DTS_REG_ENUM module)
 {
 	switch (module) {
 	case DISP_REG_RDMA0:
 	case DISP_REG_RDMA1:
-	case DISP_REG_MUTEX:
+	case DISP_REG_MUTEX32:
 	case DISP_REG_WDMA:
 	case DISP_REG_COLOR:
 	case DISP_REG_BLS:
@@ -1687,20 +1772,8 @@ int disp_dump_reg(DISP_MODULE_ENUM module)
 		g_reg_cfg[i++] = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_MEM_DELSEL3);
 		g_reg_cfg[i++] = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DEBUG_OUT_SEL);
 		g_reg_cfg[i++] = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf0206040);
 		g_reg_cfg[i++] = DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x860);
 		g_reg_cfg[i++] = DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x868);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf4010000);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf4010010);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf4010060);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf4010064);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf401008c);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf4010450);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf4010454);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf4010600);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf4010604);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf4010610);
-		g_reg_cfg[i++] = DISP_REG_GET(0xf4010614);
 		break;
 
 	case DISP_MODULE_MUTEX:
@@ -2041,7 +2114,7 @@ void disp_print_reg(DISP_MODULE_ENUM module)
 		break;
 
 	case DISP_MODULE_MUTEX:
-		DISP_MSG("===== DISP DISP_REG_MUTEX_CONFIG Reg Dump: ============\n");
+		DISP_MSG("===== DISP DISP_REG_MUTEX32_CONFIG Reg Dump: ============\n");
 		DISP_MSG
 		    ("(0x0  )DISP_MUTEX_INTEN							 =0x%x\n",
 		     g_reg_mtx[i++]);
@@ -3116,11 +3189,13 @@ static int disp_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 	unsigned int id, reg_va, reg_pa, irq_map;
+	unsigned int clk_num;
+	struct clk *clk[MAX_CLK_NUM_OF_ONE_MODULE];
 
 	/* find device id */
 	for (i = 0; i < DISP_REG_NUM; i++) {
-		id = of_device_is_compatible(pdev->dev.of_node, disp_reg_name_spy(i));
-		if (id)
+		ret = of_device_is_compatible(pdev->dev.of_node, disp_reg_name_spy(i));
+		if (ret)
 			break;
 	}
 	if (i == DISP_REG_NUM) {
@@ -3142,13 +3217,38 @@ static int disp_probe(struct platform_device *pdev)
 
 	irq_map = irq_of_parse_and_map(pdev->dev.of_node, 0);
 
+
+	/*For CCF*/
+	if (of_property_read_u32(pdev->dev.of_node, "clock-count", &clk_num)) {
+		DISP_ERR("dispsys get clocks-numbers failed\n");
+		return -ENODEV;
+	}
+
+	for (i = 0; i < clk_num; i++) {
+		if (i == MAX_CLK_NUM_OF_ONE_MODULE) {
+			DISP_ERR("dispsys %s clk number is bigger than %d, please check\n",
+						disp_clk_name_spy(id, i), MAX_CLK_NUM_OF_ONE_MODULE);
+			return -ENODEV;
+		}
+
+		clk[i] = devm_clk_get(&pdev->dev, disp_clk_name_spy(id, i));
+		if (IS_ERR(clk[i])) {
+			DISP_ERR("dispsys %s devm_clk_get failed\n", disp_clk_name_spy(id, i));
+			/*return -ENODEV;*/
+		}
+	}
+
+	if (disp_probe_cnt == 0)
+		memset(&disp_dev, 0, sizeof(disp_dev));
 	disp_dev.regs_pa[id] = reg_pa;
 	disp_dev.regs_va[id] = reg_va;
 	disp_dev.irq[id] = irq_map;
+	for (i = 0; i < clk_num; i++)
+		disp_dev.clk_map[id][i] = clk[i];
 
-	DISP_NOTICE("DT, i=%d, module=%s, reg_pa=0x%x, map_addr=0x%x, map_irq=%d\n",
+	DISP_NOTICE("DT, i=%d, module=%s, reg_pa=0x%x, map_addr=0x%x, map_irq=%d, clk_num=%d\n",
 		 id, disp_reg_name_spy(id), disp_dev.regs_pa[id], disp_dev.regs_va[id],
-		 disp_dev.irq[id]);
+		 disp_dev.irq[id], clk_num);
 #endif
 
 
