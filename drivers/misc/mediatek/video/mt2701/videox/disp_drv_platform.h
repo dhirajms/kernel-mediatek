@@ -73,7 +73,10 @@ extern unsigned char *disp_module_name[];
 #define MTK_ANDROID_SUPPORT
 #endif
 
+#ifdef MTK_ANDROID_SUPPORT
 #define MTK_DISPLAY_ENABLE_MMU
+#endif
+
 #define DDP_USE_CLOCK_API
 /* #define DDP_USE_MTK_CLKMGR */
 
