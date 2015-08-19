@@ -311,7 +311,7 @@
 		usb0: usb@11200000 {
 			compatible = "mediatek,USB0";
 			reg = <0 0x11200000 0 0x1000>,
-				  <0 0x11210000 0 0x1000>;
+			      <0 0x11210000 0 0x1000>;
 			interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_LOW>;
 			mode = <2>;
 			multipoint = <1>;
@@ -321,8 +321,8 @@
 			num_eps = <16>;
 			dma_channels = <8>;
 			clocks = <&pericfg CLK_PERI_USB0>,
-					 <&pericfg CLK_PERI_USB0_MCU>,
-					 <&pericfg CLK_PERI_USB_SLV>;
+				 <&pericfg CLK_PERI_USB0_MCU>,
+				 <&pericfg CLK_PERI_USB_SLV>;
 			clock-names = "usb0_main","usb0_mcu","usb_slv";
 			usb-power-supply = <&mt6323_vusb_reg>;
 		};
