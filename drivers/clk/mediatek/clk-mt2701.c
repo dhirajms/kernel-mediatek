@@ -684,7 +684,6 @@ struct mtk_clk_divider {
 		.div_reg = _reg,				\
 		.div_shift = _shift,				\
 		.div_width = _width,				\
-		.clk_divider_flags = CLK_DIVIDER_POWER_OF_TWO,	\
 }
 
 static const struct mtk_clk_divider top_adj_divs[] __initconst = {
