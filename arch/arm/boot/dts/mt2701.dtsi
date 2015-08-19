@@ -60,13 +60,13 @@
 			#clock-cells = <0>;
 		};
 
-		rtc_clk: dummy32k {
+		rtc_clk: rtc32k {
 			compatible = "fixed-clock";
 			clock-frequency = <32000>;
 			#clock-cells = <0>;
 		};
 
-		uart_clk: dummy26m {
+		uart_clk: clk26m {
 			compatible = "fixed-clock";
 			clock-frequency = <26000000>;
 			#clock-cells = <0>;
