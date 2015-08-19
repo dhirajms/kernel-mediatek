@@ -42,7 +42,6 @@
 
 /* #include "m4u_slt.h" */
 
-
 #define M4U_ASSERT(x) {	\
 	if (!(x))	\
 		pr_err("M4U assert fail, file:%s, line:%d", __FILE__, __LINE__); \
@@ -50,36 +49,32 @@
 
 /* #define MTK_M4U_DBG */
 #ifdef MTK_M4U_DBG
-#define M4UDBG(string, args...)	pr_dbg("M4U [pid = %d]"string, current->tgid, ##args)
-
+#define M4UDBG(string, args...)	pr_debug("M4U [pid = %d]"string, current->tgid, ##args)
 bool gM4uLogFlag = false;
-#define M4ULOG(string, args...) pr_info("M4U [pid = %d] "string, current->tgid, ##args)
+#define M4ULOG(string, args...)	pr_info("M4U [pid = %d] "string, current->tgid, ##args)
 
 #else
 
 #define M4UDBG(string, args...)
-
 bool gM4uLogFlag = false;
-
 #define M4ULOG(string, args...) do { \
 	if (gM4uLogFlag) \
 		pr_info("M4U [pid = %d] "string, current->tgid, ##args);  \
 } while (0)
 
+
+#define M4UINFO(string, args...)	printk_ratelimited("[M4U] "string, ##args)
+#define M4UTMP(string, args...)	printk_ratelimited("[M4U] "string, ##args)
+
+
 #endif
 
-#define M4UMSG(string, args...)	pr_warn("M4U"string, ##args)
-#define M4UINFO(string, args...) pr_info("M4U"string, ##args)
-
-
-#define M4UTMP(string, args...)  pr_info("M4U"string, ##args)
-
-
+#define M4UMSG(string, args...)	printk_ratelimited("[M4U] "string, ##args)
 #define M4UERR(string, args...) \
-	pr_info("M4U error : "string, ##args)
-
+	printk_ratelimited("M4U error : "string, ##args)
 
 #define m4u_aee_print(string, args...)
+
 
 struct m4u_device *gM4uDev;
 
@@ -2413,6 +2408,7 @@ int m4u_fill_linear_pagetable(unsigned int pa, unsigned int size)
 		pa += M4U_PAGE_SIZE;
 	}
 
+	m4u_invalid_tlb_all(M4U_ID_ALL, 1);
 	return 0;
 }
 
@@ -4169,17 +4165,20 @@ struct page *m4u_alloc_pages()
 		return false;
 	}
 
+	/* don't free the pte, or the frame buffer pa may < 0xf0000000 */
+	/*
 	split_page(tmp_page, order);
-
+	*/
 	/* free unused pages */
 	/* frame buffer pa is > 0xf0000000 */
-	start = (TOTAL_MVA_RANGE / M4U_PAGE_SIZE) * sizeof(unsigned int) / M4U_PAGE_SIZE;
+	/*start = (TOTAL_MVA_RANGE / M4U_PAGE_SIZE) * sizeof(unsigned int) / M4U_PAGE_SIZE;
 	end = (0xf0000000 / M4U_PAGE_SIZE) * sizeof(unsigned int) / M4U_PAGE_SIZE;
 
 	M4UMSG("m4u_alloc_pages() start = %d, end = %d.\n", start, end);
 
 	for (i = start; i < end; i++)
 		__free_page(tmp_page + i);
+	*/
 
 	return tmp_page;
 }
@@ -4253,7 +4252,7 @@ static bool m4u_struct_init(void)
 		return false;
 	}
 	if ((pt_pa_nonsec & M4U_PAGE_TABLE_ALIGN) != 0) {
-		unsigned int tmp;
+		unsigned int tmp, offset;
 
 		M4UMSG
 		    ("dma_alloc_coherent memory not align. PageTablePA=0x%x we will try again\n",
@@ -4270,9 +4269,9 @@ static bool m4u_struct_init(void)
 			M4UMSG("dma_alloc_coherent error!  dma memory not available.\n");
 			return false;
 		}
-		pPT_nonsec =
-		    (unsigned int *)((tmp + M4U_PAGE_TABLE_ALIGN) & (~M4U_PAGE_TABLE_ALIGN));
-		pt_pa_nonsec += (unsigned int)pPT_nonsec - tmp;
+		offset = ((pt_pa_nonsec + M4U_PAGE_TABLE_ALIGN) & (~M4U_PAGE_TABLE_ALIGN)) - pt_pa_nonsec;
+		pt_pa_nonsec += offset;
+		pPT_nonsec = (unsigned int *)(tmp + offset);
 	}
 
 	M4UMSG("dma_alloc_coherent success! pagetable_va=0x%x, pagetable_pa=0x%x.\n",
