@@ -619,11 +619,11 @@
 			compatible = "mediatek,dummy-codec";
 		};
 
-		mediatek,mt8590_audio {
+		mediatek,mt2701_audio {
 			compatible = "mediatek,mt2701-audio";
 		};
 
-		mediatek,mt8590_dai {
+		mediatek,mt2701_dai {
 			compatible = "mediatek,mt2701-dai";
 		};
 
