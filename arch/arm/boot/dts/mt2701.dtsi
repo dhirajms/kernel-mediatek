@@ -162,6 +162,8 @@
 			reg = <0 0x1000d000 0 0x1000>;
 			reg-names = "pwrap-base";
 			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&infracfg CLK_INFRA_PMICSPI>, <&infracfg CLK_INFRA_PMICWRAP> ;
+			clock-names = "pmicspi-clk", "pmicwrap-clk";
 		};
 
 		intpol: intpol@10200100 {

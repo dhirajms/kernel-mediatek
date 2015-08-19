@@ -17,6 +17,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/clk.h>
 #endif
 #include <mt_pmic_wrap.h>
 #include "pwrap_hal.h"
@@ -1173,6 +1174,8 @@ static int pwrap_probe(struct platform_device *pdev)
 	const struct of_device_id *of_id =
 		of_match_device(of_pwrap_match_tbl, &pdev->dev);
 	struct resource *res;
+	struct clk *pmic_spi;
+	struct clk *pmic_wrap;
 
 	if (!of_id) {
 		/* We do not expect this to happen */
@@ -1214,6 +1217,27 @@ static int pwrap_probe(struct platform_device *pdev)
 	}
 
 	pr_debug("PWRAP reg: 0x%p,  irq: %d\n", pwrap_base, pwrap_irq);
+
+	/* enable pwrap clock */
+	pmic_spi = devm_clk_get(&pdev->dev, "pmicspi-clk");
+	if (IS_ERR(pmic_spi)) {
+		ret = PTR_ERR(pmic_spi);
+		dev_err(&pdev->dev, "pmicspi-clk fail ret=%d\n", ret);
+		return ret;
+	}
+	clk_prepare(pmic_spi);
+	clk_enable(pmic_spi);
+
+	pmic_wrap = devm_clk_get(&pdev->dev, "pmicwrap-clk");
+	if (IS_ERR(pmic_wrap)) {
+		ret = PTR_ERR(pmic_wrap);
+		dev_err(&pdev->dev, "pmicwrap-clk fail ret=%d\n", ret);
+		return ret;
+	}
+
+	clk_prepare(pmic_wrap);
+	clk_enable(pmic_wrap);
+
 #endif
 
 	mt_wrp = get_mt_pmic_wrap_drv();
