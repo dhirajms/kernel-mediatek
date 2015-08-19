@@ -16,6 +16,7 @@
 #include "mt2701-afe-debug.h"
 #include "mt2701-afe.h"
 #include "mt2701-dai.h"
+#include "mt2701-afe-clk.h"
 
 struct demo_factory_mode {
 	int i2s_passthrough;
@@ -27,11 +28,33 @@ struct demo_private {
 	struct demo_factory_mode factory_mode;
 };
 
+static int platform_clock_control(struct snd_soc_dapm_widget *w,
+	struct snd_kcontrol *k, int  event)
+{
+	struct snd_soc_dapm_context *dapm = w->dapm;
+	struct snd_soc_card *card = dapm->card;
+
+	if (SND_SOC_DAPM_EVENT_ON(event)) {
+		pr_debug("%s() ON\n", __func__);
+		mt_turn_on_i2sout_clock(0, 1);
+		mt_i2s_power_on_mclk(0, 1);
+	} else {
+		pr_debug("%s() OFF\n", __func__);
+		mt_i2s_power_on_mclk(0, 0);
+		mt_turn_on_i2sout_clock(0, 0);
+	}
+
+	return 0;
+}
+
 static const struct snd_soc_dapm_widget mt2701_rt5640_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone", NULL),
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
 	SND_SOC_DAPM_MIC("Internal Mic", NULL),
 	SND_SOC_DAPM_SPK("Speaker", NULL),
+	SND_SOC_DAPM_SUPPLY("Platform Clock", SND_SOC_NOPM, 0, 0,
+		platform_clock_control, SND_SOC_DAPM_PRE_PMU |
+		SND_SOC_DAPM_POST_PMD),
 };
 
 static const struct snd_soc_dapm_route mt2701_rt5640_audio_map[] = {
@@ -43,6 +66,8 @@ static const struct snd_soc_dapm_route mt2701_rt5640_audio_map[] = {
 	{"Speaker", NULL, "SPOLN"},
 	{"Speaker", NULL, "SPORP"},
 	{"Speaker", NULL, "SPORN"},
+	{"Headphone", NULL, "Platform Clock"},
+	{"Speaker", NULL, "Platform Clock"},
 };
 
 static const struct snd_kcontrol_new mt2701_rt5640_controls[] = {

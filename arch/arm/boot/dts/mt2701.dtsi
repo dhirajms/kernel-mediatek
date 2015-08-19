@@ -606,7 +606,15 @@
 				 <&topckgen CLK_TOP_AUDPLL_D24>,
 				 <&topckgen CLK_TOP_AUDINTBUS_SEL>,
 				 <&clk26m>,
-				 <&topckgen CLK_TOP_SYSPLL1_D4>;
+				 <&topckgen CLK_TOP_SYSPLL1_D4>,
+				 <&topckgen CLK_TOP_AUD_K1_SRC_SEL>,
+				 <&topckgen CLK_TOP_AUD_K2_SRC_SEL>,
+				 <&topckgen CLK_TOP_AUD_K3_SRC_SEL>,
+				 <&topckgen CLK_TOP_AUD_K4_SRC_SEL>,
+				 <&topckgen CLK_TOP_AUD_K1_SRC_DIV>,
+				 <&topckgen CLK_TOP_AUD_K2_SRC_DIV>,
+				 <&topckgen CLK_TOP_AUD_K3_SRC_DIV>,
+				 <&topckgen CLK_TOP_AUD_K4_SRC_DIV>;
 
 
 			clock-names = "infra_sys_audio_clk",
@@ -625,8 +633,15 @@
 				      "top_audpll_d24",
 				      "top_audintbus_sel",
 				      "clk_26m",
-				      "top_syspll1_d4";
-
+				      "top_syspll1_d4",
+				      "top_aud_k1_src_sel",
+				      "top_aud_k2_src_sel",
+				      "top_aud_k3_src_sel",
+				      "top_aud_k4_src_sel",
+				      "top_aud_k1_src_div",
+				      "top_aud_k2_src_div",
+				      "top_aud_k3_src_div",
+				      "top_aud_k4_src_div";
 		};
 
 		mediatek,dummy_codec {

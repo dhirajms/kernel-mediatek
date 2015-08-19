@@ -22,6 +22,8 @@
 #include "mt2701-afe.h"
 #include "mt2701-dai-private.h"
 
+#define MCLK_CONTROL_BY_MACHINE_DRV
+
 static struct audio_i2s *get_i2s_out(struct mt_i2s_all *i2s_all, int dai_id)
 {
 	int i;
@@ -635,6 +637,7 @@ static int mt2701_i2s_startup(struct snd_pcm_substream *substream, struct snd_so
 				return -EINVAL;
 
 		}
+		#ifndef MCLK_CONTROL_BY_MACHINE_DRV
 		if (!has_ocuppied(i2s_all)) {
 			int i;
 
@@ -645,17 +648,15 @@ static int mt2701_i2s_startup(struct snd_pcm_substream *substream, struct snd_so
 				afe_i2s_power_on_mclk(i, 1);
 			#else
 			mt_afe_i2s_clk_on();
-			dev_dbg(dai->dev, "%s()  dbg0\n", __func__);
 			for (i = 0; i < 6; ++i)
 				mt_i2s_power_on_mclk(i, 1);
 			#endif
 		}
-		dev_dbg(dai->dev, "%s()  dbg1\n", __func__);
+		#endif
+
 		out->occupied = 1;
 		tx_id = get_sample_asrc_tx_id(dai->id);
-		dev_dbg(dai->dev, "%s()  dbg2\n", __func__);
 		afe_power_on_sample_asrc_tx(tx_id, 1);
-		dev_dbg(dai->dev, "%s()  dbg3\n", __func__);
 	} else {
 		enum afe_sample_asrc_rx_id rx_id;
 		struct audio_i2s *in;
@@ -665,6 +666,7 @@ static int mt2701_i2s_startup(struct snd_pcm_substream *substream, struct snd_so
 			return -EINVAL;
 		if (in->occupied)
 			return -EINVAL;
+		#ifndef MCLK_CONTROL_BY_MACHINE_DRV
 		if (!has_ocuppied(i2s_all)) {
 			int i;
 
@@ -679,6 +681,7 @@ static int mt2701_i2s_startup(struct snd_pcm_substream *substream, struct snd_so
 				mt_i2s_power_on_mclk(i, 1);
 			#endif
 		}
+		#endif
 		in->occupied = 1;
 		rx_id = get_sample_asrc_rx_id(dai->id);
 		afe_power_on_sample_asrc_rx(rx_id, 1);
@@ -715,6 +718,7 @@ static void mt2701_i2s_shutdown(struct snd_pcm_substream *substream, struct snd_
 		rx_id = get_sample_asrc_rx_id(dai->id);
 		afe_power_on_sample_asrc_rx(rx_id, 0);
 	}
+	#ifndef MCLK_CONTROL_BY_MACHINE_DRV
 	if (!has_ocuppied(i2s_all)) {
 		int i;
 
@@ -730,6 +734,7 @@ static void mt2701_i2s_shutdown(struct snd_pcm_substream *substream, struct snd_
 		mt_afe_i2s_clk_off();
 		#endif
 	}
+	#endif
 }
 
 static void init_mt_i2s_all(struct mt_i2s_all *i2s_all)

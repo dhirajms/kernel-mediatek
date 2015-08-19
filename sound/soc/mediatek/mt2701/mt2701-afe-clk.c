@@ -34,6 +34,14 @@ enum audio_system_clock_type {
 	AUDCLK_TOP_AUDINTBUS,
 	AUDCLK_CLK_26M,
 	AUDCLK_TOP_SYSPLL1_D4,
+	AUDCLK_TOP_AUD_K1_SRC_SEL,
+	AUDCLK_TOP_AUD_K2_SRC_SEL,
+	AUDCLK_TOP_AUD_K3_SRC_SEL,
+	AUDCLK_TOP_AUD_K4_SRC_SEL,
+	AUDCLK_TOP_AUD_K1_SRC_DIV,
+	AUDCLK_TOP_AUD_K2_SRC_DIV,
+	AUDCLK_TOP_AUD_K3_SRC_DIV,
+	AUDCLK_TOP_AUD_K4_SRC_DIV,
 	CLOCK_NUM
 };
 
@@ -63,6 +71,14 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[AUDCLK_TOP_AUDINTBUS] = {"top_audintbus_sel" , false , false, NULL},
 	[AUDCLK_CLK_26M] = {"clk_26m" , false , false, NULL},
 	[AUDCLK_TOP_SYSPLL1_D4] = {"top_syspll1_d4" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K1_SRC_SEL] = {"top_aud_k1_src_sel" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K2_SRC_SEL] = {"top_aud_k2_src_sel" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K3_SRC_SEL] = {"top_aud_k3_src_sel" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K4_SRC_SEL] = {"top_aud_k4_src_sel" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K1_SRC_DIV] = {"top_aud_k1_src_div" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K2_SRC_DIV] = {"top_aud_k2_src_div" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K3_SRC_DIV] = {"top_aud_k3_src_div" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K4_SRC_DIV] = {"top_aud_k4_src_div" , false , false, NULL},
 };
 
 int aud_a1sys_hp_ck_cntr;
@@ -659,5 +675,15 @@ void mt_afe_i2s_clk_off(void)
 	}
 
 	spin_unlock_irqrestore(&afe_clk_lock, flags);
+}
+
+void mt_turn_on_i2sout_clock(int id, int on)
+{
+	turn_on_i2sout_clock(id, on);
+}
+
+void mt_turn_on_i2sin_clock(int id, int on)
+{
+	turn_on_i2sin_clock(id, on);
 }
 

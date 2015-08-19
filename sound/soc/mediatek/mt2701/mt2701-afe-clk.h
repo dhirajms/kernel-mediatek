@@ -27,4 +27,7 @@ extern int mt_afe_init_clock(void *dev);
 extern int mt_afe_deinit_clock(void *dev);
 extern void mt_afe_main_clk_on(void);
 extern void mt_afe_main_clk_off(void);
+extern void mt_turn_on_i2sout_clock(int id, int on);
+extern void mt_turn_on_i2sin_clock(int id, int on);
+
 #endif
