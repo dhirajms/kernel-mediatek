@@ -479,14 +479,16 @@ static void DPI_MIPI_clk_setting(LCM_PARAMS *lcm_params)
 }
 #endif
 
-DPI_STATUS DPI_Init(bool isDpiPoweredOn)
+void DPI_InitRegbase(void)
 {
-
 	DPI_REG = (PDPI_REGS) (DDP_REG_BASE_DPI0);
 	LVDS_TX_REG = (PLVDS_TX_REGS) (DDP_REG_BASE_LVDS + 0x200);
 	LVDS_ANA_REG = (PLVDS_ANA_REGS) (DDP_REG_BASE_MIPI + 0x400);
 	DSI_PHY_REG_DPI = (PDSI_PHY_REGS) (DDP_REG_BASE_MIPI + 0x000);
+}
 
+DPI_STATUS DPI_Init(bool isDpiPoweredOn)
+{
 	if (isDpiPoweredOn)
 		_BackupDPIRegisters();
 	else

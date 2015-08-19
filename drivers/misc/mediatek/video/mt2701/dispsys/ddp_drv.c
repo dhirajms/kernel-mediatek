@@ -3249,13 +3249,13 @@ static int disp_probe(struct platform_device *pdev)
 	for (i = 0; i < clk_num; i++)
 		disp_dev.clk_map[id][i] = clk[i];
 
+	DPI_InitRegbase();
+	DSI_InitRegbase();
+
 	DISP_MSG("DT, i=%d, module=%s, reg_pa=0x%x, map_addr=0x%x, map_irq=%d, clk_num=%d\n",
 		 id, disp_reg_name_spy(id), disp_dev.regs_pa[id], disp_dev.regs_va[id],
 		 disp_dev.irq[id], clk_num);
-
-	DSI_InitRegbase();
 #endif
-
 
 	if (disp_probe_cnt != 0)
 		return 0;

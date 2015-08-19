@@ -132,7 +132,7 @@ typedef  enum
 	extern uint32_t FB_Addr;
 #endif
 
-
+	void DPI_InitRegbase(void);
 	DPI_STATUS DPI_Init(bool isDpiPoweredOn);
 	DPI_STATUS DPI_Deinit(void);
 

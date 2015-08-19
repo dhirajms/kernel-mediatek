@@ -146,13 +146,13 @@ static int mtkfb_vsync_probe(struct platform_device *pdev)
 
 static int mtkfb_vsync_remove(struct platform_device *pdev)
 {
-	VSYNC_INF("device remove\n");
+	VSYNC_DBG("device remove\n");
 	return 0;
 }
 
 static void mtkfb_vsync_shutdown(struct platform_device *pdev)
 {
-	pr_info("mtkfb_vsync device shutdown\n");
+	VSYNC_DBG("mtkfb_vsync device shutdown\n");
 }
 
 static int mtkfb_vsync_suspend(struct platform_device *pdev, pm_message_t mesg)

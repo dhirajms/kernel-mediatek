@@ -2423,12 +2423,11 @@ int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 				    ("[FB Driver] can't get semaphore in mtkfb_early_suspend()\n");
 				return -ERESTARTSYS;
 			}
-			/* DISP_PrepareSuspend(); */
+			DISP_PrepareSuspend();
 			/* Wait for disp finished. */
 			if (wait_event_interruptible_timeout(disp_done_wq, !disp_running, HZ / 10)
 			    == 0)
-				pr_info
-				    ("[FB Driver] Wait disp finished timeout in early_suspend\n");
+				MTKFB_ERR("Wait disp finished timeout in early_suspend\n");
 
 			DISP_CHECK_RET(DISP_PauseVsync(true));
 			DISP_CHECK_RET(DISP_PanelEnable(false));
@@ -3459,7 +3458,7 @@ EXPORT_SYMBOL(mtkfb_is_suspend);
 
 static void mtkfb_shutdown(struct device *pdev)
 {
-	MTKFB_LOG("[FB Driver] mtkfb_shutdown()\n");
+	pr_debug("[DISP/MTKFB]mtkfb_shutdown()\n");
 #ifndef MTK_BRINGUP_FOR_MT2701
 	mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF);
 #endif
@@ -3480,6 +3479,11 @@ static void mtkfb_shutdown(struct device *pdev)
 	sem_early_suspend_cnt--;
 
 	is_early_suspended = true;
+	DISP_PrepareSuspend();
+	/* Wait for disp finished. */
+	if (wait_event_interruptible_timeout(disp_done_wq, !disp_running, HZ / 10) == 0)
+		MTKFB_ERR("Wait disp finished timeout in early_suspend\n");
+
 	DISP_CHECK_RET(DISP_PanelEnable(false));
 	DISP_CHECK_RET(DISP_PowerEnable(false));
 
@@ -3487,7 +3491,7 @@ static void mtkfb_shutdown(struct device *pdev)
 	sem_early_suspend_cnt++;
 	up(&sem_early_suspend);
 
-	MTKFB_LOG("[FB Driver] leave mtkfb_shutdown\n");
+	pr_debug("[DISP/MTKFB]leave mtkfb_shutdown\n");
 }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -3495,7 +3499,7 @@ static void mtkfb_early_suspend(struct early_suspend *h)
 {
 	MSG_FUNC_ENTER();
 
-	pr_info("[FB Driver] enter early_suspend\n");
+	pr_debug("[DISP/MTKFB]enter early_suspend\n");
 
 
 	mutex_lock(&ScreenCaptureMutex);
@@ -3521,18 +3525,18 @@ static void mtkfb_early_suspend(struct early_suspend *h)
 	}
 
 	MMProfileLog(MTKFB_MMP_Events.EarlySuspend, MMProfileFlagStart);
-	is_early_suspended = true;
 
 	if (!lcd_fps)
 		msleep(30);
 	else
 		msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
 
-	/* DISP_PrepareSuspend(); */
+	is_early_suspended = true;
+	DISP_PrepareSuspend();
 
 	/* Wait for disp finished. */
 	if (wait_event_interruptible_timeout(disp_done_wq, !disp_running, HZ / 10) == 0)
-		pr_info("[FB Driver] Wait disp finished timeout in early_suspend\n");
+		MTKFB_ERR("Wait disp finished timeout in early_suspend\n");
 	DISP_CHECK_RET(DISP_PanelEnable(false));
 	DISP_CHECK_RET(DISP_PowerEnable(false));
 	DISP_CHECK_RET(DISP_PauseVsync(true));
@@ -3543,16 +3547,7 @@ static void mtkfb_early_suspend(struct early_suspend *h)
 	up(&sem_early_suspend);
 	mutex_unlock(&ScreenCaptureMutex);
 
-	/* Here we should flush composition workqueue but there's no
-	 * clean and easy way to get the device handle. Because early suspend
-	 * struct is not a member of fbdev, and global variables are used instead,
-	 * we can't just use container_of ...
-	 * As we flush in blank/POWEROFF IOCTL from HWC, this is not a practical issue.
-	 *
-	 * flush_workqueue(((struct mtkfb_device *)dev)->update_ovls_wq);
-	 */
-
-	pr_info("[FB Driver] leave early_suspend\n");
+	pr_debug("[DISP/MTKFB]leave early_suspend\n");
 
 	MSG_FUNC_LEAVE();
 }
@@ -3573,11 +3568,11 @@ static void mtkfb_late_resume(struct early_suspend *h)
 {
 	MSG_FUNC_ENTER();
 
-	pr_info("[FB Driver] enter late_resume\n");
+	pr_debug("[DISP/MTKFB]enter late_resume\n");
 
 	mutex_lock(&ScreenCaptureMutex);
 	if (down_interruptible(&sem_early_suspend)) {
-		pr_info("[FB Driver] can't get semaphore in mtkfb_late_resume()\n");
+		MTKFB_ERR("can't get semaphore in mtkfb_late_resume()\n");
 		mutex_unlock(&ScreenCaptureMutex);
 		return;
 	}
@@ -3586,7 +3581,7 @@ static void mtkfb_late_resume(struct early_suspend *h)
 		is_early_suspended = false;
 		sem_early_suspend_cnt++;
 		up(&sem_early_suspend);
-		MTKFB_LOG("[FB driver] has been resumed\n");
+		MTKFB_LOG("has been resumed\n");
 		mutex_unlock(&ScreenCaptureMutex);
 		return;
 	}
@@ -3597,13 +3592,13 @@ static void mtkfb_late_resume(struct early_suspend *h)
 		disp_path_clock_on("ipoh_mtkfb");
 	} else
 		disp_path_clock_on("mtkfb");
-	pr_info("[FB LR] 1\n");
+	pr_debug("[DISP/MTKFB] LR clock off finish\n");
 	DISP_CHECK_RET(DISP_PauseVsync(false));
-	pr_info("[FB LR] 2\n");
+	pr_debug("[DISP/MTKFB] LR Pause Vsync finish\n");
 	DISP_CHECK_RET(DISP_PowerEnable(true));
-	pr_info("[FB LR] 3\n");
+	pr_debug("[DISP/MTKFB] LR power off finish\n");
 	DISP_CHECK_RET(DISP_PanelEnable(true));
-	pr_info("[FB LR] 4\n");
+	pr_debug("[DISP/MTKFB] LR panel disable finish\n");
 
 	is_early_suspended = false;
 
@@ -3626,7 +3621,7 @@ static void mtkfb_late_resume(struct early_suspend *h)
 		mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_HALF);
 #endif
 #endif
-	pr_info("[FB Driver] leave late_resume\n");
+	pr_debug("[DISP/MTKFB]leave late_resume\n");
 
 	MSG_FUNC_LEAVE();
 }
