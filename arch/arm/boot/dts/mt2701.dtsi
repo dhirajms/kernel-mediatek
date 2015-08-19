@@ -55,29 +55,29 @@
 		compatible = "simple-bus";
 		ranges;
 
-		system_clk: dummy13m {
-			compatible = "fixed-clock";
-			clock-frequency = <13000000>;
-			#clock-cells = <0>;
-		};
-
-		rtc_clk: rtc32k {
-			compatible = "fixed-clock";
-			clock-frequency = <32000>;
-			#clock-cells = <0>;
-		};
-
-		uart_clk: clk26m {
-			compatible = "fixed-clock";
-			clock-frequency = <26000000>;
-			#clock-cells = <0>;
-		};
-
 		clk_null: clk_null {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
 			clock-frequency = <0>;
 		};
+
+		clk32k: clk32k {
+			compatible = "fixed-clock";
+			clock-frequency = <32000>;
+			#clock-cells = <0>;
+		};
+
+		clk26m: clk26m {
+			compatible = "fixed-clock";
+			clock-frequency = <26000000>;
+			#clock-cells = <0>;
+		};
+	};
+
+	uart_clk: dummy26m {
+		compatible = "fixed-clock";
+		clock-frequency = <26000000>;
+		#clock-cells = <0>;
 	};
 
 	timer {
@@ -477,8 +477,8 @@
 			interrupts = <GIC_SPI 159 IRQ_TYPE_LEVEL_LOW>,
 						<GIC_SPI 160 IRQ_TYPE_LEVEL_LOW>;
 			clock-count = <1>;
-			clocks = <&mmsys CLK_MM_CLK_MM_CMDQ>;
-			clock-names = "CLK_MM_CLK_MM_CMDQ";
+			clocks = <&mmsys CLK_MM_CMDQ>;
+			clock-names = "CLK_MM_CMDQ";
 		};
 
 		DISP_SMI_LARB0: dispsys@14010000 {
@@ -502,8 +502,8 @@
 			reg = <0 0x14012000 0 0x1000>;
 			interrupts = <GIC_SPI 164 IRQ_TYPE_LEVEL_LOW>;
 			clock-count = <1>;
-			clocks = <&mmsys CLK_MM_DISP_RMDA1>;
-			clock-names = "CLK_MM_DISP_RMDA1";
+			clocks = <&mmsys CLK_MM_DISP_RDMA1>;
+			clock-names = "CLK_MM_DISP_RDMA1";
 		};
 
 		DISP_UFOE: dispsys@14013000 {

@@ -50,7 +50,6 @@ static void mtk_clk_enable_critical(void)
 	clk_prepare_enable(peri_data->clks[CLK_PERI_UART0]);
 }
 
-
 /* This root clock derived from:
  * 1. some PADs
  * 2. AD parts from PLLGP
@@ -153,8 +152,6 @@ static const struct mtk_fixed_factor top_divs[] __initconst = {
 	FACTOR(CLK_TOP_CLK26M_D8, "clk26m_d8", "clk26m", 1, 8),
 	FACTOR(CLK_TOP_32K_INTERNAL, "32k_internal", "clk26m", 1, 793),
 	FACTOR(CLK_TOP_32K_EXTERNAL, "32k_external", "rtc32k", 1, 1),
-	FACTOR(CLK_TOP_A1SYS_HP, "a1sys_hp_ck", "aud_mux1_sel", 1, 1),
-	FACTOR(CLK_TOP_A2SYS_HP, "a2sys_hp_ck", "aud_mux2_sel", 1, 1),
 };
 
 static const char * const axi_parents[] __initconst = {
@@ -500,7 +497,7 @@ static const struct mtk_composite top_muxes[] __initconst = {
 						0x0050, 24, 3, 31),
 	MUX_GATE(CLK_TOP_UART_SEL, "uart_sel", uart_parents, 0x0060, 0, 1, 7),
 
-	MUX_GATE(CLK_TOP_SPI_SEL, "spi0_sel", spi_parents, 0x0060, 8, 3, 15),
+	MUX_GATE(CLK_TOP_SPI0_SEL, "spi0_sel", spi_parents, 0x0060, 8, 3, 15),
 	MUX_GATE(CLK_TOP_USB20_SEL, "usb20_sel", usb20_parents,
 						0x0060, 16, 2, 23),
 	MUX_GATE(CLK_TOP_MSDC30_0_SEL, "msdc30_0_sel", msdc30_parents,
@@ -571,8 +568,8 @@ static const struct mtk_composite top_muxes[] __initconst = {
 							0x012c, 0, 3, 21),
 	MUX_GATE(CLK_TOP_AUD_MUX2_SEL, "aud_mux2_sel", aud_mux_parents,
 							0x012c, 3, 3, 22),
-	MUX_GATE(CLK_TOP_AUDPLL_MUX_SEL, "audpll_sel", aud_mux_parents,
-							0x012c, 6, 3, 22),
+	MUX(CLK_TOP_AUDPLL_MUX_SEL, "audpll_sel", aud_mux_parents,
+							0x012c, 6, 3),
 	MUX_GATE(CLK_TOP_AUD_K1_SRC_SEL, "aud_k1_src_sel", aud_src_parents,
 							0x012c, 15, 1, 23),
 	MUX_GATE(CLK_TOP_AUD_K2_SRC_SEL, "aud_k2_src_sel", aud_src_parents,
@@ -727,7 +724,7 @@ static const struct mtk_gate_regs peri1_cg_regs = {
 static const struct mtk_gate peri_clks[] __initconst = {
 	GATE_PERI1(CLK_PERI_USB0_MCU, "usb0_mcu_ck", "axi_sel", 31),
 	GATE_PERI1(CLK_PERI_ETH, "eth_ck", "clk26m", 30),
-	GATE_PERI1(CLK_PERI_SPI0, "spi0_ck", "spi_sel", 29),
+	GATE_PERI1(CLK_PERI_SPI0, "spi0_ck", "spi0_sel", 29),
 	GATE_PERI1(CLK_PERI_AUXADC, "auxadc_ck", "clk26m", 28),
 	GATE_PERI0(CLK_PERI_I2C3, "i2c3_ck", "clk26m", 27),
 	GATE_PERI0(CLK_PERI_I2C2, "i2c2_ck", "axi_sel", 26),
@@ -762,7 +759,7 @@ static const struct mtk_gate peri_clks[] __initconst = {
 	GATE_PERI1(CLK_PERI_SPI2, "spi2_ck", "spi2_sel", 10),
 	GATE_PERI1(CLK_PERI_SPI1, "spi1_ck", "spi1_sel", 9),
 	GATE_PERI1(CLK_PERI_HOST89_DVD, "host89_dvd_ck", "aud2dvd_sel", 8),
-	GATE_PERI1(CLK_PERI_HOST89_SPI, "host89_spi_ck", "spi_sel", 7),
+	GATE_PERI1(CLK_PERI_HOST89_SPI, "host89_spi_ck", "spi0_sel", 7),
 	GATE_PERI1(CLK_PERI_HOST89_INT, "host89_int_ck", "axi_sel", 6),
 	GATE_PERI1(CLK_PERI_FLASH, "flash_ck", "nfi2x_sel", 5),
 	GATE_PERI1(CLK_PERI_NFI_PAD, "nfi_pad_ck", "nfi_sel", 4),
@@ -1099,7 +1096,7 @@ static const struct mtk_gate_regs disp1_cg_regs = {
 static const struct mtk_gate mm_clks[] __initconst = {
 	GATE_DISP0(CLK_MM_SMI_COMMON, "mm_smi_comm", "mm_sel", 0),
 	GATE_DISP0(CLK_MM_SMI_LARB0, "mm_smi_larb0", "mm_sel", 1),
-	GATE_DISP0(CLK_MM_CLK_MM_CMDQ, "mm_mm_cmdq", "mm_sel", 2),
+	GATE_DISP0(CLK_MM_CMDQ, "mm_cmdq", "mm_sel", 2),
 	GATE_DISP0(CLK_MM_MUTEX	, "mm_mutex", "mm_sel", 3),
 	GATE_DISP0(CLK_MM_DISP_COLOR, "mm_disp_color", "mm_sel", 4),
 	GATE_DISP0(CLK_MM_DISP_BLS, "mm_disp_bls", "mm_sel", 5),
@@ -1116,7 +1113,7 @@ static const struct mtk_gate mm_clks[] __initconst = {
 	GATE_DISP0(CLK_MM_CAM_MDP, "mm_cam_mdp", "mm_sel", 16),
 	GATE_DISP0(CLK_MM_FAKE_ENG, "mm_fake_eng", "mm_sel", 17),
 	GATE_DISP0(CLK_MM_MUTEX_32K, "mm_mutex_32k", "rtc_sel", 18),
-	GATE_DISP0(CLK_MM_DISP_RMDA1, "mm_disp_rdma1", "mm_sel", 19),
+	GATE_DISP0(CLK_MM_DISP_RDMA1, "mm_disp_rdma1", "mm_sel", 19),
 	GATE_DISP0(CLK_MM_DISP_UFOE, "mm_disp_ufoe", "mm_sel", 20),
 	GATE_DISP1(CLK_MM_DSI_ENGINE, "mm_dsi_eng", "mm_sel", 0),
 	GATE_DISP1(CLK_MM_DSI_DIG, "mm_dsi_dig", "dsio_lntc_dsiclk", 1),
@@ -1221,7 +1218,7 @@ static const struct mtk_gate_regs vdec1_cg_regs = {
 	}
 
 static const struct mtk_gate vdec_clks[] __initconst = {
-	GATE_VDEC0(CLK_VDEC, "vdec_cken", "vdec_sel", 0),
+	GATE_VDEC0(CLK_VDEC_CKGEN, "vdec_cken", "vdec_sel", 0),
 	GATE_VDEC1(CLK_VDEC_LARB, "vdec_larb_cken", "mm_sel", 0),
 };
 
@@ -1442,31 +1439,31 @@ CLK_OF_DECLARE(mtk_bdpsys, "mediatek,mt2701-bdpsys", mtk_bdpsys_init);
 	}
 
 static const struct mtk_pll_data apmixed_plls[] = {
-	PLL(APMIXED_ARMPLL, "armpll", 0x200, 0x20c, 0x80000001, 0,
+	PLL(CLK_APMIXED_ARMPLL, "armpll", 0x200, 0x20c, 0x80000001, 0,
 				21, 0x204, 24, 0x0, 0x204, 0),
-	PLL(APMIXED_MAINPLL, "mainpll", 0x210, 0x21c, 0xf0000001, HAVE_RST_BAR,
-				21, 0x210, 4, 0x0, 0x214, 0),
-	PLL(APMIXED_UNIVPLL, "univpll", 0x220, 0x22c, 0xf3000001, HAVE_RST_BAR,
-				7, 0x220, 4, 0x0, 0x224, 14),
-	PLL(APMIXED_MMPLL, "mmpll", 0x230, 0x23c, 0x00000001, 0,
+	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x210, 0x21c, 0xf0000001,
+		    HAVE_RST_BAR, 21, 0x210, 4, 0x0, 0x214, 0),
+	PLL(CLK_APMIXED_UNIVPLL, "univpll", 0x220, 0x22c, 0xf3000001,
+		    HAVE_RST_BAR, 7, 0x220, 4, 0x0, 0x224, 14),
+	PLL(CLK_APMIXED_MMPLL, "mmpll", 0x230, 0x23c, 0x00000001, 0,
 				21, 0x230, 4, 0x0, 0x234, 0),
-	PLL(APMIXED_MSDCPLL, "msdcpll", 0x240, 0x24c, 0x00000001, 0,
+	PLL(CLK_APMIXED_MSDCPLL, "msdcpll", 0x240, 0x24c, 0x00000001, 0,
 				21, 0x240, 4, 0x0, 0x244, 0),
-	PLL(APMIXED_TVDPLL, "tvdpll", 0x250, 0x25c, 0x00000001, 0,
+	PLL(CLK_APMIXED_TVDPLL, "tvdpll", 0x250, 0x25c, 0x00000001, 0,
 				21, 0x250, 4, 0x0, 0x258, 0),
-	PLL(APMIXED_AUD1PLL, "aud1pll", 0x270, 0x27c, 0x00000001, 0,
+	PLL(CLK_APMIXED_AUD1PLL, "aud1pll", 0x270, 0x27c, 0x00000001, 0,
 				31, 0x270, 4, 0x0, 0x274, 0),
-	PLL(APMIXED_TRGPLL, "trgpll", 0x280, 0x28c, 0x00000001, 0,
+	PLL(CLK_APMIXED_TRGPLL, "trgpll", 0x280, 0x28c, 0x00000001, 0,
 				31, 0x280, 4, 0x0, 0x284, 0),
-	PLL(APMIXED_ETHPLL, "ethpll", 0x290, 0x39c, 0x00000001, 0,
+	PLL(CLK_APMIXED_ETHPLL, "ethpll", 0x290, 0x39c, 0x00000001, 0,
 				31, 0x290, 4, 0x0, 0x294, 0),
-	PLL(APMIXED_VDECPLL, "vdecpll", 0x2a0, 0x2ac, 0x00000001, 0,
+	PLL(CLK_APMIXED_VDECPLL, "vdecpll", 0x2a0, 0x2ac, 0x00000001, 0,
 				31, 0x2a0, 4, 0x0, 0x3a4, 0),
-	PLL(APMIXED_HADDS2PLL, "hadds2pll", 0x2b0, 0x2bc, 0x00000001, 0,
+	PLL(CLK_APMIXED_HADDS2PLL, "hadds2pll", 0x2b0, 0x2bc, 0x00000001, 0,
 				31, 0x2b0, 4, 0x0, 0x2b4, 0),
-	PLL(APMIXED_AUD2PLL, "aud2pll", 0x290, 0x3cc, 0x00000001, 0,
+	PLL(CLK_APMIXED_AUD2PLL, "aud2pll", 0x290, 0x3cc, 0x00000001, 0,
 				31, 0x2c0, 4, 0x0, 0x2c4, 0),
-	PLL(APMIXED_TVD2PLL, "tvd2pll", 0x2d0, 0x2dc, 0x00000001, 0,
+	PLL(CLK_APMIXED_TVD2PLL, "tvd2pll", 0x2d0, 0x2dc, 0x00000001, 0,
 				21, 0x2d0, 4, 0x0, 0x3d4, 0),
 };
 

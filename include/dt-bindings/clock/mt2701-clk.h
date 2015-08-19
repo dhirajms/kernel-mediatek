@@ -91,7 +91,7 @@
 #define CLK_TOP_PWM_SEL				72
 #define CLK_TOP_MSDC30_0_SEL			73
 #define CLK_TOP_USB20_SEL			74
-#define CLK_TOP_SPI_SEL				75
+#define CLK_TOP_SPI0_SEL			75
 #define CLK_TOP_UART_SEL			76
 #define CLK_TOP_AUDINTBUS_SEL			77
 #define CLK_TOP_AUDIO_SEL			78
@@ -171,47 +171,47 @@
 
 /* APMIXEDSYS */
 
-#define APMIXED_ARMPLL				1
-#define APMIXED_MAINPLL				2
-#define APMIXED_UNIVPLL				3
-#define APMIXED_MMPLL				4
-#define APMIXED_MSDCPLL				5
-#define APMIXED_TVDPLL				6
-#define APMIXED_AUD1PLL				7
-#define APMIXED_TRGPLL				8
-#define APMIXED_ETHPLL				9
-#define APMIXED_VDECPLL				10
-#define APMIXED_HADDS2PLL			11
-#define APMIXED_AUD2PLL				12
-#define APMIXED_TVD2PLL				13
-#define APMIXED_NR_CLK				14
+#define CLK_APMIXED_ARMPLL			1
+#define CLK_APMIXED_MAINPLL			2
+#define CLK_APMIXED_UNIVPLL			3
+#define CLK_APMIXED_MMPLL			4
+#define CLK_APMIXED_MSDCPLL			5
+#define CLK_APMIXED_TVDPLL			6
+#define CLK_APMIXED_AUD1PLL			7
+#define CLK_APMIXED_TRGPLL			8
+#define CLK_APMIXED_ETHPLL			9
+#define CLK_APMIXED_VDECPLL			10
+#define CLK_APMIXED_HADDS2PLL			11
+#define CLK_APMIXED_AUD2PLL			12
+#define CLK_APMIXED_TVD2PLL			13
+#define CLK_APMIXED_NR				14
 
 /* DDRPHY */
 
-#define DDRPHY_VENCPLL				1
-#define DDRPHY_NR				2
+#define CLK_DDRPHY_VENCPLL			1
+#define CLK_DDRPHY_NR				2
 
 /* INFRACFG */
 
-#define CLK_INFRA_DBG				0
-#define CLK_INFRA_SMI				1
-#define CLK_INFRA_QAXI_CM4			2
-#define CLK_INFRA_AUD_SPLIN_B			3
-#define CLK_INFRA_AUDIO				4
-#define CLK_INFRA_EFUSE				5
-#define CLK_INFRA_L2C_SRAM			6
-#define CLK_INFRA_M4U				7
-#define CLK_INFRA_CONNMCU			8
-#define CLK_INFRA_TRNG				9
-#define CLK_INFRA_RAMBUFIF			10
-#define CLK_INFRA_CPUM				11
-#define CLK_INFRA_KP				12
-#define CLK_INFRA_CEC				13
-#define CLK_INFRA_IRRX				14
-#define CLK_INFRA_PMICSPI			15
-#define CLK_INFRA_PMICWRAP			16
-#define CLK_INFRA_DDCCI				17
-#define CLK_INFRA_NR				18
+#define CLK_INFRA_DBG				1
+#define CLK_INFRA_SMI				2
+#define CLK_INFRA_QAXI_CM4			3
+#define CLK_INFRA_AUD_SPLIN_B			4
+#define CLK_INFRA_AUDIO				5
+#define CLK_INFRA_EFUSE				6
+#define CLK_INFRA_L2C_SRAM			7
+#define CLK_INFRA_M4U				8
+#define CLK_INFRA_CONNMCU			9
+#define CLK_INFRA_TRNG				10
+#define CLK_INFRA_RAMBUFIF			11
+#define CLK_INFRA_CPUM				12
+#define CLK_INFRA_KP				13
+#define CLK_INFRA_CEC				14
+#define CLK_INFRA_IRRX				15
+#define CLK_INFRA_PMICSPI			16
+#define CLK_INFRA_PMICWRAP			17
+#define CLK_INFRA_DDCCI				18
+#define CLK_INFRA_NR				19
 
 /* PERICFG */
 #define CLK_PERI_NFI				1
@@ -342,7 +342,7 @@
 
 #define CLK_MM_SMI_COMMON			1
 #define CLK_MM_SMI_LARB0			2
-#define CLK_MM_CLK_MM_CMDQ			3
+#define CLK_MM_CMDQ				3
 #define CLK_MM_MUTEX				4
 #define CLK_MM_DISP_COLOR			5
 #define CLK_MM_DISP_BLS				6
@@ -359,7 +359,7 @@
 #define CLK_MM_CAM_MDP				17
 #define CLK_MM_FAKE_ENG				18
 #define CLK_MM_MUTEX_32K			19
-#define CLK_MM_DISP_RMDA1			20
+#define CLK_MM_DISP_RDMA1			20
 #define CLK_MM_DISP_UFOE			21
 
 #define CLK_MM_DSI_ENGINE			22
@@ -388,7 +388,7 @@
 
 /* VDEC */
 
-#define CLK_VDEC				1
+#define CLK_VDEC_CKGEN				1
 #define CLK_VDEC_LARB				2
 #define CLK_VDEC_NR				3
 
