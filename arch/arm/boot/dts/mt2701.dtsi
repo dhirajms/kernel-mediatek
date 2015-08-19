@@ -226,36 +226,6 @@
 			clocks = <&uart_clk>;
 		};
 
-		spi0: spi@1100a000 {
-			compatible = "mediatek,mt2701-spi";
-			reg = <0 0x1100a000 0 0x100>;
-			interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&pericfg CLK_PERI_SPI0>, <&pericfg CLK_PERI_AP_DMA>;
-			clock-names = "main", "dma";
-			cell-index = <0>;
-			status = "disabled";
-		};
-
-		spi1: spi@11016000 {
-			compatible = "mediatek,mt2701-spi";
-			reg = <0 0x11016000 0 0x100>;
-			interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&pericfg CLK_PERI_SPI1>, <&pericfg CLK_PERI_AP_DMA>;
-			clock-names = "main", "dma";
-			cell-index = <1>;
-			status = "disabled";
-		};
-
-		spi2: spi@11017000 {
-			compatible = "mediatek,mt2701-spi";
-			reg = <0 0x11017000 0 0x1000>;
-			interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&pericfg CLK_PERI_SPI2>, <&pericfg CLK_PERI_AP_DMA>;
-			clock-names = "main", "dma";
-			cell-index = <2>;
-			status = "disabled";
-		};
-
 		i2c0: i2c@11007000 {
 			compatible = "mediatek,mt6577-i2c";
 			reg = <0 0x11007000 0 0x70>,
@@ -286,6 +256,42 @@
 			clock-div = <16>;
 			clocks = <&pericfg CLK_PERI_I2C2>, <&pericfg CLK_PERI_AP_DMA>;
 			clock-names = "main", "dma";
+			status = "disabled";
+		};
+
+		spi0: spi@1100a000 {
+			compatible = "mediatek,mt2701-spi";
+			reg = <0 0x1100a000 0 0x100>;
+			interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&pericfg CLK_PERI_SPI0>;
+			clock-names = "main";
+			cell-index = <0>;
+			#address-cells = <0x1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		spi1: spi@11016000 {
+			compatible = "mediatek,mt2701-spi";
+			reg = <0 0x11016000 0 0x100>;
+			interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&pericfg CLK_PERI_SPI1>;
+			clock-names = "main";
+			cell-index = <1>;
+			#address-cells = <0x1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		spi2: spi@11017000 {
+			compatible = "mediatek,mt2701-spi";
+			reg = <0 0x11017000 0 0x1000>;
+			interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&pericfg CLK_PERI_SPI2>;
+			clock-names = "main";
+			cell-index = <2>;
+			#address-cells = <0x1>;
+			#size-cells = <0>;
 			status = "disabled";
 		};
 
