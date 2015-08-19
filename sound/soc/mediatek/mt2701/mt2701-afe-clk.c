@@ -31,6 +31,9 @@ enum audio_system_clock_type {
 	AUDCLK_TOP_AUDPLL_D8,
 	AUDCLK_TOP_AUDPLL_D16,
 	AUDCLK_TOP_AUDPLL_D24,
+	AUDCLK_TOP_AUDINTBUS,
+	AUDCLK_CLK_26M,
+	AUDCLK_TOP_SYSPLL1_D4,
 	CLOCK_NUM
 };
 
@@ -57,6 +60,9 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[AUDCLK_TOP_AUDPLL_D8] = {"top_audpll_d8" , false , false, NULL},
 	[AUDCLK_TOP_AUDPLL_D16] = {"top_audpll_d16" , false , false, NULL},
 	[AUDCLK_TOP_AUDPLL_D24] = {"top_audpll_d24" , false , false, NULL},
+	[AUDCLK_TOP_AUDINTBUS] = {"top_audintbus_sel" , false , false, NULL},
+	[AUDCLK_CLK_26M] = {"clk_26m" , false , false, NULL},
+	[AUDCLK_TOP_SYSPLL1_D4] = {"top_syspll1_d4" , false , false, NULL},
 };
 
 int aud_a1sys_hp_ck_cntr;
@@ -186,6 +192,18 @@ void turn_on_afe_clock(void)
 	/*MT_CG_INFRA_AUDIO, INFRA_PDN_STA[5]*/
 	int ret = clk_enable(aud_clks[AUDCLK_INFRA_SYS_AUDIO].clock);
 
+	ret = clk_prepare_enable(aud_clks[AUDCLK_TOP_AUDINTBUS].clock);
+	if (ret)
+		pr_err("%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUDINTBUS].name, ret);
+
+	ret = clk_set_parent(aud_clks[AUDCLK_TOP_AUDINTBUS].clock,
+		aud_clks[AUDCLK_TOP_SYSPLL1_D4].clock);
+	if (ret)
+		pr_err("%s clk_set_parent %s-%s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUDINTBUS].name,
+			aud_clks[AUDCLK_TOP_SYSPLL1_D4].name, ret);
+
 	if (ret)
 		pr_err("%s clk_enable %s fail %d\n",
 		       __func__, aud_clks[AUDCLK_INFRA_SYS_AUDIO].name, ret);
@@ -207,6 +225,9 @@ void turn_off_afe_clock(void)
 
 	/*MT_CG_INFRA_AUDIO,*/
 	clk_disable(aud_clks[AUDCLK_INFRA_SYS_AUDIO].clock);
+
+	clk_disable_unprepare(aud_clks[AUDCLK_TOP_AUDINTBUS].clock);
+
 	/*MT_CG_AUDIO_AFE,		AUDIO_TOP_CON0[2]*/
 	afe_msk_write(AUDIO_TOP_CON0, PDN_AFE, PDN_AFE);
 	/*MT_CG_AUDIO_APLL,		AUDIO_TOP_CON0[23]*/

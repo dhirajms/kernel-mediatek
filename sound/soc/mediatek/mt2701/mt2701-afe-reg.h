@@ -139,6 +139,11 @@ extern void *pctrl_base_address;
 #define UNIVPLL_D2 (0x3<<8)
 #define CLK_INTDIR_SEL_MASK (0x3<<8)
 
+#define CLK_CFG_12   (TOPCKGEN_BASE + 0xC0)
+/* bit 23: pdn_asm_m(104M)/pdn_asm_l(26M) */
+#define CLK_CFG_13   (TOPCKGEN_BASE + 0xD0)
+/* bit 7: pdn_asm_h(208M)*/
+
 /* temp definition */
 #define BOOST_DRIVING_I2S0 (PINCTRL_BASE+0xF80)
 #define BOOST_DRIVING_I2S12 (PINCTRL_BASE+0xF70)

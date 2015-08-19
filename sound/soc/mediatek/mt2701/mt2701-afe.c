@@ -2791,7 +2791,7 @@ int afe_sample_asrc_tx_enable(enum afe_sample_asrc_tx_id id, int en)
 		afe_msk_write(addrCON0, (0x1 << 4), (0x1 << 4));	/* clear */
 		afe_msk_write(addrCON0, (0x1 << 4) | (0x1 << 0), (0x1 << 4) | ASM_ON_MASK);	/* clear and ON */
 	} else {
-		afe_msk_write(addrCON0, (0x0 << 0), ASM_ON_MASK);	/* OFF */
+		/*afe_msk_write(addrCON0, (0x0 << 0), ASM_ON_MASK);	/* OFF */
 	}
 	return 0;
 }

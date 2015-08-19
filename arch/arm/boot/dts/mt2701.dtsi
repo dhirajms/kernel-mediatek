@@ -602,7 +602,10 @@
 				 <&topckgen CLK_TOP_AUDPLL_D8>,
 				 <&topckgen CLK_TOP_AUDPLL_D16>,
 				 <&topckgen CLK_TOP_AUDPLL_D24>,
-				 <&topckgen CLK_TOP_AUDINTBUS_SEL>;
+				 <&topckgen CLK_TOP_AUDINTBUS_SEL>,
+				 <&clk26m>,
+				 <&topckgen CLK_TOP_SYSPLL1_D4>;
+
 
 			clock-names = "infra_sys_audio_clk",
 				      "top_audio_mux1_sel",
@@ -618,7 +621,9 @@
 				      "top_audpll_d8",
 				      "top_audpll_d16",
 				      "top_audpll_d24",
-				      "top_audintbus_sel";
+				      "top_audintbus_sel",
+				      "clk_26m",
+				      "top_syspll1_d4";
 
 		};
 
