@@ -37,7 +37,7 @@ void *topckgen_base_address;
 void *cmsys_base_address;
 void *infracfg_base_address;
 void *pctrl_base_address;
-void *afe_sram_phy_address;
+unsigned int afe_sram_phy_address;
 
 #endif
 #ifdef CONFIG_OF
@@ -92,7 +92,7 @@ int mt_afe_reg_remap(void *dev)
 		ret = -ENXIO;
 		goto exit;
 	}
-	pr_debug("afe_base_address = 0x%x from 0x%x\n", afe_base_address, res.start);
+	pr_debug("afe_base_address = 0x%p from 0x%x\n", afe_base_address, res.start);
 
 	/* audio SRAM base */
 	ret = of_address_to_resource(pdev->of_node, 1, &res);
@@ -125,18 +125,18 @@ int mt_afe_reg_remap(void *dev)
 		ret = -ENODEV;
 		goto exit;
 	}
-	pr_debug("topckgen_base_address = 0x%x\n", topckgen_base_address);
+	pr_debug("topckgen_base_address = 0x%p\n", topckgen_base_address);
 
 	/* todo for cmsys: need to find the device tree node for CMSYS*/
 	cmsys_base_address = ioremap_nocache(CMSYS_BASE_ADDR, 0x1000);
-	pr_debug("cmsys_base_address = 0x%x\n", cmsys_base_address);
+	pr_debug("cmsys_base_address = 0x%p\n", cmsys_base_address);
 
 	infracfg_base_address = ioremap_nocache(INFRACFG_BASE_ADDR, 0x1000);
-	pr_debug("infracfg_base_address = 0x%x\n", infracfg_base_address);
+	pr_debug("infracfg_base_address = 0x%p\n", infracfg_base_address);
 
 	pctrl_base_address = ioremap_nocache(PCTRL_BASE_ADDR, 0x2000);
-	pr_debug("pctrl_base_address = 0x%x\n", pctrl_base_address);
-	pr_debug("afe_sram_address = 0x%x from 0x%x\n", afe_sram_address, afe_sram_phy_address);
+	pr_debug("pctrl_base_address = 0x%p\n", pctrl_base_address);
+	pr_debug("afe_sram_address = 0x%p from 0x%x\n", afe_sram_address, afe_sram_phy_address);
 
 exit:
 	if (ret)
@@ -260,9 +260,6 @@ void afe_enable(int en)
 
 	for (i = 0; i < 6; ++i)
 		afe_i2s_power_on_mclk(i, 0);
-	#else
-	for (i = 0; i < 6; ++i)
-		mt_i2s_power_on_mclk(i, 0);
 	#endif
 
 	if (en) {
@@ -1120,7 +1117,7 @@ void asys_irq_release(enum audio_irq_id id)
 
 
 /******************** i2s ********************/
-
+#ifdef CONFIG_MTK_LEGACY_CLOCK
 int afe_i2s_power_on_mclk(int id, int on)
 {
 	u32 val, msk;
@@ -1204,6 +1201,32 @@ static void afe_i2s_mclk_configurate(int id, int mclk)
 	afe_msk_write(CLK_AUDDIV_3, domain << domain_pos, 0x1 << domain_pos);
 	#endif
 }
+#else
+static void afe_i2s_mclk_configurate(int id, int mclk)
+{
+	u32 addr, pos;
+	int div;
+	u32 domain_pos;
+	int domain;
+
+	if (mclk <= 0) {
+		pr_err("%s() error: i2s id %d, bad mclk %d\n", __func__, id, mclk);
+		return;
+	}
+	if ((98304000 % mclk) == 0) {
+		domain = 0;
+	} else if ((90316800 % mclk) == 0) {
+		domain = 1;
+	} else {
+		domain = 0;
+		pr_err("%s() error: i2s id %d, bad mclk %d\n", __func__, id, mclk);
+		return;
+	}
+	mt_mclk_set(id , domain, mclk);
+
+}
+
+#endif
 
 int afe_i2s_in_configurate(enum afe_i2s_in_id id, const struct afe_i2s_in_config *config)
 {
@@ -2791,7 +2814,7 @@ int afe_sample_asrc_tx_enable(enum afe_sample_asrc_tx_id id, int en)
 		afe_msk_write(addrCON0, (0x1 << 4), (0x1 << 4));	/* clear */
 		afe_msk_write(addrCON0, (0x1 << 4) | (0x1 << 0), (0x1 << 4) | ASM_ON_MASK);	/* clear and ON */
 	} else {
-		/*afe_msk_write(addrCON0, (0x0 << 0), ASM_ON_MASK);	/* OFF */
+		afe_msk_write(addrCON0, (0x0 << 0), ASM_ON_MASK);	/* OFF */
 	}
 	return 0;
 }

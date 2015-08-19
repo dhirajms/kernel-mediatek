@@ -339,7 +339,6 @@ void asys_irq_release(enum audio_irq_id id);
 
 
 /******************** i2s ********************/
-int afe_i2s_power_on_mclk(int id, int on);
 
 enum afe_i2s_in_id {
 	AFE_I2S_IN_1 = 0,

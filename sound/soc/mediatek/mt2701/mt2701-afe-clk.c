@@ -20,6 +20,10 @@ enum audio_system_clock_type {
 	AUDCLK_INFRA_SYS_AUDIO, /*INFRA_PDN[5]*/
 	AUDCLK_TOP_AUD_MUX1_SEL,
 	AUDCLK_TOP_AUD_MUX2_SEL,
+	AUDCLK_TOP_AUD_MUX1_DIV,
+	AUDCLK_TOP_AUD_MUX2_DIV,
+	AUDCLK_TOP_AUD_48K_TIMING,
+	AUDCLK_TOP_AUD_44K_TIMING,
 	AUDCLK_TOP_AUDPLL_MUX_SEL,
 	AUDCLK_TOP_APLL_SEL,
 	AUDCLK_TOP_AUD1PLL_98M,
@@ -38,10 +42,25 @@ enum audio_system_clock_type {
 	AUDCLK_TOP_AUD_K2_SRC_SEL,
 	AUDCLK_TOP_AUD_K3_SRC_SEL,
 	AUDCLK_TOP_AUD_K4_SRC_SEL,
+	AUDCLK_TOP_AUD_K5_SRC_SEL,
+	AUDCLK_TOP_AUD_K6_SRC_SEL,
 	AUDCLK_TOP_AUD_K1_SRC_DIV,
 	AUDCLK_TOP_AUD_K2_SRC_DIV,
 	AUDCLK_TOP_AUD_K3_SRC_DIV,
 	AUDCLK_TOP_AUD_K4_SRC_DIV,
+	AUDCLK_TOP_AUD_K5_SRC_DIV,
+	AUDCLK_TOP_AUD_K6_SRC_DIV,
+	AUDCLK_TOP_AUD_I2S1_MCLK,
+	AUDCLK_TOP_AUD_I2S2_MCLK,
+	AUDCLK_TOP_AUD_I2S3_MCLK,
+	AUDCLK_TOP_AUD_I2S4_MCLK,
+	AUDCLK_TOP_AUD_I2S5_MCLK,
+	AUDCLK_TOP_AUD_I2S6_MCLK,
+	AUDCLK_TOP_ASM_M_SEL,
+	AUDCLK_TOP_ASM_H_SEL,
+	AUDCLK_TOP_UNIVPLL2_D4,
+	AUDCLK_TOP_UNIVPLL2_D2,
+	AUDCLK_TOP_SYSPLL_D5,
 	CLOCK_NUM
 };
 
@@ -57,6 +76,10 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[AUDCLK_INFRA_SYS_AUDIO] = {"infra_sys_audio_clk" , true , false , NULL},
 	[AUDCLK_TOP_AUD_MUX1_SEL] = {"top_audio_mux1_sel" , false , false, NULL},
 	[AUDCLK_TOP_AUD_MUX2_SEL] = {"top_audio_mux2_sel" , false , false, NULL},
+	[AUDCLK_TOP_AUD_MUX1_DIV] = {"top_audio_mux1_div" , false , false, NULL},
+	[AUDCLK_TOP_AUD_MUX2_DIV] = {"top_audio_mux2_div" , false , false, NULL},
+	[AUDCLK_TOP_AUD_48K_TIMING] = {"top_audio_48k_timing" , true , false, NULL},
+	[AUDCLK_TOP_AUD_44K_TIMING] = {"top_audio_44k_timing" , true , false, NULL},
 	[AUDCLK_TOP_AUDPLL_MUX_SEL] = {"top_audpll_mux_sel" , false , false, NULL},
 	[AUDCLK_TOP_APLL_SEL] = {"top_apll_sel" , false , false, NULL},
 	[AUDCLK_TOP_AUD1PLL_98M] = {"top_aud1_pll_98M" , false , false, NULL},
@@ -75,10 +98,25 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[AUDCLK_TOP_AUD_K2_SRC_SEL] = {"top_aud_k2_src_sel" , false , false, NULL},
 	[AUDCLK_TOP_AUD_K3_SRC_SEL] = {"top_aud_k3_src_sel" , false , false, NULL},
 	[AUDCLK_TOP_AUD_K4_SRC_SEL] = {"top_aud_k4_src_sel" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K5_SRC_SEL] = {"top_aud_k5_src_sel" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K6_SRC_SEL] = {"top_aud_k6_src_sel" , false , false, NULL},
 	[AUDCLK_TOP_AUD_K1_SRC_DIV] = {"top_aud_k1_src_div" , false , false, NULL},
 	[AUDCLK_TOP_AUD_K2_SRC_DIV] = {"top_aud_k2_src_div" , false , false, NULL},
 	[AUDCLK_TOP_AUD_K3_SRC_DIV] = {"top_aud_k3_src_div" , false , false, NULL},
 	[AUDCLK_TOP_AUD_K4_SRC_DIV] = {"top_aud_k4_src_div" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K5_SRC_DIV] = {"top_aud_k5_src_div" , false , false, NULL},
+	[AUDCLK_TOP_AUD_K6_SRC_DIV] = {"top_aud_k6_src_div" , false , false, NULL},
+	[AUDCLK_TOP_AUD_I2S1_MCLK] = {"top_aud_i2s1_mclk" , true , false, NULL},
+	[AUDCLK_TOP_AUD_I2S2_MCLK] = {"top_aud_i2s2_mclk" , true , false, NULL},
+	[AUDCLK_TOP_AUD_I2S3_MCLK] = {"top_aud_i2s3_mclk" , true , false, NULL},
+	[AUDCLK_TOP_AUD_I2S4_MCLK] = {"top_aud_i2s4_mclk" , true , false, NULL},
+	[AUDCLK_TOP_AUD_I2S5_MCLK] = {"top_aud_i2s5_mclk" , true , false, NULL},
+	[AUDCLK_TOP_AUD_I2S6_MCLK] = {"top_aud_i2s6_mclk" , true , false, NULL},
+	[AUDCLK_TOP_ASM_M_SEL] = {"top_asm_m_sel" , false , false, NULL},
+	[AUDCLK_TOP_ASM_H_SEL] = {"top_asm_h_sel" , false , false, NULL},
+	[AUDCLK_TOP_UNIVPLL2_D4] = {"top_univpll2_d4" , false , false, NULL},
+	[AUDCLK_TOP_UNIVPLL2_D2] = {"top_univpll2_d2" , false , false, NULL},
+	[AUDCLK_TOP_SYSPLL_D5] = {"top_syspll_d5" , false , false, NULL},
 };
 
 int aud_a1sys_hp_ck_cntr;
@@ -89,9 +127,48 @@ int aud_unipll_clk_cntr;
 int aud_afe_clk_cntr;
 int aud_i2s_clk_cntr;
 
-
-static DEFINE_SPINLOCK(afe_clk_lock);
 static DEFINE_MUTEX(afe_clk_mutex);
+
+void mclk_configuration(int id, int domain, int mclk)
+{
+	int ret;
+	/* Set MCLK Kx_SRC_SEL(domain) */
+	ret = clk_prepare_enable(aud_clks[AUDCLK_TOP_AUD_K1_SRC_SEL + id].clock);
+	if (ret)
+		pr_err("%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUD_K1_SRC_SEL + id].name, ret);
+
+	if (domain == 0) {
+		ret = clk_set_parent(aud_clks[AUDCLK_TOP_AUD_K1_SRC_SEL + id].clock,
+		aud_clks[AUDCLK_TOP_AUD_MUX1_SEL].clock);
+		if (ret)
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+				__func__, aud_clks[AUDCLK_TOP_AUD_K1_SRC_SEL + id].name,
+				aud_clks[AUDCLK_TOP_AUD_MUX1_SEL].name, ret);
+	} else {
+		ret = clk_set_parent(aud_clks[AUDCLK_TOP_AUD_K1_SRC_SEL + id].clock,
+		aud_clks[AUDCLK_TOP_AUD_MUX2_SEL].clock);
+		if (ret)
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+				__func__, aud_clks[AUDCLK_TOP_AUD_K1_SRC_SEL + id].name,
+				aud_clks[AUDCLK_TOP_AUD_MUX2_SEL].name, ret);
+	}
+	clk_disable_unprepare(aud_clks[AUDCLK_TOP_AUD_K1_SRC_SEL + id].clock);
+
+	/* Set MCLK Kx_SRC_DIV(divider) */
+	ret = clk_prepare_enable(aud_clks[AUDCLK_TOP_AUD_K1_SRC_DIV + id].clock);
+	if (ret)
+		pr_err("%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUD_K1_SRC_DIV + id].name, ret);
+
+	ret = clk_set_rate(aud_clks[AUDCLK_TOP_AUD_K1_SRC_DIV + id].clock, mclk);
+	if (ret)
+		pr_err("%s clk_set_rate %s-%d fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUD_K1_SRC_DIV + id].name,
+			mclk, ret);
+	clk_disable_unprepare(aud_clks[AUDCLK_TOP_AUD_K1_SRC_DIV + id].clock);
+
+}
 
 int turn_on_i2sin_clock(int id, int on)
 {
@@ -132,51 +209,6 @@ int turn_on_i2sout_clock(int id, int on)
 	 afe_msk_write(AUDIO_TOP_CON4, pdn<<(id+6), 1<<(id+6));
 }
 
-#if 0 /*duplicate with afe_power_on_sample_asrc_rx/afe_power_on_sample_asrc_tx*/
-int turn_on_asrcin_clock(int id, int on)
-{
-	int pdn = !on;
-
-	if (id < 0 || id > 5) {
-		pr_err("%s() error: asrc id %d\n", __func__, id);
-		return -EINVAL;
-	}
-	/*MT_CG_AUDIO_ASRCI1,	AUDIO_TOP_CON4[12]
-	/*MT_CG_AUDIO_ASRCI2,	AUDIO_TOP_CON4[13]
-	/*MT_CG_AUDIO_ASRCI3,	PWR2_TOP_CON[2]*/
-	/*MT_CG_AUDIO_ASRCI4,	PWR2_TOP_CON[3]*/
-	/*MT_CG_AUDIO_ASRCI5,	PWR2_TOP_CON[4]*/
-	/*MT_CG_AUDIO_ASRCI6,	PWR2_TOP_CON[5]*/
-	if (id < 2)  /* ASRCI1,ASRCI2 */
-	    afe_msk_write(AUDIO_TOP_CON4, pdn<<(id+12), 1<<(id+12));
-	else if (id < 6)  /* ASRCI3,ASRCI4,,ASRCI5,ASRCI6 */
-	    afe_msk_write(PWR2_TOP_CON, pdn<<id, 1<<id);
-}
-
-
-int turn_on_asrcout_clock(int id, int on)
-{
-	int pdn = !on;
-
-	if (id < 0 || id > 5) {
-		pr_err("%s() error: asrc id %d\n", __func__, id);
-		return -EINVAL;
-	}
-
-	/*MT_CG_AUDIO_ASRCO1,	AUDIO_TOP_CON4[14]
-	/*MT_CG_AUDIO_ASRCO2,	AUDIO_TOP_CON4[15]
-	/*MT_CG_AUDIO_ASRCO3,	PWR2_TOP_CON[6]*/
-	/*MT_CG_AUDIO_ASRCO4,	PWR2_TOP_CON[7]*/
-	/*MT_CG_AUDIO_ASRCO5,	PWR2_TOP_CON[8]*/
-	/*MT_CG_AUDIO_ASRCO6,	PWR2_TOP_CON[9]*/
-
-	if (id < 2)  /* ASRCOUT1,ASRCOUT2 */
-	    afe_msk_write(AUDIO_TOP_CON4, pdn<<(id+14), 1<<(id+14));
-	else if (id < 6)  /* ASRCOUT3,ASRCOUT4,,ASRCOUT5,ASRCOUT6 */
-	    afe_msk_write(PWR2_TOP_CON, pdn<<(id+4), 1<<(id+4));
-}
-#endif
-
 void turn_on_i2s_clock(void)
 {
 	int id;
@@ -204,10 +236,15 @@ void turn_off_i2s_clock(void)
 
 void turn_on_afe_clock(void)
 {
+	int ret;
 
 	/*MT_CG_INFRA_AUDIO, INFRA_PDN_STA[5]*/
-	int ret = clk_enable(aud_clks[AUDCLK_INFRA_SYS_AUDIO].clock);
+	ret = clk_enable(aud_clks[AUDCLK_INFRA_SYS_AUDIO].clock);
+	if (ret)
+		pr_err("%s clk_enable %s fail %d\n",
+		       __func__, aud_clks[AUDCLK_INFRA_SYS_AUDIO].name, ret);
 
+	/* Set AUDCLK_TOP_AUDINTBUS to AUDCLK_TOP_SYSPLL1_D4 */
 	ret = clk_prepare_enable(aud_clks[AUDCLK_TOP_AUDINTBUS].clock);
 	if (ret)
 		pr_err("%s clk_prepare_enable %s fail %d\n",
@@ -220,9 +257,36 @@ void turn_on_afe_clock(void)
 			__func__, aud_clks[AUDCLK_TOP_AUDINTBUS].name,
 			aud_clks[AUDCLK_TOP_SYSPLL1_D4].name, ret);
 
+	/* Set AUDCLK_TOP_ASM_H_SEL to AUDCLK_TOP_UNIVPLL2_D2*/
+	ret = clk_prepare_enable(aud_clks[AUDCLK_TOP_ASM_H_SEL].clock);
+	if (ret)
+		pr_err("%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_ASM_H_SEL].name, ret);
+
+	ret = clk_set_parent(aud_clks[AUDCLK_TOP_ASM_H_SEL].clock,
+		aud_clks[AUDCLK_TOP_UNIVPLL2_D2].clock);
+	if (ret)
+		pr_err("%s clk_set_parent %s-%s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_ASM_H_SEL].name,
+			aud_clks[AUDCLK_TOP_UNIVPLL2_D2].name, ret);
+
 	if (ret)
 		pr_err("%s clk_enable %s fail %d\n",
-		       __func__, aud_clks[AUDCLK_INFRA_SYS_AUDIO].name, ret);
+		       __func__, aud_clks[AUDCLK_TOP_ASM_H_SEL].name, ret);
+
+	/* Set AUDCLK_TOP_ASM_M_SEL to AUDCLK_TOP_UNIVPLL2_D4*/
+	ret = clk_prepare_enable(aud_clks[AUDCLK_TOP_ASM_M_SEL].clock);
+	if (ret)
+		pr_err("%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_ASM_M_SEL].name, ret);
+
+	ret = clk_set_parent(aud_clks[AUDCLK_TOP_ASM_M_SEL].clock,
+		aud_clks[AUDCLK_TOP_UNIVPLL2_D4].clock);
+	if (ret)
+		pr_err("%s clk_set_parent %s-%s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_ASM_M_SEL].name,
+			aud_clks[AUDCLK_TOP_UNIVPLL2_D4].name, ret);
+
 	/*MT_CG_AUDIO_AFE,		AUDIO_TOP_CON0[2]*/
 	afe_msk_write(AUDIO_TOP_CON0, 0, PDN_AFE);
 	/*MT_CG_AUDIO_APLL,		AUDIO_TOP_CON0[23]*/
@@ -243,6 +307,8 @@ void turn_off_afe_clock(void)
 	clk_disable(aud_clks[AUDCLK_INFRA_SYS_AUDIO].clock);
 
 	clk_disable_unprepare(aud_clks[AUDCLK_TOP_AUDINTBUS].clock);
+	clk_disable_unprepare(aud_clks[AUDCLK_TOP_ASM_H_SEL].clock);
+	clk_disable_unprepare(aud_clks[AUDCLK_TOP_ASM_M_SEL].clock);
 
 	/*MT_CG_AUDIO_AFE,		AUDIO_TOP_CON0[2]*/
 	afe_msk_write(AUDIO_TOP_CON0, PDN_AFE, PDN_AFE);
@@ -263,8 +329,8 @@ void turn_on_a1sys_hp_ck(void)
 
 	pr_debug("%s\n", __func__);
 #ifdef COMMON_CLOCK_FRAMEWORK_API
-		/* TODO: divider setting from CCF */
-	topckgen_msk_write(CLK_AUDDIV_0, 0x1 << 16, AUD_A1SYS_K1_MASK);	/* APLL1 DIV Fix:APLL1/2 */
+
+	/* Set Mux */
 	ret = clk_prepare_enable(aud_clks[AUDCLK_TOP_AUD_MUX1_SEL].clock);
 	if (ret)
 		pr_err("%s clk_prepare_enable %s fail %d\n",
@@ -277,27 +343,41 @@ void turn_on_a1sys_hp_ck(void)
 			__func__, aud_clks[AUDCLK_TOP_AUD_MUX1_SEL].name,
 			aud_clks[AUDCLK_TOP_AUD1PLL_98M].name, ret);
 
+	/* Set Divider */
+	ret = clk_prepare_enable(aud_clks[AUDCLK_TOP_AUD_MUX1_DIV].clock);
+	if (ret)
+		pr_err("%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUD_MUX1_DIV].name, ret);
+	ret = clk_set_rate(aud_clks[AUDCLK_TOP_AUD_MUX1_DIV].clock, 98304000/2);
+	if (ret)
+		pr_err("%s clk_set_parent %s-%d fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUD_MUX1_DIV].name,
+			98304000/2, ret);
+
+	/* Enable clock gate */
+	ret = clk_enable(aud_clks[AUDCLK_TOP_AUD_48K_TIMING].clock);
+	if (ret)
+		pr_err("%s clk_enable %s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUD_48K_TIMING].name, ret);
+	/* Enable infra audio */
 	ret = clk_enable(aud_clks[AUDCLK_INFRA_SYS_AUDIO].clock);
 	if (ret)
 		pr_err("%s clk_enable %s fail %d\n",
 			__func__, aud_clks[AUDCLK_INFRA_SYS_AUDIO].name, ret);
 
 #endif
-	return ret;
 
 }
 
 void turn_off_a1sys_hp_ck(void)
 {
-	int ret = 0;
-
 	pr_debug("%s\n", __func__);
 #ifdef COMMON_CLOCK_FRAMEWORK_API
 	clk_disable(aud_clks[AUDCLK_INFRA_SYS_AUDIO].clock);
+	clk_disable(aud_clks[AUDCLK_TOP_AUD_48K_TIMING].clock);
+	clk_disable_unprepare(aud_clks[AUDCLK_TOP_AUD_MUX1_DIV].clock);
 	clk_disable_unprepare(aud_clks[AUDCLK_TOP_AUD_MUX1_SEL].clock);
 #endif
-	return ret;
-
 }
 
 void turn_on_a2sys_hp_ck(void)
@@ -306,10 +386,8 @@ void turn_on_a2sys_hp_ck(void)
 
 	pr_debug("%s\n", __func__);
 #ifdef COMMON_CLOCK_FRAMEWORK_API
-	/* TODO: divider setting from CCF*/
-	topckgen_msk_write(CLK_AUDDIV_0, 0x1 << 24, AUD_A2SYS_K1_MASK);	/* APLL2 DIV Fix:APLL2/2 */
 
-
+	/* Set Mux */
 	ret = clk_prepare_enable(aud_clks[AUDCLK_TOP_AUD_MUX2_SEL].clock);
 	if (ret)
 		pr_err("%s clk_prepare_enable %s fail %d\n",
@@ -321,25 +399,38 @@ void turn_on_a2sys_hp_ck(void)
 		pr_err("%s clk_set_parent %s-%s fail %d\n",
 		__func__, aud_clks[AUDCLK_TOP_AUD_MUX2_SEL].name,
 		aud_clks[AUDCLK_TOP_AUD2PLL_90M].name, ret);
+	/* Set Divider */
+	ret = clk_prepare_enable(aud_clks[AUDCLK_TOP_AUD_MUX2_DIV].clock);
+	if (ret)
+		pr_err("%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUD_MUX2_DIV].name, ret);
+	ret = clk_set_rate(aud_clks[AUDCLK_TOP_AUD_MUX2_DIV].clock, 90316800/2);
+	if (ret)
+		pr_err("%s clk_set_parent %s-%d fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUD_MUX2_DIV].name,
+			90316800/2, ret);
 
+	/* Enable clock gate */
+	ret = clk_enable(aud_clks[AUDCLK_TOP_AUD_44K_TIMING].clock);
+	if (ret)
+		pr_err("%s clk_enable %s fail %d\n",
+			__func__, aud_clks[AUDCLK_TOP_AUD_44K_TIMING].name, ret);
+	/* Enable infra audio */
 	ret = clk_enable(aud_clks[AUDCLK_INFRA_SYS_AUDIO].clock);
 	if (ret)
 		pr_err("%s clk_enable %s fail %d\n",
 		 __func__, aud_clks[AUDCLK_INFRA_SYS_AUDIO].name, ret);
 #endif
-	return ret;
-
 }
 void turn_off_a2sys_hp_ck(void)
 {
-	int ret = 0;
-
 	pr_debug("%s\n", __func__);
 #ifdef COMMON_CLOCK_FRAMEWORK_API
 	clk_disable(aud_clks[AUDCLK_INFRA_SYS_AUDIO].clock);
+	clk_disable(aud_clks[AUDCLK_TOP_AUD_44K_TIMING].clock);
+	clk_disable_unprepare(aud_clks[AUDCLK_TOP_AUD_MUX2_DIV].clock);
 	clk_disable_unprepare(aud_clks[AUDCLK_TOP_AUD_MUX2_SEL].clock);
 #endif
-	return ret;
 }
 
 void turn_on_f_apll_ck(unsigned int mux_select, unsigned int divider)
@@ -387,42 +478,31 @@ void turn_on_f_apll_ck(unsigned int mux_select, unsigned int divider)
 		pr_err("%s clk_enable %s fail %d\n",
 		 __func__, aud_clks[AUDCLK_INFRA_SYS_AUDIO].name, ret);
 #endif
-
-	return ret;
-
 }
+
 void turn_off_f_apll_clock(void)
 {
-	int ret = 0;
-
 	pr_debug("%s\n", __func__);
 #ifdef COMMON_CLOCK_FRAMEWORK_API
 	clk_disable(aud_clks[AUDCLK_INFRA_SYS_AUDIO].clock);
 	clk_disable_unprepare(aud_clks[AUDCLK_TOP_AUDPLL_MUX_SEL].clock);
 	clk_disable_unprepare(aud_clks[AUDCLK_TOP_APLL_SEL].clock);
 #endif
-	return ret;
-
 }
 
 void turn_on_unipll_clock(void)
 {
-	int ret = 0;
 
 #ifdef COMMON_CLOCK_FRAMEWORK_API
 	/* TODO*/
 #endif
-	return ret;
-
 }
 void turn_off_unipll_clock(void)
 {
-	int ret = 0;
 
 #ifdef COMMON_CLOCK_FRAMEWORK_API
 	/* TODO*/
 #endif
-	return ret;
 
 }
 
@@ -431,9 +511,10 @@ int mt_afe_init_clock(void *dev)
 {
 	int ret = 0;
 
-	pr_debug("%s\n", __func__);
 #ifdef COMMON_CLOCK_FRAMEWORK_API
-	size_t i;
+	unsigned int i;
+
+	pr_debug("%s\n", __func__);
 
 	for (i = 0; i < ARRAY_SIZE(aud_clks); i++) {
 		aud_clks[i].clock = devm_clk_get(dev, aud_clks[i].name);
@@ -484,22 +565,26 @@ int mt_i2s_power_on_mclk(int id, int on)
 	int ret = 0;
 
 	pr_debug("%s\n", __func__);
+	mutex_lock(&afe_clk_mutex);
 #ifdef COMMON_CLOCK_FRAMEWORK_API
-	/* TODO , wait for shunli*/
-	afe_i2s_power_on_mclk(id, on);
-
+	/*afe_i2s_power_on_mclk(id, on);*/
+	if (on) {
+		ret = clk_enable(aud_clks[AUDCLK_TOP_AUD_I2S1_MCLK+id].clock);
+		if (ret)
+			pr_err("%s clk_enable %s fail %d\n",
+			 __func__, aud_clks[AUDCLK_TOP_AUD_I2S1_MCLK+id].name, ret);
+	} else {
+		clk_disable(aud_clks[AUDCLK_TOP_AUD_I2S1_MCLK+id].clock);
+	}
 #endif
+	mutex_unlock(&afe_clk_mutex);
 	return ret;
-
 }
-
-
 
 void mt_afe_a1sys_hp_ck_on(void)
 {
-
-	mutex_lock(&afe_clk_mutex);
 	pr_debug("%s aud_a1sys_hp_ck_cntr:%d\n", __func__, aud_a1sys_hp_ck_cntr);
+	mutex_lock(&afe_clk_mutex);
 
 	if (aud_a1sys_hp_ck_cntr == 0)
 		turn_on_a1sys_hp_ck();
@@ -509,8 +594,8 @@ void mt_afe_a1sys_hp_ck_on(void)
 
 void mt_afe_a1sys_hp_ck_off(void)
 {
-	mutex_lock(&afe_clk_mutex);
 	pr_debug("%s aud_a1sys_hp_ck_cntr(%d)\n", __func__, aud_a1sys_hp_ck_cntr);
+	mutex_lock(&afe_clk_mutex);
 
 	aud_a1sys_hp_ck_cntr--;
 	if (aud_a1sys_hp_ck_cntr == 0)
@@ -526,8 +611,8 @@ void mt_afe_a1sys_hp_ck_off(void)
 
 void mt_afe_a2sys_hp_ck_on(void)
 {
-	mutex_lock(&afe_clk_mutex);
 	pr_debug("%s aud_a2sys_hp_ck_cntr:%d\n", __func__, aud_a2sys_hp_ck_cntr);
+	mutex_lock(&afe_clk_mutex);
 
 	if (aud_a2sys_hp_ck_cntr == 0)
 		turn_on_a2sys_hp_ck();
@@ -538,8 +623,8 @@ void mt_afe_a2sys_hp_ck_on(void)
 
 void mt_afe_a2sys_hp_ck_off(void)
 {
-	mutex_lock(&afe_clk_mutex);
 	pr_debug("%s aud_a1sys_hp_ck_cntr(%d)\n", __func__, aud_a2sys_hp_ck_cntr);
+	mutex_lock(&afe_clk_mutex);
 
 	aud_a2sys_hp_ck_cntr--;
 	if (aud_a2sys_hp_ck_cntr == 0)
@@ -555,9 +640,9 @@ void mt_afe_a2sys_hp_ck_off(void)
 
 void mt_afe_f_apll_ck_on(unsigned int mux_select, unsigned int divider)
 {
-	mutex_lock(&afe_clk_mutex);
-	pr_debug("%s aud_f_apll_clk_cntr:%d\n", __func__, aud_f_apll_clk_cntr);
 
+	pr_debug("%s aud_f_apll_clk_cntr:%d\n", __func__, aud_f_apll_clk_cntr);
+	mutex_lock(&afe_clk_mutex);
 	if (aud_f_apll_clk_cntr == 0)
 		turn_on_f_apll_ck(mux_select, divider);
 
@@ -568,9 +653,8 @@ void mt_afe_f_apll_ck_on(unsigned int mux_select, unsigned int divider)
 
 void mt_afe_f_apll_ck_off(void)
 {
-	mutex_lock(&afe_clk_mutex);
 	pr_debug("%s aud_f_apll_clk_cntr(%d)\n", __func__, aud_f_apll_clk_cntr);
-
+	mutex_lock(&afe_clk_mutex);
 	aud_f_apll_clk_cntr--;
 	if (aud_f_apll_clk_cntr == 0)
 		turn_off_f_apll_clock();
@@ -579,7 +663,6 @@ void mt_afe_f_apll_ck_off(void)
 		aud_f_apll_clk_cntr = 0;
 	}
 	mutex_unlock(&afe_clk_mutex);
-
 }
 
 void mt_afe_unipll_clk_on(void)
@@ -597,8 +680,8 @@ void mt_afe_unipll_clk_on(void)
 
 void mt_afe_unipll_clk_off(void)
 {
-	mutex_lock(&afe_clk_mutex);
 	pr_debug("%s aud_unipll_clk_cntr(%d)\n", __func__, aud_unipll_clk_cntr);
+	mutex_lock(&afe_clk_mutex);
 
 	aud_unipll_clk_cntr--;
 	if (aud_unipll_clk_cntr == 0)
@@ -613,25 +696,21 @@ void mt_afe_unipll_clk_off(void)
 
 void mt_afe_main_clk_on(void)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&afe_clk_lock, flags);
 	pr_debug("%s aud_afe_clk_cntr:%d\n", __func__, aud_afe_clk_cntr);
-
+	mutex_lock(&afe_clk_mutex);
 	if (aud_afe_clk_cntr == 0)
 		turn_on_afe_clock();
 
 	aud_afe_clk_cntr++;
 
-	spin_unlock_irqrestore(&afe_clk_lock, flags);
+	mutex_unlock(&afe_clk_mutex);
+
 }
 
 void mt_afe_main_clk_off(void)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&afe_clk_lock, flags);
 	pr_debug("%s aud_afe_clk_cntr:%d\n", __func__, aud_afe_clk_cntr);
+	mutex_lock(&afe_clk_mutex);
 
 	aud_afe_clk_cntr--;
 	if (aud_afe_clk_cntr == 0)
@@ -641,31 +720,26 @@ void mt_afe_main_clk_off(void)
 		aud_afe_clk_cntr = 0;
 	}
 
-	spin_unlock_irqrestore(&afe_clk_lock, flags);
+	mutex_unlock(&afe_clk_mutex);
 }
 
 void mt_afe_i2s_clk_on(void)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&afe_clk_lock, flags);
 	pr_debug("%s aud_i2s_clk_cntr:%d\n", __func__, aud_i2s_clk_cntr);
 
+	mutex_lock(&afe_clk_mutex);
 	if (aud_i2s_clk_cntr == 0)
 		turn_on_i2s_clock();
 
 	aud_i2s_clk_cntr++;
 
-	spin_unlock_irqrestore(&afe_clk_lock, flags);
+	mutex_unlock(&afe_clk_mutex);
 }
 
 void mt_afe_i2s_clk_off(void)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&afe_clk_lock, flags);
 	pr_debug("%s aud_i2s_clk_cntr:%d\n", __func__, aud_i2s_clk_cntr);
-
+	mutex_lock(&afe_clk_mutex);
 	aud_i2s_clk_cntr--;
 	if (aud_i2s_clk_cntr == 0)
 		turn_off_i2s_clock();
@@ -674,16 +748,24 @@ void mt_afe_i2s_clk_off(void)
 		aud_i2s_clk_cntr = 0;
 	}
 
-	spin_unlock_irqrestore(&afe_clk_lock, flags);
+	mutex_unlock(&afe_clk_mutex);
 }
 
 void mt_turn_on_i2sout_clock(int id, int on)
 {
+	pr_debug("%s id:%d on:%d\n", __func__, id, on);
 	turn_on_i2sout_clock(id, on);
 }
 
 void mt_turn_on_i2sin_clock(int id, int on)
 {
+	pr_debug("%s id:%d on:%d\n", __func__, id, on);
 	turn_on_i2sin_clock(id, on);
+}
+
+void mt_mclk_set(int id, int domain, int mclk)
+{
+	pr_debug("%s id:%d domain:%d, mclk:%d\n", __func__, id, domain, mclk);
+	mclk_configuration(id, domain, mclk);
 }
 

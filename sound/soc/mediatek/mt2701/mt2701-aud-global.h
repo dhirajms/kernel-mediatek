@@ -22,6 +22,5 @@
 #define COMMON_CLOCK_FRAMEWORK_API
 #define AUD_PINCTRL_SUPPORTING
 #endif
-extern int afe_i2s_power_on_mclk(int id, int on);
 
 #endif
