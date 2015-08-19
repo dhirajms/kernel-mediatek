@@ -1,7 +1,7 @@
 #ifndef __USB20_H__
 #define __USB20_H__
 
-#define ID_PIN_USE_EX_EINT 1
+/* #define ID_PIN_USE_EX_EINT 1 */
 
 #ifdef CONFIG_USB_MTK_OTG
 #ifdef ID_PIN_USE_EX_EINT

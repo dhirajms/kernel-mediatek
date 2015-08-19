@@ -298,6 +298,16 @@
 			status = "disabled";
 		};
 
+		m4u: M4U@0x10205000 {
+			compatible = "mediatek,mt2701-m4u";
+			reg = <0 0x10205000 0 0x1000>,
+				<0 0x1000c000 0 0x1000>; /* SMI COMMON AO */
+			interrupts = <GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infracfg CLK_INFRA_M4U>,
+					<&infracfg CLK_INFRA_SMI>;
+			clock-names = "infra_m4u", "infra_smi";
+		};
+
 		usb0: usb@11200000 {
 			compatible = "mediatek,USB0";
 			reg = <0 0x11200000 0 0x1000>,
@@ -311,19 +321,10 @@
 			num_eps = <16>;
 			dma_channels = <8>;
 			clocks = <&pericfg CLK_PERI_USB0>,
-							<&pericfg CLK_PERI_USB0_MCU>,
-							<&pericfg CLK_PERI_USB_SLV>;
+					 <&pericfg CLK_PERI_USB0_MCU>,
+					 <&pericfg CLK_PERI_USB_SLV>;
 			clock-names = "usb0_main","usb0_mcu","usb_slv";
 			usb-power-supply = <&mt6323_vusb_reg>;
-		};
-		m4u: M4U@0x10205000 {
-			compatible = "mediatek,mt2701-m4u";
-			reg = <0 0x10205000 0 0x1000>,
-				<0 0x1000c000 0 0x1000>; /* SMI COMMON AO */
-			interrupts = <GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&infracfg CLK_INFRA_M4U>,
-					<&infracfg CLK_INFRA_SMI>;
-			clock-names = "infra_m4u", "infra_smi";
 		};
 
 		mmc0: mmc@11230000 {

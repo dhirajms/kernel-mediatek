@@ -868,6 +868,7 @@ static int mt_usb_init(struct musb *musb)
 		DBG(0, "[MUSB] usb_get_phy error!!\n");
 		return -EPROBE_DEFER;
 	}
+	musb->xceiv->io_priv = (void __iomem *)usb_phy_base;
 #ifdef CONFIG_OF
 	/* musb->nIrq = usb_irq_number1; */
 #else
@@ -1040,7 +1041,7 @@ static int mt_usb_probe(struct platform_device *pdev)
 	}
 
 	volt = regulator_get_voltage(usb_power);
-	DBG(0, "usb_power = %p\n", usb_power);
+	DBG(0, "usb_power = %d\n", volt);
 
 #ifdef CONFIG_USB_MTK_OTG
 	pdata->mode = MUSB_OTG;

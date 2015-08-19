@@ -40,7 +40,6 @@
 
 #ifdef CONFIG_OF
 struct device_node *usb_node;
-struct device_node *iddig_node;
 static unsigned int iddig_pin;
 /* static unsigned int iddig_pin_mode; */
 /* static unsigned int iddig_if_config = 1; */
@@ -53,7 +52,10 @@ struct pinctrl_state *pinctrl_iddig;
 struct pinctrl_state *pinctrl_drvvbus;
 struct pinctrl_state *pinctrl_drvvbus_low;
 struct pinctrl_state *pinctrl_drvvbus_high;
+#ifdef ID_PIN_USE_EX_EINT
 static int usb_iddig_number;
+struct device_node *iddig_node;
+#endif
 
 #endif
 
@@ -86,6 +88,14 @@ module_param(delay_time1, int, 0644);
 
 void mt_usb_set_vbus(struct musb *musb, int is_on)
 {
+	DBG(0, "mt65xx_usb20_vbus++,is_on=%d\r\n", is_on);
+	if (is_on) {
+		pinctrl_select_state(pinctrl, pinctrl_drvvbus_high);
+		DBG(0, "mt65xx_usb20_vbus++,is_on=%d\r\n", is_on);
+	} else {
+		pinctrl_select_state(pinctrl, pinctrl_drvvbus_low);
+		DBG(0, "mt65xx_usb20_vbus++,is_on=%d\r\n", is_on);
+	}
 #if 0
 	DBG(0, "mt65xx_usb20_vbus++,is_on=%d\r\n", is_on);
 	if (is_on) {
@@ -450,8 +460,10 @@ static void otg_int_init(void)
 {
 
 #ifdef CONFIG_OF
-#ifdef ID_PIN_USE_EX_EINT
 	int ret = 0;
+#ifndef ID_PIN_USE_EX_EINT
+	u32 phy_id_pull = 0;
+#endif
 
 	pr_debug("****%s:%d before Init IDDIG KS!!!!!\n", __func__, __LINE__);
 	pinctrl_iddig = pinctrl_lookup_state(pinctrl, "iddig_irq_init");
@@ -462,6 +474,7 @@ static void otg_int_init(void)
 	pinctrl_select_state(pinctrl, pinctrl_iddig);
 	pr_debug("****%s:%d end Init IDDIG KS!!!!!\n", __func__, __LINE__);
 
+#ifdef ID_PIN_USE_EX_EINT
 	gpio_request(iddig_pin, "USB_IDDIG");
 	/* gpio_set_debounce(iddig_pin, 64); */
 	/* usb_iddig_number = irq_of_parse_and_map(iddig_node, 0); */
@@ -475,11 +488,11 @@ static void otg_int_init(void)
 	else
 		pr_debug("USB IDDIG IRQ LINE available!! usb_iddig_number= %d\n", usb_iddig_number);
 #else
-	u32 phy_id_pull = 0;
+	/* u32 phy_id_pull = 0; */
 
-	phy_id_pull = __raw_readl(U2PHYDTM1);
+	phy_id_pull = __raw_readl((void __iomem *)U2PHYDTM1);
 	phy_id_pull |= ID_PULL_UP;
-	__raw_writel(phy_id_pull, U2PHYDTM1);
+	__raw_writel(phy_id_pull, (void __iomem *)U2PHYDTM1);
 
 	musb_writel(mtk_musb->mregs, USB_L1INTM,
 		    IDDIG_INT_STATUS | musb_readl(mtk_musb->mregs, USB_L1INTM));
@@ -524,12 +537,16 @@ void mt_usb_otg_init(struct musb *musb)
 	if (usb_node == NULL)
 		pr_err("USB OTG - get USB0 node failed\n");
 
+#ifdef ID_PIN_USE_EX_EINT
 	iddig_node = of_get_child_by_name(usb_node, "otg-iddig");
 	if (iddig_node == NULL)
 		pr_err("USB IDDIG EINT - get IDDIG EINT node failed\n");
 
 	iddig_pin = of_get_named_gpio(iddig_node, "iddig_gpio", 0);
+#else
+	iddig_pin = of_get_named_gpio(usb_node, "iddig_gpio", 0);
 
+#endif
 	drvvbus_pin = of_get_named_gpio(usb_node, "drvvbus_gpio", 0);
 
 	ret = gpio_request(iddig_pin, "iddig_gpio");
@@ -540,7 +557,7 @@ void mt_usb_otg_init(struct musb *musb)
 	if (ret != 0)
 		pr_err("gpio_request drvvbus_gpio fail\n");
 
-	gpio_direction_input(iddig_pin);
+	/* gpio_direction_input(iddig_pin); */
 
 	gpio_direction_output(drvvbus_pin, 0);
 
