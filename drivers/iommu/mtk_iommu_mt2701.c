@@ -91,7 +91,6 @@ irqreturn_t mt2701_iommu_isr(int irq, void *dev_id)
 {
 	unsigned int port;
 	u32 intrsrc, port_regval, fault_iova, fault_pa;
-	unsigned int *ptestart;
 	void __iomem *m4u_base;
 	struct mtk_iommu_domain *mtk_domain = (struct mtk_iommu_domain *)dev_id;
 	struct mtk_iommu_info *piommu = mtk_domain->piommuinfo;
@@ -113,10 +112,9 @@ irqreturn_t mt2701_iommu_isr(int irq, void *dev_id)
 
 	port_regval = readl(m4u_base + REG_MMU_INT_ID);
 	port = MTK_TF_TO_PORT(piommu, port_regval);
-	ptestart = mtk_domain->pgtableva + (fault_iova >> PAGE_SHIFT);
 
-	dev_err_ratelimited(dev, "iommu fault: fault type is %d,  port is %d, iova is 0x%x, pa is 0x%x, *pte is 0x%x\n",
-			    intrsrc, port, fault_iova, fault_pa, *ptestart);
+	dev_err_ratelimited(dev, "iommu fault: fault type is %d,  port is %d, iova is 0x%x, pa is 0x%x\n",
+			    intrsrc, port, fault_iova, fault_pa);
 
 	mt2701_iommu_invalidate_tlb(piommu, M4U_ID_ALL, 1, 0, 0);
 

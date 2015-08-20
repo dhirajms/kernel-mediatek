@@ -90,7 +90,7 @@
 #define F_MMU_FAULT_INTR_MSK			0xFF
 #define REG_MMU_INT_ID				0x388
 
-#define MTK_TF_TO_LARB(TFID)			(6 - ((TFID >> 12) & 0xF))
+#define MTK_TF_TO_LARB(TFID)			(6 - ((TFID >> 13) & 0x7))
 #define MTK_TF_TO_LARBPORT(TFID)		((TFID >> 8) & 0xF)
 #define MTK_TF_TO_PORT(PIMU, TF)		\
 		(PIMU->imucfg->m4u_port_in_larbx[MTK_TF_TO_LARB(TF)]\
