@@ -37,10 +37,12 @@ static int platform_clock_control(struct snd_soc_dapm_widget *w,
 	if (SND_SOC_DAPM_EVENT_ON(event)) {
 		pr_debug("%s() ON\n", __func__);
 		mt_turn_on_i2sout_clock(0, 1);
+		mt_turn_on_i2sin_clock(0, 1);
 		mt_i2s_power_on_mclk(0, 1);
 	} else {
 		pr_debug("%s() OFF\n", __func__);
 		mt_i2s_power_on_mclk(0, 0);
+		mt_turn_on_i2sin_clock(0, 0);
 		mt_turn_on_i2sout_clock(0, 0);
 	}
 
@@ -49,32 +51,37 @@ static int platform_clock_control(struct snd_soc_dapm_widget *w,
 
 static const struct snd_soc_dapm_widget mt2701_rt5640_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone", NULL),
-	SND_SOC_DAPM_MIC("Headset Mic", NULL),
+	SND_SOC_DAPM_LINE("Line Out", NULL),
+
 	SND_SOC_DAPM_MIC("Internal Mic", NULL),
-	SND_SOC_DAPM_SPK("Speaker", NULL),
+	SND_SOC_DAPM_LINE("Line In", NULL),
 	SND_SOC_DAPM_SUPPLY("Platform Clock", SND_SOC_NOPM, 0, 0,
 		platform_clock_control, SND_SOC_DAPM_PRE_PMU |
 		SND_SOC_DAPM_POST_PMD),
 };
 
 static const struct snd_soc_dapm_route mt2701_rt5640_audio_map[] = {
-	{"Headset Mic", NULL, "MICBIAS1"},
-	{"IN2P", NULL, "Headset Mic"},
 	{"Headphone", NULL, "HPOL"},
 	{"Headphone", NULL, "HPOR"},
-	{"Speaker", NULL, "SPOLP"},
-	{"Speaker", NULL, "SPOLN"},
-	{"Speaker", NULL, "SPORP"},
-	{"Speaker", NULL, "SPORN"},
+	{"Line Out", NULL, "LOUTL"},
+	{"Line Out", NULL, "LOUTR"},
+
+	{"IN1P", NULL, "Internal Mic"}, /*AMIC*/
+	{"IN1N", NULL, "Internal Mic"},
+	{"IN2P", NULL, "Line In"},
+	{"IN2N", NULL, "Line In"},
+
 	{"Headphone", NULL, "Platform Clock"},
-	{"Speaker", NULL, "Platform Clock"},
+	{"Line Out", NULL, "Platform Clock"},
+	{"Line In", NULL, "Platform Clock"},
+	{"Internal Mic", NULL, "Platform Clock"},
 };
 
 static const struct snd_kcontrol_new mt2701_rt5640_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Headphone"),
-	SOC_DAPM_PIN_SWITCH("Headset Mic"),
 	SOC_DAPM_PIN_SWITCH("Internal Mic"),
-	SOC_DAPM_PIN_SWITCH("Speaker"),
+	SOC_DAPM_PIN_SWITCH("Line Out"),
+	SOC_DAPM_PIN_SWITCH("Line In"),
 };
 
 

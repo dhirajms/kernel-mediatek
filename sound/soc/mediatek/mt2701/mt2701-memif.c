@@ -277,7 +277,7 @@ static int memif_prepare(struct snd_pcm_substream *substream)
 			.dsd_width = dsd_width,
 			.first_bit = MSB_FIRST,
 			.daimod_fs = DAIMOD_8000HZ,
-			.channel = STEREO,
+			.channel = channel,
 			.dlmch_ch_num = dlmch_ch_num,
 			.mono_sel = MONO_USE_L,
 			.dup_write = DUP_WR_DISABLE,
