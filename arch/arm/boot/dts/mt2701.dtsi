@@ -170,6 +170,15 @@
 			interrupts = <GIC_SPI 88 IRQ_TYPE_EDGE_FALLING>;
 		};
 
+		smi_common: smi@1000c000 {
+			compatible = "mediatek,mt2701-smi",
+				     "mediatek,mt8127-smi";
+			reg = <0 0x1000c000 0 0x1000>;
+			clocks = <&infracfg CLK_INFRA_SMI>,
+				 <&mmsys CLK_MM_SMI_COMMON>;
+			clock-names = "apb", "smi";
+		};
+
 		pwrap: pwrap@1000d000 {
 			compatible = "mediatek,mt2701-pwrap";
 			reg = <0 0x1000d000 0 0x1000>;
@@ -484,6 +493,15 @@
 			clock-names = "CLK_MM_CMDQ";
 		};
 
+		larb0: larb@14010000 {
+			compatible = "mediatek,mt2701-smi-larb",
+				     "mediatek,mt8127-smi-larb";
+			reg = <0 0x14010000 0 0x1000>;
+			smi = <&smi_common>;
+			clocks = <&mmsys CLK_MM_SMI_LARB0>;
+			clock-names = "smi";
+		};
+
 		disp_smi_larb0: dispsys@14010000 {
 			compatible = "mediatek,DISP_SMI_LARB0";
 			reg = <0 0x14010000 0 0x1000>;
@@ -710,6 +728,15 @@
 			power-domains = <&scpsys MT2701_POWER_DOMAIN_MFG>;
 		};
 
+		larb2: larb@15001000 {
+			compatible = "mediatek,mt2701-smi-larb",
+				     "mediatek,mt8127-smi-larb";
+			reg = <0 0x15001000 0 0x1000>;
+			smi = <&smi_common>;
+			clocks = <&imgsys CLK_IMG_SMI_COMM>;
+			clock-names = "smi";
+		};
+
 		vdecsys: syscon@16000000 {
 			#address-cells = <1>;
 			#size-cells = <1>;
@@ -717,6 +744,15 @@
 			reg = <0 0x16000000 0 0x1000>;
 			#clock-cells = <1>;
 			power-domains = <&scpsys MT2701_POWER_DOMAIN_VDEC>;
+		};
+
+		larb1: larb@16010000 {
+			compatible = "mediatek,mt2701-smi-larb",
+				     "mediatek,mt8127-smi-larb";
+			reg = <0 0x16010000 0 0x1000>;
+			smi = <&smi_common>;
+			clocks = <&vdecsys CLK_VDEC_LARB>;
+			clock-names = "smi";
 		};
 
 		hifsys: syscon@1a000000 {
