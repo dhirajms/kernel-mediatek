@@ -43,7 +43,7 @@
 #define F_SMI_SECUR_CON_MASK(port)		(0xF << ((port & 0x7) << 2))
 
 struct mtk_smi_common {
-	void __iomem	*base;
+	void __iomem	*base; /* AO base */
 	struct clk	*clk_apb;
 	struct clk	*clk_smi;
 };
@@ -114,10 +114,6 @@ int mtk_smi_config_port(struct device *larbdev, unsigned int larbportid,
 
 	dev_dbg(larbdev, "smi-config port id %d\n", larbportid);
 
-	ret = mtk_smi_common_get(smi_device);
-	if (ret)
-		return ret;
-
 	if (iommuen)
 		sec_con_val = F_SMI_SECUR_CON_VIRTUAL(larbportid);
 	else
@@ -129,8 +125,6 @@ int mtk_smi_config_port(struct device *larbdev, unsigned int larbportid,
 
 	writel(regval,
 	       smipriv->base + REG_SMI_SECUR_CON_OF_PORT(larbportid));
-
-	mtk_smi_common_put(smi_device);
 
 	return 0;
 }
