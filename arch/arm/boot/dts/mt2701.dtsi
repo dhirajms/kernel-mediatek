@@ -16,6 +16,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/clock/mt2701-clk.h>
 #include <dt-bindings/power/mt2701-power.h>
+#include <dt-bindings/memory/mt2701-larb-port.h>
 #include "skeleton64.dtsi"
 #include "mt2701-pinfunc.h"
 
@@ -193,6 +194,16 @@
 			reg = <0 0x10200100 0 0x1c>;
 		};
 
+		iommu: iommu@10205000 {
+			compatible = "mediatek,mt2701-m4u",
+				     "mediatek,mt8127-m4u";
+			reg = <0 0x10205000 0 0x1000>;
+			interrupts = <GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infracfg CLK_INFRA_M4U>;
+			clock-names = "bclk";
+			#iommu-cells = <1>;
+		};
+
 		apmixedsys: syscon@10209000 {
 			compatible = "mediatek,mt2701-apmixedsys", "syscon";
 			reg = <0 0x10209000 0 0x1000>;
@@ -304,16 +315,6 @@
 			#address-cells = <0x1>;
 			#size-cells = <0>;
 			status = "disabled";
-		};
-
-		m4u: M4U@0x10205000 {
-			compatible = "mediatek,mt2701-m4u";
-			reg = <0 0x10205000 0 0x1000>,
-				<0 0x1000c000 0 0x1000>; /* SMI COMMON AO */
-			interrupts = <GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&infracfg CLK_INFRA_M4U>,
-					<&infracfg CLK_INFRA_SMI>;
-			clock-names = "infra_m4u", "infra_smi";
 		};
 
 		usb0: usb@11200000 {
