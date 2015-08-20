@@ -23,7 +23,7 @@
 
 / {
 	compatible = "mediatek,mt2701";
-	interrupt-parent = <&gic>;
+	interrupt-parent = <&sysirq>;
 
 	cpus {
 		#address-cells = <1>;
@@ -190,8 +190,11 @@
 			clock-names = "pmicspi-clk", "pmicwrap-clk";
 		};
 
-		intpol: intpol@10200100 {
-			compatible = "mediatek,mt6577-intpol";
+		sysirq: intpol-controller@10200100 {
+			compatible = "mediatek,mt6577-sysirq";
+			interrupt-controller;
+			#interrupt-cells = <3>;
+			interrupt-parent = <&gic>;
 			reg = <0 0x10200100 0 0x1c>;
 		};
 
@@ -215,6 +218,7 @@
 			compatible = "arm,cortex-a7-gic";
 			interrupt-controller;
 			#interrupt-cells = <3>;
+			interrupt-parent = <&gic>;
 			reg = <0 0x10211000 0 0x1000>,
 			      <0 0x10212000 0 0x1000>,
 			      <0 0x10214000 0 0x2000>,
