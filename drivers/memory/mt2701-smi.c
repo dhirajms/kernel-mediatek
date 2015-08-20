@@ -224,7 +224,7 @@ static int mtk_smi_probe(struct platform_device *pdev)
 	if (IS_ERR(smipriv->clk_apb))
 		return PTR_ERR(smipriv->clk_apb);
 
-	ret = clk_prepare(smipriv->clk_smi);
+	ret = clk_prepare(smipriv->clk_apb);
 	if (ret) {
 		dev_err(dev, "Failed to prepare smi apb clock 0x%x\n", ret);
 		return ret;
