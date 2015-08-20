@@ -392,11 +392,6 @@ int OVLLayerConfig(unsigned int layer, unsigned int source, DpColorFormat format
 		ASSERT(0);	/* direct link support YUV444 only */
 	}
 
-	if ((source == OVL_LAYER_SOURCE_MEM && addr == 0)) {
-		pr_notice("error: source from memory, but addr is 0!\n");
-		ASSERT(0);	/* direct link support YUV444 only */
-	}
-
 	switch (fmt) {
 	case OVL_INPUT_FORMAT_ARGB8888:
 	case OVL_INPUT_FORMAT_PARGB8888:

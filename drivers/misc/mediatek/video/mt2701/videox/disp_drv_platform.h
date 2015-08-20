@@ -4,7 +4,6 @@
 #include <linux/dma-mapping.h>
 #include <linux/types.h>
 #include <linux/clk.h>
-/* #include <board-custom.h> */
 #include <disp_assert_layer.h>
 #include "ddp_hal.h"
 #include "ddp_drv.h"
@@ -13,8 +12,24 @@
 #include "dsi_drv.h"
 #include "disp_drv_log.h"
 #include "ddp_reg.h"
-#include "m4u.h"
-#include "m4u_port.h"
+
+#ifdef CONFIG_MTK_M4U
+#include <m4u.h>
+#include <m4u_port.h>
+#endif
+
+#ifdef CONFIG_MTK_IOMMU
+#include <soc/mediatek/mtk-smi.h>
+#include <asm/dma-iommu.h>
+#endif
+
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#include <linux/clk.h>
+#include <linux/of_platform.h>
+#endif
 
 #define MTK_LCD_HW_SIF_VERSION      2
 #define MTKFB_NO_M4U
@@ -71,10 +86,6 @@ extern unsigned char *disp_module_name[];
 
 #ifndef MTK_BRINGUP_FOR_MT2701
 #define MTK_ANDROID_SUPPORT
-#endif
-
-#ifdef MTK_ANDROID_SUPPORT
-#define MTK_DISPLAY_ENABLE_MMU
 #endif
 
 #define DDP_USE_CLOCK_API

@@ -14,10 +14,6 @@
 #include "disp_drv_ddp.h"
 #include "disp_drv.h"
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
-#include <m4u.h>
-#endif
-
 #ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
 #include "tz_cross/trustzone.h"
 #include "tz_cross/ta_mem.h"
@@ -206,11 +202,11 @@ static void process_dbg_opt(const char *opt)
 
 		STR_CONVERT(&p, &enable, uint, goto Error);
 		if (enable)
-			irq_log = 1;
+			disp_log_level |= DISPLOG_IRQ;
 		else
-			irq_log = 0;
+			disp_log_level &= ~DISPLOG_IRQ;
 
-		sprintf(buf, "irq_log: %d\n", irq_log);
+		sprintf(buf, "irq_log: 0x%x\n", disp_log_level);
 	}
 #ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
 	else if (0 == strncmp(opt, "tee_dbg_log:", 12)) {

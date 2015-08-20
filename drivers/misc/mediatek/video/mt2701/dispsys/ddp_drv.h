@@ -1,6 +1,7 @@
 #ifndef __DDP_DRV_H__
 #define __DDP_DRV_H__
 #include <linux/ioctl.h>
+#include <linux/iommu.h>
 #include "ddp_hal.h"
 #include "ddp_aal.h"
 
@@ -375,6 +376,8 @@ struct disp_device {
 	unsigned int regs_va[DISP_REG_NUM];
 	struct clk *clk_map[DISP_REG_NUM][MAX_CLK_NUM_OF_ONE_MODULE];
 	struct device *dev;
+	struct platform_device *pimudev; /*iommu device node*/
+	struct platform_device *psmidev; /*smi larb device node*/
 	unsigned int irq[DISP_REG_NUM];
 };
 

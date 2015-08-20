@@ -12,11 +12,6 @@
 /* for MTK_HDMI_MAIN_PATH */
 #include "disp_drv_platform.h"
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
-#include <m4u.h>
-#endif
-
-
 /* Parameter */
 static DISP_OVL_ENGINE_INSTANCE disp_ovl_engine_params;
 
@@ -226,7 +221,7 @@ void disp_ovl_engine_direct_link_overlay(void)
 	MMProfileLogEx(MTKFB_MMP_Events.direct_link_overlay, MMProfileFlagStart, 0, 0);
 
 	if (1 == first_boot) {
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 		M4U_PORT_STRUCT portStruct;
 
 		DISP_OVL_ENGINE_DBG("config m4u start\n\n");
@@ -326,7 +321,7 @@ int disp_ovl_engine_indirect_link_overlay(void *fb_va)
 	int i, temp_va = 0;
 	static int internal_buffer_init;
 	struct disp_path_config_struct config = { 0 };
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	M4U_PORT_STRUCT portStruct;
 #endif
 
@@ -353,7 +348,7 @@ int disp_ovl_engine_indirect_link_overlay(void *fb_va)
 			DISP_OVL_ENGINE_DBG("vmalloc %dbytes fail\n", tmpBufferSize);
 			return OVL_ERROR;
 		}
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 		if (m4u_alloc_mva(DISP_WDMA, temp_va, tmpBufferSize, 0, 0, &disp_ovl_engine.Ovlmva)) {
 			DISP_OVL_ENGINE_DBG("m4u_alloc_mva for disp_ovl_engine.Ovlmva fail\n");
 			return OVL_ERROR;
@@ -379,7 +374,7 @@ int disp_ovl_engine_indirect_link_overlay(void *fb_va)
 		DISP_OVL_ENGINE_DBG("M4U alloc mva: 0x%x va: 0x%x size: 0x%x\n",
 				    disp_ovl_engine.Ovlmva, temp_va, tmpBufferSize);
 	}
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	/* config m4u port */
 	DISP_OVL_ENGINE_DBG("config m4u start\n\n");
 	portStruct.ePortID = DISP_OVL_0;

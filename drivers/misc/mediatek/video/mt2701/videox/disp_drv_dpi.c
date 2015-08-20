@@ -336,7 +336,7 @@ static DISP_STATUS dpi_init(uint32_t fbVA, uint32_t fbPA, bool isLcmInited)
 
 	disp_path_get_mutex();
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	/* Config FB_Layer port to be virtual. */
 	{
 		M4U_PORT_STRUCT portStruct;

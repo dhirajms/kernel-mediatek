@@ -1180,7 +1180,7 @@ DPI_STATUS DPI_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp)
 
 #else
 	unsigned int mva;
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	unsigned int ret = 0;
 	M4U_PORT_STRUCT portStruct;
 #endif
@@ -1202,7 +1202,7 @@ DPI_STATUS DPI_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp)
 	pr_info("before alloc MVA: va = 0x%x, size = %d\n", pvbuf,
 		lcm_params->height * lcm_params->width * bpp / 8);
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	ret =
 	    m4u_alloc_mva(DISP_WDMA, pvbuf, lcm_params->height * lcm_params->width * bpp / 8, 0, 0,
 			  &mva);
@@ -1248,7 +1248,7 @@ DPI_STATUS DPI_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp)
 
 	disp_path_release_mutex();
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	portStruct.ePortID = DISP_WDMA;	/* hardware port ID, defined in M4U_PORT_ID_ENUM */
 	portStruct.Virtuality = 1;
 	portStruct.Security = 0;

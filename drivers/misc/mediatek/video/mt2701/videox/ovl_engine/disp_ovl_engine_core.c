@@ -13,10 +13,6 @@
 #include <linux/ion_drv.h>
 #endif
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
-#include <m4u.h>
-#endif
-
 /* Ovl_engine parameter */
 DISP_OVL_ENGINE_PARAMS disp_ovl_engine;
 DEFINE_SEMAPHORE(disp_ovl_engine_semaphore);

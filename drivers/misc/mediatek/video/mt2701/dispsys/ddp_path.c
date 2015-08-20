@@ -39,11 +39,6 @@
 #include <mach/xlog.h>
 #endif
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
-#include <m4u.h>
-#include <m4u_port.h>
-#endif
-
 #ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
 #include <tz_cross/trustzone.h>
 #include <tz_cross/tz_ddp.h>
@@ -522,7 +517,7 @@ int disp_path_release_mem_write_mutex(void)
 
 static int disp_path_init_m4u_port(DISP_MODULE_ENUM module)
 {
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	int m4u_module = M4U_PORT_UNKNOWN;
 	M4U_PORT_STRUCT portStruct;
 
@@ -2343,10 +2338,16 @@ int disp_path_clock_on(char *name)
 	enable_clock(MT_CG_DISP0_DISP_RDMA, "DDP");
 	enable_clock(MT_CG_DISP0_MDP_BLS_26M, "DDP");
 #else
+
 	DISP_MSG("Use CCF\n");
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_CONFIG][0]);
+#ifdef CONFIG_MTK_IOMMU
+	DISP_MSG("Enable larb0\n");
+	mtk_smi_larb_get(&disp_dev.psmidev->dev);
+#else
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_SMI_COMMON][0]);
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_SMI_LARB0][0]);
+#endif
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_MUTEX32][0]);
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_OVL][0]);
 	clk_prepare_enable(disp_dev.clk_map[DISP_REG_COLOR][0]);
@@ -2447,8 +2448,13 @@ int disp_path_clock_off(char *name)
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_WDMA][0]);
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_RDMA0][0]);
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_RDMA1][0]);
+#ifdef CONFIG_MTK_IOMMU
+	DISP_MSG("Disable larb0\n");
+	mtk_smi_larb_put(&disp_dev.psmidev->dev);
+#else
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_SMI_LARB0][0]);
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_SMI_COMMON][0]);
+#endif
 	clk_disable_unprepare(disp_dev.clk_map[DISP_REG_CONFIG][0]);
 #endif
 	/* DISP_MSG("DISP CG:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0)); */
@@ -3071,7 +3077,7 @@ int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
 #else
 			OVLLayerSwitch(pConfig->ovl_config.layer, pConfig->ovl_config.layer_en);
 			if (pConfig->ovl_config.layer_en != 0) {
-				if (pConfig->ovl_config.addr == 0 ||
+				if (/*pConfig->ovl_config.addr == 0 ||*/
 				    pConfig->ovl_config.dst_w == 0 ||
 				    pConfig->ovl_config.dst_h == 0) {
 					DISP_ERR
@@ -3366,3 +3372,27 @@ int disp_path_config_(struct disp_path_config_struct *pConfig, int mutexId)
 
 	return 0;
 }
+
+void disp_path_stop_access_memory(void)
+{
+	int i;
+	int value;
+	struct disp_path_config_struct config;
+
+	value = DISP_REG_GET(DISP_REG_OVL_SRC_CON);
+	if (value) {
+		/*DISP_WaitVSYNC();*/
+		memset(&config, 0, sizeof(struct disp_path_config_struct));
+		disp_path_get_mutex();
+		for (i = 0; i < DDP_OVL_LAYER_MUN; i++) {
+			config.ovl_config.layer_en = 0;
+			config.ovl_config.layer = i;
+			disp_path_config_layer(&config.ovl_config);
+		}
+		disp_path_release_mutex();
+		disp_path_wait_reg_update(0);
+		msleep(50);
+	}
+}
+
+

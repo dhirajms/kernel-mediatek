@@ -54,11 +54,6 @@
 #include <linux/ion_drv.h>
 #endif
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
-#include <m4u.h>
-#include <m4u_port.h>
-#endif
-
 /* for MTK_HDMI_MAIN_PATH */
 #include "disp_drv_platform.h"
 
@@ -132,7 +127,7 @@ void mtkfb_log_enable(int enable)
 /* local variables */
 /* --------------------------------------------------------------------------- */
 unsigned int fb_pa = 0;
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 static bool mtkfb_enable_mmu = true;
 #else
 static bool mtkfb_enable_mmu;

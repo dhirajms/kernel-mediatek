@@ -4095,7 +4095,7 @@ void fbconfig_DSI_set_timing(MIPI_TIMING timing)
 DSI_STATUS DSI_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp, bool cmd_mode)
 {
 	unsigned int mva;
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	unsigned int ret = 0;
 	M4U_PORT_STRUCT portStruct;
 #endif
@@ -4116,7 +4116,7 @@ DSI_STATUS DSI_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp, bool cm
 	pr_info("before alloc MVA: va = 0x%x, size = %d\n", pvbuf,
 		lcm_params->height * lcm_params->width * bpp / 8);
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	ret =
 	    m4u_alloc_mva(DISP_WDMA, pvbuf, lcm_params->height * lcm_params->width * bpp / 8, 0, 0,
 			  &mva);
@@ -4169,7 +4169,7 @@ DSI_STATUS DSI_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp, bool cm
 
 	disp_path_release_mutex();
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	portStruct.ePortID = DISP_WDMA;	/* hardware port ID, defined in M4U_PORT_ID_ENUM */
 	portStruct.Virtuality = 1;
 	portStruct.Security = 0;

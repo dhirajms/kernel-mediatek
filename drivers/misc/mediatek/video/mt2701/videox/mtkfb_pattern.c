@@ -46,11 +46,6 @@
 #include <linux/ion_drv.h>
 #endif
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
-#include <m4u.h>
-#include <m4u_port.h>
-#endif
-
 static int fill_buffer_rgb(void *addr, unsigned int size)
 {
 	int i;
@@ -78,7 +73,7 @@ static int fill_buffer_rgb(void *addr, unsigned int size)
 
 static int alloc_buffer(unsigned int size, unsigned int *pVa, unsigned int *pMva)
 {
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	M4U_PORT_STRUCT m4uport;
 #endif
 	unsigned int mva, va;
@@ -96,7 +91,7 @@ static int alloc_buffer(unsigned int size, unsigned int *pVa, unsigned int *pMva
 
 	fill_buffer_rgb((void *)va, size);
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	if (m4u_alloc_mva(DISP_OVL_0, va, size, 0, 0, &mva)) {
 		pr_notice("m4u_alloc_mva for hdmi_mva_r fail\n");
 		vfree((void *)va);
@@ -127,7 +122,7 @@ int free_buffer(unsigned int size, unsigned int va, unsigned int mva)
 {
 	pr_notice("[Pattern] free_buffer va=0x%08x, mva=0x%08x\n", va, mva);
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	if (mva) {
 		M4U_PORT_STRUCT m4uport;
 

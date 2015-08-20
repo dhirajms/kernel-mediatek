@@ -16,5 +16,6 @@ extern unsigned int fb_height;
 
 int disp_check_engine_status(int mutexID);
 int disp_path_release_mutex_(int mutexID);
+void disp_path_stop_access_memory(void);
 
 #endif

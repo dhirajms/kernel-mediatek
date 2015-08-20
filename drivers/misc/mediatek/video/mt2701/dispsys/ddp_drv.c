@@ -52,13 +52,6 @@ struct ion_sys_data sys_data;
 struct ion_mm_data mm_data;
 #endif
 
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#include <linux/clk.h>
-#endif
-
 #define DISP_INDEX_OFFSET 0x0	/* must be consistent with ddp_rdma.c */
 #define DISP_DEVNAME "mtk_disp"
 
@@ -66,7 +59,7 @@ unsigned int dbg_log = 0;
 /* must disable irq level log by default, else will block uart output, open it only for debug use */
 unsigned int irq_log = 0;
 unsigned int irq_err_log = 0;
-unsigned int disp_log_level = 0;/*DISPLOG_MSG;*//*(DISPLOG_ALL & (~DISPLOG_IRQ));*/
+unsigned int disp_log_level = 0;/*(DISPLOG_ALL & (~DISPLOG_IRQ));*/
 /* device and driver */
 static dev_t disp_devno;
 static struct cdev *disp_cdev;
@@ -1249,7 +1242,7 @@ static const char *disp_reg_name_spy(DISP_DTS_REG_ENUM regs)
 	case DISP_REG_CMDQ:
 		return "mediatek,DISP_CMDQ";
 	case DISP_REG_SMI_LARB0:
-		return "mediatek,DISP_SMI_LARB0";
+		return "mediatek,mt2701-smi-larb";
 	case DISP_REG_SMI_COMMON:
 		return "mediatek,DISP_SMI_COMMON";
 	case DISP_REG_RDMA1:
@@ -1316,7 +1309,7 @@ static const char *disp_clk_name_spy(DISP_DTS_REG_ENUM regs, unsigned int index)
 	case DISP_REG_CMDQ:
 		return "CLK_MM_CMDQ";
 	case DISP_REG_SMI_LARB0:
-		return "CLK_MM_SMI_LARB0";
+		return "smi";
 	case DISP_REG_SMI_COMMON:
 		return "CLK_MM_SMI_COMMON";
 	case DISP_REG_RDMA1:
@@ -3194,6 +3187,12 @@ static int disp_probe(struct platform_device *pdev)
 	unsigned int id, reg_va, reg_pa, irq_map;
 	unsigned int clk_num;
 	struct clk *clk[MAX_CLK_NUM_OF_ONE_MODULE];
+#ifdef CONFIG_MTK_IOMMU
+	struct device_node *np;
+#endif
+
+	if (disp_probe_cnt == 0)
+		memset(&disp_dev, 0, sizeof(disp_dev));
 
 	/* find device id */
 	for (i = 0; i < DISP_REG_NUM; i++) {
@@ -3220,29 +3219,49 @@ static int disp_probe(struct platform_device *pdev)
 
 	irq_map = irq_of_parse_and_map(pdev->dev.of_node, 0);
 
-
 	/*For CCF*/
 	if (of_property_read_u32(pdev->dev.of_node, "clock-count", &clk_num)) {
-		DISP_ERR("dispsys get clocks-numbers failed\n");
-		return -ENODEV;
+		/*DISP_ERR("dispsys %s get clocks-numbers failed\n", disp_reg_name_spy(id));*/
+		/*return -ENODEV;*/
+	} else {
+		for (i = 0; i < clk_num; i++) {
+			if (i == MAX_CLK_NUM_OF_ONE_MODULE) {
+				DISP_ERR("dispsys %s clk number is bigger than %d, please check\n",
+							disp_clk_name_spy(id, i), MAX_CLK_NUM_OF_ONE_MODULE);
+				return -ENODEV;
+			}
+
+			clk[i] = devm_clk_get(&pdev->dev, disp_clk_name_spy(id, i));
+			if (IS_ERR(clk[i])) {
+				DISP_ERR("dispsys %s devm_clk_get failed\n", disp_clk_name_spy(id, i));
+				/*return -ENODEV;*/
+			}
+		}
 	}
 
-	for (i = 0; i < clk_num; i++) {
-		if (i == MAX_CLK_NUM_OF_ONE_MODULE) {
-			DISP_ERR("dispsys %s clk number is bigger than %d, please check\n",
-						disp_clk_name_spy(id, i), MAX_CLK_NUM_OF_ONE_MODULE);
-			return -ENODEV;
-		}
-
-		clk[i] = devm_clk_get(&pdev->dev, disp_clk_name_spy(id, i));
-		if (IS_ERR(clk[i])) {
-			DISP_ERR("dispsys %s devm_clk_get failed\n", disp_clk_name_spy(id, i));
-			/*return -ENODEV;*/
+#ifdef CONFIG_MTK_IOMMU
+	/*For IOMMU*/
+	if (NULL == disp_dev.pimudev) {
+		np = of_parse_phandle(pdev->dev.of_node, "iommus", 0);
+		if (np) {
+			disp_dev.pimudev = of_find_device_by_node(np);
+			if (WARN_ON(!disp_dev.pimudev)) {
+				of_node_put(np);
+				return -EINVAL;
+			}
+			disp_dev.dev = &pdev->dev;
+			DISP_MSG("DT, i=%d, module=%s iommus %p\n", id, disp_reg_name_spy(id), disp_dev.dev);
 		}
 	}
+	if (NULL == disp_dev.psmidev) {
+		np = of_parse_phandle(pdev->dev.of_node, "larbs", 0);
+		if (np) {
+			disp_dev.psmidev = of_find_device_by_node(np);
+			DISP_MSG("DT, i=%d, module=%s smi larbs\n", id, disp_reg_name_spy(id));
+		}
+	}
+#endif
 
-	if (disp_probe_cnt == 0)
-		memset(&disp_dev, 0, sizeof(disp_dev));
 	disp_dev.regs_pa[id] = reg_pa;
 	disp_dev.regs_va[id] = reg_va;
 	disp_dev.irq[id] = irq_map;
@@ -3396,7 +3415,7 @@ static const struct of_device_id dispsys_of_ids[] = {
 	{.compatible = "mediatek,DISP_DPI0",},
 	{.compatible = "mediatek,DISP_MUTEX",},
 	{.compatible = "mediatek,DISP_CMDQ",},
-	{.compatible = "mediatek,DISP_SMI_LARB0",},
+	{.compatible = "mediatek,mt2701-smi-larb",},
 	{.compatible = "mediatek,DISP_SMI_COMMON",},
 	{.compatible = "mediatek,DISP_RDMA1",},
 	{.compatible = "mediatek,DISP_UFOE",},

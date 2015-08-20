@@ -4,11 +4,6 @@
 
 #include "disp_ovl_engine_core.h"
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
-#include <m4u.h>
-#endif
-
-
 /* Parameter */
 static DISP_OVL_ENGINE_INSTANCE disp_ovl_engine_params;
 

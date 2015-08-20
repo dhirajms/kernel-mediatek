@@ -13,10 +13,6 @@
 #include "dsi_drv.h"
 #include "dsi_reg.h"
 
-#ifdef MTK_DISPLAY_ENABLE_MMU
-#include <m4u.h>
-#endif
-
 static LCD_IF_ID ctrl_if = LCD_IF_PARALLEL_0;
 static LCM_PARAMS s_lcm_params = { 0 };
 
@@ -721,73 +717,86 @@ int disphal_pm_restore_noirq(struct device *device)
 
 int disphal_enable_mmu(bool enable)
 {
-	if (enable)
-		DISP_MSG("display enable mmu\n");
-	else
-		DISP_MSG("display disable mmu\n");
 	disp_use_mmu = enable;
 	return 0;
 }
 
-#if 1
-int disphal_allocate_fb(struct resource *res, unsigned int *pa, unsigned int *va,
-			unsigned int *dma_pa)
+int disphal_allocate_fb(struct resource *res, unsigned int *pa,
+			unsigned int *va, unsigned int *dma_pa)
 {
+	unsigned int size = res->end - res->start + 1;
+
+#ifdef CONFIG_MTK_M4U
+
+	int ret = 0;
+	/* m4u_alloc_mva(M4U_CLNTMOD_LCDC_UI, res->start, size, 0, 0, dma_pa); */
+	ret = m4u_fill_linear_pagetable(res->start, size);
+	if (ret)
+		pr_info("fill_linear_pagetable error, %d\n", ret);
+	*pa = res->start;
+	*va = (unsigned int)ioremap_nocache(res->start, size);
+	*dma_pa = *pa;
+	DISP_MSG("display use M4U\n");
+
+#elif defined(CONFIG_MTK_IOMMU)
+
+	dma_addr_t handle_pa;
+	struct dma_iommu_mapping *dma_mapping;
+	void *va_addr;
+
+	/*disp_path_stop_access_memory();*/
+	dma_mapping = disp_dev.pimudev->dev.archdata.iommu;
+	arm_iommu_attach_device(disp_dev.dev, dma_mapping);
+
+	va_addr = dma_alloc_coherent(disp_dev.dev, size, &handle_pa,
+						GFP_KERNEL/* | DMA_ATTR_FORCE_CONTIGUOUS*/);
+
+	DISP_MSG("[DISPHAL] dma_alloc_coherent:0x%x va:0x%p size:0x%x\n",
+				(unsigned int)handle_pa, va_addr, size);
+
+	*va = (unsigned int)va_addr;
+	/* can not use __pa, why?*/
+	/**pa = (unsigned int)__pa(va_addr);*/
+	*pa = (unsigned int)iommu_iova_to_phys(dma_mapping->domain, handle_pa);
+	DISP_MSG("[DISPHAL] iommu_iova_to_phys pa:0x%x __pa(va):0x%x\n",
+				*pa, __pa(va_addr));
+	*dma_pa = (unsigned int)handle_pa;
+	DISP_MSG("display use IOMMU\n");
+
+#else
+
 	unsigned int addr;
 	unsigned int page_count;
 	unsigned int i = 0;
 	struct page **pages;
 
+	page_count = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+	pages = kmalloc((sizeof(struct page *) * page_count), GFP_KERNEL);
+	DISP_MSG("page count: %d\n", page_count);
+	for (i = 0; i < page_count; i++) {
+		addr = res->start + i * PAGE_SIZE;
+		pages[i] = pfn_to_page(addr >> PAGE_SHIFT);
+	}
+
+	*va = (unsigned int)vmap(pages, page_count, VM_MAP, PAGE_KERNEL);
+	/*kfree(pages);*/
 	*pa = res->start;
-	if (1) {
-		page_count = (res->end - res->start + 1 + PAGE_SIZE - 1) / PAGE_SIZE;
-		pages = kmalloc((sizeof(struct page *) * page_count), GFP_KERNEL);
-		DISP_MSG("page count: %d\n", page_count);
-		for (i = 0; i < page_count; i++) {
-			addr = res->start + i * PAGE_SIZE;
-			pages[i] = pfn_to_page(addr >> PAGE_SHIFT);
-		}
-
-		*va = (unsigned int)vmap(pages, page_count, VM_MAP, PAGE_KERNEL);
-		/*kfree(pages);*/
-	} else
-		*va = (unsigned int)ioremap_nocache(res->start, res->end - res->start + 1);
-
 	*dma_pa = *pa;
 
-	return 0;
-}
+	disp_path_stop_access_memory();
+	DISP_MSG("display not use MMU\n");
 
-#else
-
-int disphal_allocate_fb(struct resource *res, unsigned int *pa, unsigned int *va,
-			unsigned int *dma_pa)
-{
-	*pa = res->start;
-	*va = (unsigned int)ioremap_nocache(res->start, res->end - res->start + 1);
-	if (disp_use_mmu) {
-		/* m4u_alloc_mva(M4U_CLNTMOD_LCDC_UI, *pa, (res->end - res->start + 1), 0, 0, dma_pa); */
-#ifdef MTK_DISPLAY_ENABLE_MMU
-		int ret = 0;
-
-		ret = m4u_fill_linear_pagetable(*pa, res->end - res->start + 1);
-		if (ret)
-			pr_info("fill_linear_pagetable error, %d\n", ret);
 #endif
-		*dma_pa = *pa;
-		ASSERT(dma_pa);
-		pr_info("[DISPHAL] FB MVA is 0x%08X PA is 0x%08X\n", *dma_pa, *pa);
-	} else
-		*dma_pa = *pa;
+
+	ASSERT(dma_pa);
+	pr_info("[DISPHAL] FB MVA is 0x%08X PA is 0x%08X\n", *dma_pa, *pa);
 
 	return 0;
 }
-
-#endif
 
 int disphal_map_overlay_out_buffer(unsigned int va, unsigned int size, unsigned int *dma_pa)
 {
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	int ret;
 
 	ret = m4u_alloc_mva(DISP_WDMA, va, size, 0, 0, dma_pa);
@@ -801,7 +810,7 @@ int disphal_map_overlay_out_buffer(unsigned int va, unsigned int size, unsigned 
 
 int disphal_unmap_overlay_out_buffer(unsigned int va, unsigned int size, unsigned int dma_pa)
 {
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	m4u_dealloc_mva(DISP_WDMA, va, size, dma_pa);
 #endif
 	return 0;
@@ -809,7 +818,7 @@ int disphal_unmap_overlay_out_buffer(unsigned int va, unsigned int size, unsigne
 
 int disphal_sync_overlay_out_buffer(unsigned int va, unsigned int size)
 {
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	m4u_dma_cache_maint(DISP_WDMA, (const void *)va, size, DMA_BIDIRECTIONAL);
 #endif
 	return 0;
@@ -818,7 +827,7 @@ int disphal_sync_overlay_out_buffer(unsigned int va, unsigned int size)
 int disphal_dma_map_kernel(unsigned int dma_pa, unsigned int size, unsigned int *kva,
 			   unsigned int *mapsize)
 {
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	m4u_mva_map_kernel(dma_pa, size, 0, kva, mapsize);
 #else
 	kva = ioremap_nocache(dma_pa, size);
@@ -829,7 +838,7 @@ int disphal_dma_map_kernel(unsigned int dma_pa, unsigned int size, unsigned int 
 
 int disphal_dma_unmap_kernel(unsigned int dma_pa, unsigned int size, unsigned int kva)
 {
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	m4u_mva_unmap_kernel(dma_pa, size, kva);
 #else
 	iounmap((void *)dma_pa);
@@ -839,7 +848,7 @@ int disphal_dma_unmap_kernel(unsigned int dma_pa, unsigned int size, unsigned in
 
 int disphal_init_overlay_to_memory(void)
 {
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	M4U_PORT_STRUCT portStruct;
 
 	portStruct.ePortID = DISP_WDMA;	/* hardware port ID, defined in M4U_PORT_ID_ENUM */
@@ -856,7 +865,7 @@ int disphal_init_overlay_to_memory(void)
 
 int disphal_deinit_overlay_to_memory(void)
 {
-#ifdef MTK_DISPLAY_ENABLE_MMU
+#ifdef CONFIG_MTK_M4U
 	M4U_PORT_STRUCT portStruct;
 
 	portStruct.ePortID = DISP_WDMA;	/* hardware port ID, defined in M4U_PORT_ID_ENUM */
