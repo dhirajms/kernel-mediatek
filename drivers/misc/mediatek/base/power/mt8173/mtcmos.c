@@ -12,7 +12,8 @@
 #include <linux/mfd/syscon.h>
 #include <linux/regmap.h>
 #include <linux/soc/mediatek/infracfg.h>
-
+#include <mt_chip.h>
+#include <mt_dcm.h>
 #include "mtcmos.h"
 
 static struct regmap *regmap_spm;
@@ -1007,10 +1008,9 @@ int spm_mtcmos_ctrl_cpusys1(int state, int chkWfiBeforePdn)
 				VCA15_PWR_ISO) == 0) {
 
 			/* enable dcm for low power */
-			/*
 			if (CHIP_SW_VER_01 == mt_get_chip_sw_ver())
-				spm_write(TOPAXI_DCMCTL, spm_read(TOPAXI_DCMCTL) | 0x00000771);
-			*/
+				enable_cpu_dcm();
+
 			spm_write(SPM_SLEEP_DUAL_VCORE_PWR_CON,
 				  spm_read(SPM_SLEEP_DUAL_VCORE_PWR_CON) |
 					VCA15_PWR_ISO);
@@ -1025,12 +1025,8 @@ int spm_mtcmos_ctrl_cpusys1(int state, int chkWfiBeforePdn)
 					~VCA15_PWR_ISO);
 
 			/* disable dcm for performance */
-			/*
-			if (CHIP_SW_VER_01 == mt_get_chip_sw_ver()) {
-				spm_write(TOPAXI_DCMCTL, spm_read(TOPAXI_DCMCTL) | 0x00000001);
-				spm_write(TOPAXI_DCMCTL, spm_read(TOPAXI_DCMCTL) & ~0x00000770);
-			}
-			*/
+			if (CHIP_SW_VER_01 == mt_get_chip_sw_ver())
+				disable_cpu_dcm();
 		}
 
 		spm_mtcmos_cpu_lock(&flags);

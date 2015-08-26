@@ -785,8 +785,7 @@ void enable_cpu_dcm(void)
 	if (!dcm_reg_init)
 		return;
 
-	dcm_setl(INFRA_TOPCKGEN_DCMCTL, 0x00000001);
-	dcm_clrl(INFRA_TOPCKGEN_DCMCTL, 0x00000770);
+	dcm_setl(INFRA_TOPCKGEN_DCMCTL, 0x00000771);
 }
 
 void bus_dcm_enable(void)
