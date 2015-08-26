@@ -13,7 +13,7 @@
 #include <linux/regmap.h>
 #include <linux/soc/mediatek/infracfg.h>
 #include <mt_chip.h>
-#include <mt_dcm.h>
+#include "mt_dcm.h"
 #include "mtcmos.h"
 
 static struct regmap *regmap_spm;
