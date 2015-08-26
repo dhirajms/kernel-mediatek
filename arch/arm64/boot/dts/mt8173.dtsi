@@ -948,8 +948,9 @@
 			usb-xtal-clk = <&apmixedsys>;
 			usb-wakeup-ctrl = <&pericfg>;
 			clocks = <&pericfg CLK_PERI_USB0>,
+				 <&topckgen CLK_TOP_USB30_SEL>,
 				 <&pericfg CLK_PERI_USB1>;
-			clock-names = "peri_usb0", "peri_usb1";
+			clock-names = "peri_usb0", "top_usb30", "peri_usb1";
 			num-eps = <9>;
 		};
 
@@ -1769,7 +1770,7 @@
 			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
-			<&topckgen CLK_TOP_USB30_SEL>,
+			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
 			<&topckgen CLK_TOP_SCP_SEL>,
@@ -1806,8 +1807,8 @@
 			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
-			<&pericfg CLK_PERI_USB0>,
-			<&pericfg CLK_PERI_USB1>,
+			<&clk_null>,
+			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
@@ -1961,11 +1962,6 @@
 	bring-up-pd-venclt-disp {
 		compatible = "mediatek,scpsys-bring-up";
 		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
-	};
-
-	bring-up-pd-usb {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT8173_POWER_DOMAIN_USB>;
 	};
 };
 
