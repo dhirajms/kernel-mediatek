@@ -130,12 +130,32 @@ cmdqSecContextHandle cmdq_sec_context_handle_create(uint32_t tgid);
 void cmdq_sec_lock_secure_path(void);
 void cmdq_sec_unlock_secure_path(void);
 
+/* add for universal communicate with TEE */
+struct transmitBufferStruct {
+	void *pBuffer;		/* the share memory */
+	uint32_t size;		/* share memory size */
+	KREE_SHAREDMEM_HANDLE shareMemHandle;
+	KREE_SESSION_HANDLE cmdqHandle;
+	KREE_SESSION_HANDLE memSessionHandle;
+};
+
+
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 /* the session to communicate with TA */
 KREE_SESSION_HANDLE cmdq_session_handle(void);
 KREE_SESSION_HANDLE cmdq_mem_session_handle(void);
 int32_t cmdq_sec_create_shared_memory(cmdqSecSharedMemoryHandle *pHandle, const uint32_t size);
 int32_t cmdq_sec_destroy_shared_memory(cmdqSecSharedMemoryHandle handle);
+
+
+
+
+
+int32_t cmdqSecRegisterSecureBuffer(struct transmitBufferStruct *pSecureData);
+int32_t cmdqSecServiceCall(struct transmitBufferStruct *pSecureData, int32_t cmd);
+int32_t cmdqSecUnRegisterSecureBuffer(struct transmitBufferStruct *pSecureData);
+void cmdq_sec_register_secure_irq(void);
+
 #endif
 
 

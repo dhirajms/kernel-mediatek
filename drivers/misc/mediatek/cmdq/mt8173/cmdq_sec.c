@@ -1029,19 +1029,140 @@ void cmdqSecDeInitialize(void)
 #endif
 }
 
+int32_t cmdqSecRegisterSecureBuffer(struct transmitBufferStruct *pSecureData)
+{
+	int32_t status = 0;
+	KREE_SHAREDMEM_PARAM cmdq_shared_param;
+	TZ_RESULT tzRes = TZ_RESULT_SUCCESS;
+
+	do {
+		if (NULL == pSecureData) {
+			status = -1;
+			break;
+		}
+
+		cmdq_shared_param.buffer = pSecureData->pBuffer;
+		cmdq_shared_param.size = pSecureData->size;
+
+		if (0 == pSecureData->memSessionHandle) {
+			pSecureData->memSessionHandle = cmdq_mem_session_handle();
+			if (0 == pSecureData->memSessionHandle) {
+				status = -2;
+				break;
+			}
+		}
+
+
+		tzRes = KREE_RegisterSharedmem(pSecureData->memSessionHandle, &(pSecureData->shareMemHandle),
+					   &cmdq_shared_param);
+
+
+		if (tzRes != TZ_RESULT_SUCCESS) {
+			status = -3;
+			break;
+		}
+	} while (0);
+
+	if (0 != status)
+		CMDQ_ERR("cmdqSecRegisterSecureBuffer failed, status[%d]\n", status);
+
+
+	return status;
+}
+
+int32_t cmdqSecServiceCall(struct transmitBufferStruct *pSecureData, int32_t cmd)
+{
+		MTEEC_PARAM cmdq_param[4];
+		unsigned int paramTypes = TZ_ParamTypes1(TZPT_MEMREF_INPUT);
+		TZ_RESULT tzRes = TZ_RESULT_SUCCESS;
+
+		if (0 ==  pSecureData->cmdqHandle) {
+			pSecureData->cmdqHandle = cmdq_session_handle();
+			if (0 == pSecureData->cmdqHandle) {
+				CMDQ_ERR("get cmdq handle failed\n");
+				return -1;
+			}
+		}
+
+
+		cmdq_param[0].memref.handle = (uint32_t) pSecureData->shareMemHandle;
+		cmdq_param[0].memref.offset = 0;
+		cmdq_param[0].memref.size = pSecureData->size;
+
+		tzRes = KREE_TeeServiceCall(pSecureData->cmdqHandle, cmd, paramTypes, cmdq_param);
+		if (tzRes != TZ_RESULT_SUCCESS) {
+			CMDQ_ERR("leave secure world cmdqSecServiceCall fail, ret=0x%x\n", tzRes);
+			return -2;
+		}
+		return 0;
+}
+
+int32_t cmdqSecUnRegisterSecureBuffer(struct transmitBufferStruct *pSecureData)
+{
+	TZ_RESULT ret = TZ_RESULT_SUCCESS;
+
+	ret = KREE_UnregisterSharedmem(pSecureData->memSessionHandle,
+									pSecureData->shareMemHandle);
+
+	if (ret != TZ_RESULT_SUCCESS) {
+		CMDQ_ERR("deinit unregister share memory failed ret=%d\n", ret);
+		return -1;
+	}
+	return 0;
+}
+
+void cmdq_sec_register_secure_irq(void)
+{
+	/*
+	**	pass SECURE IRQ ID to trustzone
+	**	1	prepare buffer to transfer to secure world
+	**	2	register secure buffer
+	**	3	service call
+	**	4	unregister secure buffer
+	*/
+
+	/* 1	prepare buffer to transfer to secure world */
+	uint32_t secureIrqID = cmdq_dev_get_irq_secure_id();
+	struct transmitBufferStruct secureData;
+
+	memset(&secureData, 0, sizeof(secureData));
+	secureData.pBuffer = &secureIrqID;
+	secureData.size = sizeof(secureIrqID);
+
+	/* 2	register secure buffer */
+	if (0 !=  cmdqSecRegisterSecureBuffer(&secureData))
+		return;
+	CMDQ_LOG("register secure irq normal\n");
+
+	/* 3	service call */
+	cmdqSecServiceCall(&secureData, CMD_CMDQ_TL_REGISTER_SECURE_IRQ);
+
+	/* 4	unregister secure buffer */
+	cmdqSecUnRegisterSecureBuffer(&secureData);
+
+
+}
 
 void cmdqSecInitialize(void)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	INIT_LIST_HEAD(&gCmdqSecContextList);
 /* cmdq_sec_allocate_path_resource_unlocked(); */
+
+	/*	register secure IRQ handle */
+	cmdq_sec_lock_secure_path();
+	cmdq_sec_register_secure_irq();
+	cmdq_sec_unlock_secure_path();
+
+
 	/* allocate shared memory */
 	gCmdqContext.hSecSharedMem = NULL;
 	cmdq_sec_create_shared_memory(&(gCmdqContext.hSecSharedMem), PAGE_SIZE);
-
+	/* init share memory */
 	cmdq_sec_lock_secure_path();
 	cmdq_sec_init_share_memory();
 	cmdq_sec_unlock_secure_path();
+
 #endif
 }
 
