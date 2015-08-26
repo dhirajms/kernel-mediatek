@@ -229,6 +229,20 @@ static void __iomem *scpsys_base;	/* 0x10006000 */
 #define VENCLT_CG_SET		VENCLT_REG(0x4)
 #define VENCLT_CG_CLR		VENCLT_REG(0x8)
 
+/* SCPSYS Register */
+#define SPM_VDE_PWR_CON		SCP_REG(0x210)
+#define SPM_MFG_PWR_CON		SCP_REG(0x214)
+#define SPM_VEN_PWR_CON		SCP_REG(0x230)
+#define SPM_ISP_PWR_CON		SCP_REG(0x238)
+#define SPM_DIS_PWR_CON		SCP_REG(0x23c)
+#define SPM_VEN2_PWR_CON	SCP_REG(0x298)
+#define SPM_AUDIO_PWR_CON	SCP_REG(0x29c)
+#define SPM_MFG_2D_PWR_CON	SCP_REG(0x2c0)
+#define SPM_MFG_ASYNC_PWR_CON	SCP_REG(0x2c4)
+#define SPM_USB_PWR_CON		SCP_REG(0x2cc)
+#define SPM_PWR_STATUS		SCP_REG(0x60c)
+#define SPM_PWR_STATUS_2ND	SCP_REG(0x610)
+
 #endif /* CLKDBG_SOC */
 
 static bool is_valid_reg(void __iomem *addr)
@@ -950,6 +964,18 @@ static size_t get_regnames(struct regname *regnames, size_t size)
 {
 	struct regname rn[] = {
 #if CLKDBG_8173
+		{SPM_VDE_PWR_CON, "SPM_VDE_PWR_CON"},
+		{SPM_MFG_PWR_CON, "SPM_MFG_PWR_CON"},
+		{SPM_VEN_PWR_CON, "SPM_VEN_PWR_CON"},
+		{SPM_ISP_PWR_CON, "SPM_ISP_PWR_CON"},
+		{SPM_DIS_PWR_CON, "SPM_DIS_PWR_CON"},
+		{SPM_VEN2_PWR_CON, "SPM_VEN2_PWR_CON"},
+		{SPM_AUDIO_PWR_CON, "SPM_AUDIO_PWR_CON"},
+		{SPM_MFG_2D_PWR_CON, "SPM_MFG_2D_PWR_CON"},
+		{SPM_MFG_ASYNC_PWR_CON, "SPM_MFG_ASYNC_PWR_CON"},
+		{SPM_USB_PWR_CON, "SPM_USB_PWR_CON"},
+		{SPM_PWR_STATUS, "SPM_PWR_STATUS"},
+		{SPM_PWR_STATUS_2ND, "SPM_PWR_STATUS_2ND"},
 		{CLK_CFG_0, "CLK_CFG_0"},
 		{CLK_CFG_1, "CLK_CFG_1"},
 		{CLK_CFG_2, "CLK_CFG_2"},
