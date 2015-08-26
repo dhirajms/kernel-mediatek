@@ -1573,7 +1573,7 @@
 				"disp-smi-jpgdec",
 				"venc-larb-jpgdec",
 				"venc-jpgdec";
-			power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC>;
 		};
 
 		vencltsys: vencltsys@19000000 {
@@ -1896,16 +1896,16 @@
 			<&mmsys CLK_MM_HDMI_HDCP>,
 			<&mmsys CLK_MM_HDMI_HDCP24M>,
 			<&clk_null>,
-			<&vdecsys CLK_VDEC_CKEN>,
-			<&vdecsys CLK_VDEC_LARB_CKEN>,
 			<&clk_null>,
-			<&vencsys CLK_VENC_CKE0>,
-			<&vencsys CLK_VENC_CKE1>,
-			<&vencsys CLK_VENC_CKE2>,
-			<&vencsys CLK_VENC_CKE3>,
 			<&clk_null>,
-			<&vencltsys CLK_VENCLT_CKE0>,
-			<&vencltsys CLK_VENCLT_CKE1>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>;
 
