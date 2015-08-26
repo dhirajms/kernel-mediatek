@@ -5165,6 +5165,10 @@ int primary_display_get_info(void *info)
 	dispif_info->displayWidth = primary_display_get_width();
 	dispif_info->displayHeight = primary_display_get_height();
 
+	if (2560 == dispif_info->displayWidth)
+		dispif_info->displayWidth = 2048;
+	if (1600 == dispif_info->displayHeight)
+		dispif_info->displayHeight = 1536;
 	dispif_info->vsyncFPS = pgc->lcm_fps;
 
 	if (dispif_info->displayWidth * dispif_info->displayHeight <= 240 * 432)

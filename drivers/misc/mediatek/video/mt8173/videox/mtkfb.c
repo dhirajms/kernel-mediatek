@@ -1230,6 +1230,10 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				dispif_info[displayid].displayWidth = primary_display_get_width();
 				dispif_info[displayid].displayHeight = primary_display_get_height();
 
+				if (2560 == dispif_info[displayid].displayWidth)
+					dispif_info[displayid].displayWidth = 2048;
+				if (1600 == dispif_info[displayid].displayHeight)
+					dispif_info[displayid].displayHeight = 1536;
 				dispif_info[displayid].lcmOriginalWidth =
 				    primary_display_get_original_width();
 				dispif_info[displayid].lcmOriginalHeight =
