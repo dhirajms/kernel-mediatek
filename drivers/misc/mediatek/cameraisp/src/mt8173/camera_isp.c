@@ -3970,35 +3970,12 @@ static MINT32 ISP_DumpReg(void)
 
 static inline void Get_ccf_clock(struct platform_device *pDev)
 {
-	struct device_node *pm_node_disp=NULL;
-	struct platform_device *pmdev_disp = NULL;
-
 	LOG_INF("== MTKCAM_USING_CCF: ISP ==");
 	if (pDev == NULL) {
 		pr_err("[%s] ERROR: pDev is Null\n", __func__);
 		return;
 	}
 
-	// we need to find out disp power domain to control disp power
-	// save power device node for later using
-	pm_node_disp = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-isp_display");
-	if(NULL == pm_node_disp)
-	{
-		LOG_ERR("of_find_compatible_node(mediatek,mt8173-isp_display) fail");
-	}
-	else
-	{
-		LOG_ERR("of_find_compatible_node(mediatek,mt8173-isp_display) success !!");
-		
-		pmdev_disp = of_find_device_by_node(pm_node_disp);
-		if (WARN_ON(!pmdev_disp)) {
-			return;
-		}
-		g_pmdev_disp = &pmdev_disp->dev;
-		LOG_ERR("of_find_device_by_node(pmdev_disp) success !!");
-	}
-	g_pmdev_isp = &pDev->dev;
-	
 	g_ispclk_larb2_smi = devm_clk_get(&pDev->dev, "IMG_LARB2_SMI");
 	BUG_ON(IS_ERR(g_ispclk_larb2_smi));
 	g_ispclk_cam_smi = devm_clk_get(&pDev->dev, "IMG_CAM_SMI");
@@ -4020,7 +3997,14 @@ static inline void Get_ccf_clock(struct platform_device *pDev)
 
 static inline void Prepare_ccf_clock(void)
 {
-	LOG_INF("====>");
+/*
+	[Houston]: Temp disable controlling DISP power to avoid boot up fail
+	It needs to be rollbacked, after DISP power is fixed by disp driver
+*/
+/*	BUG_ON(IS_ERR(g_pmdev_disp)); pm_runtime_get_sync(g_pmdev_disp); */
+
+	BUG_ON(IS_ERR(g_pmdev_isp)); pm_runtime_get_sync(g_pmdev_isp);
+
 	BUG_ON(IS_ERR(g_ispclk_larb2_smi));
 	clk_prepare(g_ispclk_larb2_smi);
 	BUG_ON(IS_ERR(g_ispclk_cam_smi));
@@ -4035,13 +4019,11 @@ static inline void Prepare_ccf_clock(void)
 	clk_prepare(g_ispclk_cam_sv);
 	BUG_ON(IS_ERR(g_ispclk_smi_common));
 	clk_prepare(g_ispclk_smi_common);
-	LOG_INF("<====");
 	return;
 }
 
 static inline void Enable_ccf_clock(void)
 {
-	LOG_INF("====>");
 	BUG_ON(IS_ERR(g_ispclk_larb2_smi));
 	clk_enable(g_ispclk_larb2_smi);
 	BUG_ON(IS_ERR(g_ispclk_cam_smi));
@@ -4057,8 +4039,6 @@ static inline void Enable_ccf_clock(void)
 
 	BUG_ON(IS_ERR(g_ispclk_smi_common));
 	clk_enable(g_ispclk_smi_common);
-
-	LOG_INF("<====");
 
 	return;
 }
@@ -4098,6 +4078,15 @@ static inline void Unprepare_ccf_clock(void)
 	clk_unprepare(g_ispclk_cam_sv);
 	BUG_ON(IS_ERR(g_ispclk_smi_common));
 	clk_unprepare(g_ispclk_smi_common);
+
+
+	BUG_ON(IS_ERR(g_pmdev_isp));	pm_runtime_put_sync(g_pmdev_isp);
+/*
+	[Houston]: Temp disable controlling DISP power to avoid boot up fail
+	It needs to be rollbacked, after DISP power is fixed by disp driver
+*/
+/*	BUG_ON(IS_ERR(g_pmdev_disp));	pm_runtime_put_sync(g_pmdev_disp); */
+
 	return;
 }
 
@@ -4105,7 +4094,6 @@ static inline void Unprepare_ccf_clock(void)
 
 static void ISP_EnableClock(MBOOL En)
 {
-	LOG_INF("====> En(%d) , G_u4EnableClockCount(%d)", En, G_u4EnableClockCount);
 
 	if (G_u4EnableClockCount == 1) {
 		LOG_DBG("- E. En: %d. G_u4EnableClockCount: %d.", En, G_u4EnableClockCount);
@@ -4133,7 +4121,6 @@ static void ISP_EnableClock(MBOOL En)
 #endif
 			break;
 		default:
-			LOG_INF("G_u4EnableClockCount(%d)", G_u4EnableClockCount);
 			break;
 		}
 		G_u4EnableClockCount++;
@@ -4161,12 +4148,10 @@ static void ISP_EnableClock(MBOOL En)
 #endif
 			break;
 		default:
-			LOG_INF("G_u4EnableClockCount(%d)", G_u4EnableClockCount);
 			break;
 		}
 		spin_unlock(&(IspInfo.SpinLockClock));
 	}
-	LOG_INF("<==== En(%d) , G_u4EnableClockCount(%d)", En, G_u4EnableClockCount);
 }
 
 /*******************************************************************************
@@ -11332,7 +11317,8 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 				i, of_getISPPA(pDev->dev.of_node, i), (unsigned long int)cam_isp_dev->regs[i]);
 	}
 
-/* Houston Add MTCMOS status checking +++++ */
+/* [Houston] this debug code should be removed after MTCMOS problem is clear */
+/* Add MTCMOS status checking +++++ */
 {
 	struct device_node *scpsys_node = NULL;
 	struct platform_device *scpsys_dev = NULL;
@@ -11424,17 +11410,16 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 	device_create(pIspClass, NULL, IspDevNo, NULL, ISP_DEV_NAME);
 
 #ifdef MTKCAM_USING_CCF		/* Common Clock Framework (CCF) */
-	Get_ccf_clock(pDev);
 
-/* Houston workaround for pm_domain timing +++ */
-
+/* [Houston] Need to power on ISP firstly to avoid ISP reg UN-accessed +++ */
+	LOG_INF("[Houston] pm_runtime_enable(ISP)");
+	/* Save isp power domain handle */
+	g_pmdev_isp = &pDev->dev;
 	BUG_ON(IS_ERR(g_pmdev_isp)); pm_runtime_enable(g_pmdev_isp);
-	BUG_ON(IS_ERR(g_pmdev_disp)); pm_runtime_enable(g_pmdev_disp);
+	pm_runtime_get_sync(g_pmdev_isp);	LOG_INF("[Houston] pm_runtime_get_sync(ISP)");
+/* [Houston] --- */
 
-	BUG_ON(IS_ERR(g_pmdev_isp));	pm_runtime_get_sync(g_pmdev_isp);
-	BUG_ON(IS_ERR(g_pmdev_disp));	pm_runtime_get_sync(g_pmdev_disp);
-
-/* Houston workaround for pm_domain timing --- */
+	Get_ccf_clock(pDev);
 
 #endif
 
@@ -11543,15 +11528,14 @@ static MINT32 ISP_remove(struct platform_device *pDev)
 	/*  */
 	LOG_DBG("- E.");
 
-/* Houston workaround for pm_domain timing +++ */
-
-	BUG_ON(IS_ERR(g_pmdev_isp)); pm_runtime_put_sync(g_pmdev_isp);
-	BUG_ON(IS_ERR(g_pmdev_disp)); pm_runtime_put_sync(g_pmdev_disp);
-
+	LOG_INF("[Houston] pm_runtime_disable(ISP)");
 	BUG_ON(IS_ERR(g_pmdev_isp)); pm_runtime_disable(g_pmdev_isp);
-	BUG_ON(IS_ERR(g_pmdev_disp)); pm_runtime_disable(g_pmdev_disp);
+/*
+	[Houston] : Temp disable controlling DISP power to avoid boot up fail
+	It needs to be rollbacked, after DISP power is fixed by disp driver
+*/
+	/* BUG_ON(IS_ERR(g_pmdev_disp)); pm_runtime_disable(g_pmdev_disp); */
 
-/* Houston workaround for pm_domain timing --- */
 
 	/* unregister char driver. */
 	ISP_UnregCharDev();
@@ -13385,6 +13369,9 @@ void ISP_MCLK1_EN(MBOOL En)
 	static MUINT32 mMclk1User;
 	MUINT32 temp = 0;
 
+	LOG_INF("===> [0x1000660c]=0x%x , [0x10006610]=0x%x ",
+		ISP_RD32(g_scpsys_baseaddr+0x60c), ISP_RD32(g_scpsys_baseaddr+0x610));
+
 	if (1 == En)
 		mMclk1User++;
 	else
@@ -13404,6 +13391,10 @@ void ISP_MCLK1_EN(MBOOL En)
 	}
 	temp = ISP_RD32(ISP_ADDR + 0x4200);
 	LOG_INF("ISP_MCLK1_EN(0x%x), mMclk1User(%d)", temp, mMclk1User);
+
+	LOG_INF("<=== [0x1000660c]=0x%x , [0x10006610]=0x%x ",
+		ISP_RD32(g_scpsys_baseaddr+0x60c), ISP_RD32(g_scpsys_baseaddr+0x610));
+
 }
 
 void ISP_MCLK2_EN(MBOOL En)
@@ -14320,6 +14311,87 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 	return M4U_CALLBACK_HANDLED;
 }
 
+/* One more driver for DISP power domain */
+
+#ifdef MTKCAM_USING_CCF
+
+/* Attach another pm_domain driver */
+static int disp_pm_probe(struct platform_device *pdev)
+{
+	/* save disp power domain device */
+	g_pmdev_disp = &pdev->dev;
+
+	if (g_pmdev_disp->pm_domain == NULL)
+		LOG_ERR("g_pmdev_disp->pm_domain is NULL");
+
+	LOG_INF("pm_runtime_enable(DISP)");
+	pm_runtime_enable(g_pmdev_disp);
+
+/*
+	[Houston]: Temp disable controlling DISP power to avoid boot up fail
+	It needs to be rollbacked, after DISP power is fixed by disp driver
+*/
+
+/*
+	LOG_INF("pm_runtime_get_sync(DISP)");
+	pm_runtime_get_sync(g_pmdev_disp);
+*/
+
+	return 0;
+}
+
+static int disp_pm_remove(struct platform_device *pdev)
+{
+	LOG_INF("pm_runtime_disable(DISP)");
+	pm_runtime_disable(g_pmdev_disp);
+	return 0;
+}
+
+static const struct of_device_id disp_pm_id_table[] = {
+	{ .compatible = "mediatek,mt8173-isp_display",},
+	{ },
+};
+
+MODULE_DEVICE_TABLE(of, disp_pm_id_table);
+
+static struct platform_driver disp_pm_driver = {
+	.probe		= disp_pm_probe,
+	.remove		= disp_pm_remove,
+	.driver		= {
+		.name	= "disp_pm_driver",
+		.owner	= THIS_MODULE,
+		.of_match_table = disp_pm_id_table,
+	}
+	,
+};
+module_platform_driver(disp_pm_driver);
+
+
+/*
+	We need to power on(get_sync) ISP MTCMOS in kernel init stage,
+	and power off(put_sync) in late_init to make sure ISP HW engine is workable.
+	Otherwise, ISP reg would be UN-accessed, even its power/clock is on.
+*/
+int __init ISP_lateinit(void)
+{
+	LOG_INF("pm_runtime_put_sync(ISP)");
+	pm_runtime_put_sync(g_pmdev_isp);
+
+/*
+	[Houston]: Temp disable controlling DISP power to avoid boot up fail
+	It needs to be rollbacked, after DISP power is fixed by disp driver
+*/
+
+/*
+	LOG_INF("pm_runtime_put_sync(DISP)");
+	pm_runtime_put_sync(g_pmdev_disp);
+*/
+
+	return 0;
+}
+late_initcall(ISP_lateinit);
+
+#endif
 
 
 /*******************************************************************************
