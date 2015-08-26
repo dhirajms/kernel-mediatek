@@ -168,11 +168,13 @@
 &i2c0 {
 	clock-frequency = <400000>;
 	status = "okay";
-	cap_touch@20 {
+	cap_touch@5d {
 		compatible = "mediatek,cap_touch";
-		reg = <0x20>;
+		reg = <0x5d>;
 		interrupt-parent = <&pio>;
-		interrupts = <14 IRQ_TYPE_EDGE_FALLING>;
+		interrupts = <14 IRQ_TYPE_EDGE_RISING>;
+		rst-gpio = <&pio6397 12 0>;
+		int-gpio = <&pio 14 0>;
 	};
 };
 
@@ -250,6 +252,12 @@
 		compatible = "mediatek,8173led_i2c";
 		reg = <0x2c>;
 	};
+};
+
+&lcm {
+	gpio_lcm_pwr_en = <&pio 103 0>;
+	gpio_lcm_rst_en = <&pio 105 0>;
+	gpio_lcm_led_en = <&pio 102 0>;
 };
 
 &mmc0 {
