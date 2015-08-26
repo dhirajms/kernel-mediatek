@@ -1790,7 +1790,7 @@
 			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
-			<&infracfg CLK_INFRA_M4U>,
+			<&clk_null>,
 			<&infracfg CLK_INFRA_CPUM>,
 			<&clk_null>,
 			<&clk_null>,
