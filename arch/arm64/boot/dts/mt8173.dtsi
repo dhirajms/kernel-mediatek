@@ -1939,11 +1939,6 @@
 		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
 	};
 
-	bring-up-pd-mfg {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT8173_POWER_DOMAIN_MFG>;
-	};
-
 	bring-up-pd-venc {
 		compatible = "mediatek,scpsys-bring-up";
 		power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC>;
