@@ -71,6 +71,7 @@ typedef unsigned char BOOL;
 #define MTKCAM_USING_DTGPIO
 #ifdef MTKCAM_USING_DTGPIO	/* Device Tree GPIO */
 #include <linux/of_gpio.h>
+#include <linux/pinctrl/consumer.h>
 #else
 #error "ERROR: MTKCAM_USING_DTGPIO is not defined"
 #endif
@@ -3150,11 +3151,11 @@ static int CAMERA_HW_i2c_remove2(struct i2c_client *client)
 ********************************************************************************/
 #ifdef CONFIG_OF
 static const struct of_device_id CAMERA_HW_i2c_of_ids[] = {
-	{.compatible = "mediatek,CAMERA_HW_i2C",},
+	{.compatible = "mediatek,camera_hw_i2c",},
 	{}
 };
 #endif
-
+MODULE_DEVICE_TABLE(of,CAMERA_HW_i2c_of_ids);
 struct i2c_driver CAMERA_HW_i2c_driver = {
 	.probe = CAMERA_HW_i2c_probe,
 	.remove = CAMERA_HW_i2c_remove,
@@ -3169,22 +3170,22 @@ struct i2c_driver CAMERA_HW_i2c_driver = {
 	.id_table = CAMERA_HW_i2c_id,
 };
 
-#if 0
+#if 1
 #ifdef CONFIG_OF
 static const struct of_device_id CAMERA_HW2_i2c_driver_of_ids[] = {
-	{.compatible = "mediatek,CAMERA_HW2_i2C",},
+	{.compatible = "mediatek,camera_hw2_i2c",},
 	{}
 };
 #endif
 #endif
-
+MODULE_DEVICE_TABLE(of,CAMERA_HW2_i2c_driver_of_ids);
 struct i2c_driver CAMERA_HW_i2c_driver2 = {
 	.probe = CAMERA_HW_i2c_probe2,
 	.remove = CAMERA_HW_i2c_remove2,
 	.driver = {
 		   .name = CAMERA_HW_DRVNAME2,
 		   .owner = THIS_MODULE,
-#if 0
+#if 1
 #ifdef CONFIG_OF
 		   .of_match_table = CAMERA_HW2_i2c_driver_of_ids,
 #endif
