@@ -1784,7 +1784,7 @@
 			<&clk_null>,
 			<&clk_null>,
 			<&infracfg CLK_INFRA_DBGCLK>,
-			<&infracfg CLK_INFRA_SMI>,
+			<&clk_null>,
 			<&clk_null>,
 			<&infracfg CLK_INFRA_GCE>,
 			<&clk_null>,
