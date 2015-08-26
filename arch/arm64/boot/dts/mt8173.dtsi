@@ -1835,13 +1835,13 @@
 			<&pericfg CLK_PERI_UART2_SEL>,
 			<&pericfg CLK_PERI_UART3_SEL>,
 			<&clk_null>,
-			<&imgsys CLK_IMG_LARB2_SMI>,
-			<&imgsys CLK_IMG_CAM_SMI>,
-			<&imgsys CLK_IMG_CAM_CAM>,
-			<&imgsys CLK_IMG_SEN_TG>,
-			<&imgsys CLK_IMG_SEN_CAM>,
-			<&imgsys CLK_IMG_CAM_SV>,
-			<&imgsys CLK_IMG_FD>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
+			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
@@ -1948,16 +1948,6 @@
 	};
 
 	bring-up-pd-venc-disp {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
-	};
-
-	bring-up-pd-isp {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT8173_POWER_DOMAIN_ISP>;
-	};
-
-	bring-up-pd-isp-disp {
 		compatible = "mediatek,scpsys-bring-up";
 		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
 	};
