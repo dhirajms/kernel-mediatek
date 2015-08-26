@@ -1590,6 +1590,8 @@
 			compatible = "mediatek,mt8173-keypad";
 			reg = <0 0x10010000 0 0x1000>;
 			interrupts = <GIC_SPI 154 IRQ_TYPE_EDGE_FALLING>;
+			clocks = <&infracfg CLK_INFRA_KP>;
+			clock-names = "kpd-clk";
 		};
 
 		accdet: accdet@ {
@@ -1785,7 +1787,7 @@
 			<&infracfg CLK_INFRA_L2C_SRAM>,
 			<&infracfg CLK_INFRA_M4U>,
 			<&infracfg CLK_INFRA_CPUM>,
-			<&infracfg CLK_INFRA_KP>,
+			<&clk_null>,
 			<&infracfg CLK_INFRA_CEC>,
 			<&infracfg CLK_INFRA_PMICSPI>,
 			<&infracfg CLK_INFRA_PMICWRAP>,
