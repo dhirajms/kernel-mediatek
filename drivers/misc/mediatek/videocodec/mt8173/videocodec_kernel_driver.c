@@ -742,6 +742,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			    rHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
 			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
 			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
+			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VP9_DEC ||
 			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
 				while (bLockedHW == VAL_FALSE) {
 					mutex_lock(&DecHWLockEventTimeoutLock);
@@ -1148,6 +1149,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			    rHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
 			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
 			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
+			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VP9_DEC ||
 			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
 				mutex_lock(&VdecHWLock);
 				if (grVcodecDecHWLock.pvHandle ==
@@ -1299,7 +1301,8 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			    val_isr.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
 			    val_isr.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
 			    val_isr.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
-			    val_isr.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
+			    val_isr.eDriverType == VAL_DRIVER_TYPE_VP8_DEC ||
+			    val_isr.eDriverType == VAL_DRIVER_TYPE_VP9_DEC) {
 				mutex_lock(&VdecHWLock);
 				if (grVcodecDecHWLock.pvHandle ==
 				    (VAL_VOID_T *) pmem_user_v2p_video((VAL_ULONG_T) val_isr.
