@@ -176,7 +176,8 @@ u32 sdio_tune_flag = 0;
 
 #define CAPACITY_2G                      (2 * 1024 * 1024 * 1024ULL)
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 u32 g_emmc_mode_switch = 0;
 EXPORT_SYMBOL(g_emmc_mode_switch);
 
@@ -3439,7 +3440,8 @@ struct msdc_host *msdc_get_host(int host_function, bool boot, bool secondary)
 }
 EXPORT_SYMBOL(msdc_get_host);
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 
 u8 ext_csd[512];
 EXPORT_SYMBOL(ext_csd);
@@ -5030,7 +5032,8 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		if (msdc_do_command(host, cmd, 0, CMD_TIMEOUT))
 			goto done;
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 		if (host->hw->host_function == MSDC_EMMC &&
 		    host->hw->boot == MSDC_BOOT_EN &&
 		    cmd->opcode == MMC_SWITCH
@@ -5366,7 +5369,8 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 			}
 		}
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 		if ((cmd->opcode == MMC_SEND_EXT_CSD) &&
 			(host->hw->host_function == MSDC_EMMC))
 			msdc_get_ext_csd(ext_csd, data, host);
@@ -9843,7 +9847,8 @@ static void __exit mt_msdc_exit(void)
 
 module_init(mt_msdc_init);
 module_exit(mt_msdc_exit);
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 late_initcall_sync(msdc_get_cache_region);
 #endif
 MODULE_LICENSE("GPL");

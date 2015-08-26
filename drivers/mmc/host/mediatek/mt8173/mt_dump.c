@@ -19,7 +19,8 @@
 #include "mt_dump.h"
 #include <mt-plat/sd_misc.h>
 #include <mt-plat/sync_write.h>
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 #ifdef CONFIG_MTK_GPT_SCHEME_SUPPORT
 #include <mt-plat/partition.h>
 #endif
@@ -1040,7 +1041,8 @@ static unsigned int simp_mmc_select_voltage(struct simp_mmc_host *host, unsigned
 }
 
 #define CAPACITY_2G                        (2 * 1024 * 1024 * 1024ULL)
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 #if 0
 static u64 simp_msdc_get_user_capacity(struct simp_mmc_card *card)
 {
@@ -1064,7 +1066,8 @@ static u64 simp_msdc_get_user_capacity(struct simp_mmc_card *card)
 
 static void simp_emmc_cal_offset(struct simp_mmc_card *card)
 {
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 #if 0
 	u64 device_capacity = 0;
 
@@ -1537,7 +1540,8 @@ static unsigned int simp_init_emmc(void)
 
 	if (0 == module_init_emmc) {
 		simp_msdc_hw_init();
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 		if (SIMP_FAILED == simp_mmc_init(MSDC_EMMC, 1)) {
 			pr_err("init eMMC Failed ,line:%d\n", __LINE__);
 			ret = 1;
@@ -2036,7 +2040,8 @@ static sector_t lp_start_sect = (sector_t) (-1);
 static sector_t lp_nr_sects = (sector_t) (-1);
 #endif
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 #ifdef CONFIG_MTK_GPT_SCHEME_SUPPORT
 static int simp_emmc_dump_write(unsigned char *buf, unsigned int len,
 				unsigned int offset, unsigned int dev)
@@ -2326,7 +2331,8 @@ int card_dump_func_write(unsigned char *buf, unsigned int len, unsigned long lon
 	sec_offset = offset / 512;
 	switch (dev) {
 	case DUMP_INTO_BOOT_CARD_IPANIC:
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 		ret = simp_emmc_dump_write(buf, len, (unsigned int)offset, dev);
 #endif
 		break;
@@ -2344,7 +2350,8 @@ int card_dump_func_write(unsigned char *buf, unsigned int len, unsigned long lon
 }
 EXPORT_SYMBOL(card_dump_func_write);
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 
 #define SD_FALSE			 (-1)
 #define SD_TRUE			  (0)
@@ -2522,7 +2529,8 @@ int card_dump_func_read(unsigned char *buf, unsigned int len, unsigned long long
 	sec_offset = offset / 512;
 	switch (dev) {
 	case DUMP_INTO_BOOT_CARD_IPANIC:
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 		ret = emmc_dump_read(buf, len, (unsigned int)offset, dev);
 #endif
 		break;
@@ -2569,7 +2577,8 @@ static void simp_msdc_hw_init(void)
 static int __init emmc_dump_init(void)
 {
 	simp_msdc_hw_init();
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 	simp_mmc_init(MSDC_EMMC, 1);
 #endif
 	simp_mmc_init(MSDC_SD, 0);
@@ -2586,7 +2595,8 @@ static void __exit emmc_dump_exit(void)
 module_init(emmc_dump_init);
 module_exit(emmc_dump_exit);
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 #ifdef CONFIG_MTK_GPT_SCHEME_SUPPORT
 /* @partition_ready_flag,
  *  = 0: partition init not ready

@@ -144,7 +144,8 @@ static int simple_sd_ioctl_multi_rw(struct msdc_ioctl *msdc_ctl)
 		pr_debug("mmc_send_ext_csd error, multi rw\n");
 		goto multi_end;
 	}
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 	switch (msdc_ctl->partition) {
 	case EMMC_PART_BOOT1:
 		if (0x1 != (l_buf[179] & 0x7)) {
@@ -350,7 +351,8 @@ static int simple_sd_ioctl_single_rw(struct msdc_ioctl *msdc_ctl)
 		pr_debug("mmc_send_ext_csd error, single rw\n");
 		goto single_end;
 	}
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 	switch (msdc_ctl->partition) {
 	case EMMC_PART_BOOT1:
 		if (0x1 != (l_buf[179] & 0x7)) {
@@ -921,7 +923,8 @@ static int simple_sd_ioctl_sd30_mode_switch(struct msdc_ioctl *msdc_ctl)
 	}
 #endif
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 	/* just for emmc slot */
 	if (msdc_ctl->host_num == 0)
 		g_emmc_mode_switch = 1;
@@ -1010,7 +1013,8 @@ int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type, struct 
 		/*      info->emmc_capacity = msdc_get_capacity(1);*/
 		break;
 	case EMMC_RESERVE:
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 		/*      info->emmc_reserve = msdc_get_reserve();*/
 #endif
 		break;
@@ -1021,7 +1025,8 @@ int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type, struct 
 	return 1;
 }
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 #ifdef CONFIG_MTK_GPT_SCHEME_SUPPORT
 static int simple_mmc_get_disk_info(struct mbr_part_info *mpi, unsigned char *name)
 {
@@ -1174,7 +1179,8 @@ end:
 
 static int simple_mmc_erase_partition(unsigned char *name)
 {
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 	struct mbr_part_info mbr_part;
 	int l_ret = -1;
 

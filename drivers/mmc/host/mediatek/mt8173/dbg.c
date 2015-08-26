@@ -372,7 +372,8 @@ u8 read_write_state = 0;	/* 0:stop, 1:read, 2:write */
 */
 static int sd_multi_rw_compare_slave(int host_num, int read, uint address)
 {
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 	char l_buf[512];
 #endif
 	struct scatterlist msdc_sg;
@@ -446,7 +447,8 @@ static int sd_multi_rw_compare_slave(int host_num, int read, uint address)
 
 	mmc_claim_host(host_ctl->mmc);
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 	if (!g_ett_tune && (host_ctl->hw->host_function == MSDC_EMMC)) {
 		mmc_send_ext_csd(host_ctl->mmc->card, l_buf);
 
@@ -598,7 +600,8 @@ static int sd_multi_rw_compare(int host_num, uint address, int count)
 
 static int emmc_multi_rw_compare_slave(int host_num, int read, uint address)
 {
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 	char l_buf[512];
 #endif
 	struct scatterlist msdc_sg;
@@ -644,7 +647,8 @@ static int emmc_multi_rw_compare_slave(int host_num, int read, uint address)
 
 	mmc_claim_host(host_ctl->mmc);
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 	if (!g_ett_tune && (host_ctl->hw->host_function == MSDC_EMMC)) {
 		mmc_send_ext_csd(host_ctl->mmc->card, l_buf);
 
@@ -1881,7 +1885,8 @@ static int rwThread(void *data)
 			p = 0x3;
 		else if (read_write_state == 2)
 			p = 0;
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 		if (id == 0) {
 			if (mode == 1)
 				error = emmc_multi_rw_compare_slave(id, 1, COMPARE_ADDRESS_MMC);
@@ -2276,7 +2281,8 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf, size_t 
 		}
 
 		if (id == 0) {	/* for msdc0 */
-#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* #ifdef CONFIG_MTK_EMMC_SUPPORT */
+#if 0
 			emmc_multi_rw_compare(0, COMPARE_ADDRESS_MMC, compare_count);
 #else
 			sd_multi_rw_compare(0, COMPARE_ADDRESS_SD, compare_count);
