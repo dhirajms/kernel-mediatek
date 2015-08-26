@@ -9,6 +9,7 @@
 #include <linux/proc_fs.h>
 #include <linux/spinlock.h>
 #include <linux/seq_file.h>
+#include <linux/reboot.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mt-plat/mt_typedefs.h"
 #include "mach/mt_thermal.h"
@@ -275,8 +276,14 @@ static int tsabb_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsig
 		pr_info("*****************************************");
 		pr_info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
+		/* Since WDT not enable, use machine restart instead of BUG() to reset device */
+#ifdef CONFIG_MTK_WD_KICKER
 		BUG();
-		/* arch_reset(0,NULL); */
+#else
+		dump_stack();
+		mdelay(200);
+		machine_restart("");
+#endif
 	}
 	return 0;
 }
@@ -289,6 +296,19 @@ static struct thermal_cooling_device_ops mtktsabb_cooling_sysrst_ops = {
 
 static int mtktsabb_read(struct seq_file *m, void *v)
 {
+	seq_printf(m, "[ tsallts_read_tzabb] trip_0_temp=%d,trip_1_temp=%d,trip_2_temp=%d,trip_3_temp=%d,\n",
+		trip_temp[0], trip_temp[1], trip_temp[2], trip_temp[3]);
+	seq_printf(m, "trip_4_temp=%d,trip_5_temp=%d,trip_6_temp=%d,trip_7_temp=%d,trip_8_temp=%d,trip_9_temp=%d,\n",
+		trip_temp[4], trip_temp[5], trip_temp[6], trip_temp[7], trip_temp[8], trip_temp[9]);
+	seq_printf(m, "g_THERMAL_TRIP_0=%d,g_THERMAL_TRIP_1=%d,g_THERMAL_TRIP_2=%d,g_THERMAL_TRIP_3=%d,\n",
+		g_THERMAL_TRIP[0], g_THERMAL_TRIP[1], g_THERMAL_TRIP[2], g_THERMAL_TRIP[3]);
+	seq_printf(m, "g_THERMAL_TRIP_4=%d,g_THERMAL_TRIP_5=%d,g_THERMAL_TRIP_6=%d,g_THERMAL_TRIP_7=%d,\n",
+		g_THERMAL_TRIP[4], g_THERMAL_TRIP[5], g_THERMAL_TRIP[6], g_THERMAL_TRIP[7]);
+	seq_printf(m, "g_THERMAL_TRIP_8=%d,g_THERMAL_TRIP_9=%d,\n", g_THERMAL_TRIP[8], g_THERMAL_TRIP[9]);
+	seq_printf(m, "cooldev0=%s,cooldev1=%s,cooldev2=%s,cooldev3=%s,cooldev4=%s,\n",
+		g_bind0, g_bind1, g_bind2, g_bind3, g_bind4);
+	seq_printf(m, "cooldev5=%s,cooldev6=%s,cooldev7=%s,cooldev8=%s,cooldev9=%s,time_ms=%d\n",
+		g_bind5, g_bind6, g_bind7, g_bind8, g_bind9, interval);
 	return 0;
 }
 

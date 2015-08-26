@@ -11,7 +11,7 @@
 #include <linux/netdevice.h>
 /* For using net dev - */
 #include <mt-plat/mtk_wcn_cmb_stub.h>
-
+#include <linux/reboot.h>
 /*=============================================================
  *Weak functions
  *=============================================================*/
@@ -474,7 +474,14 @@ static int wmt_cl_set_cur_state(struct thermal_cooling_device *cool_dev, unsigne
 
 	if (cl_dev_state == 1) {
 		/* the temperature is over than the critical, system reboot. */
+		/* Since WDT not enable, use machine restart instead of BUG() to reset device */
+#ifdef CONFIG_MTK_WD_KICKER
 		BUG();
+#else
+		dump_stack();
+		mdelay(200);
+		machine_restart("");
+#endif
 	}
 
 	return 0;

@@ -7,7 +7,7 @@
 #include <linux/types.h>
 #include <linux/delay.h>
 #include <linux/proc_fs.h>
-
+#include <linux/reboot.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mach/mt_thermal.h"
 
@@ -360,8 +360,14 @@ static int sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsigned lo
 		pr_info("*****************************************");
 		pr_info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
+		/* Since WDT not enable, use machine restart instead of BUG() to reset device */
+#ifdef CONFIG_MTK_WD_KICKER
 		BUG();
-		/* arch_reset(0,NULL); */
+#else
+		dump_stack();
+		mdelay(200);
+		machine_restart("");
+#endif
 	}
 	return 0;
 }

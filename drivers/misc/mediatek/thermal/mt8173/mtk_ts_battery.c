@@ -18,6 +18,7 @@
 #include "mach/mt_thermal.h"
 #include "inc/tmp_battery.h"
 #include <linux/uidgid.h>
+#include <linux/reboot.h>
 
 /* ************************************ */
 /* Weak functions */
@@ -375,9 +376,14 @@ static int tsbat_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsig
 		pr_debug("*****************************************");
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
-/* BUG(); */
-		/* arch_reset(0,NULL); */
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+		/* Since WDT not enable, use machine restart instead of BUG() to reset device */
+#ifdef CONFIG_MTK_WD_KICKER
+		BUG();
+#else
+		dump_stack();
+		mdelay(200);
+		machine_restart("");
+#endif
 	}
 	return 0;
 }

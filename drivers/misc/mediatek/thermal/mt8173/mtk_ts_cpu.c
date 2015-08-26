@@ -12,6 +12,7 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
+#include <linux/reboot.h>
 /* #include <mach/mt_ptp.h> */
 #include "../../base/power/mt8173/mt_spm.h"
 #include <mt-plat/sync_write.h>
@@ -2428,7 +2429,14 @@ static int sysrst_cpu_set_cur_state(struct thermal_cooling_device *cdev, unsigne
 		pr_debug("*****************************************\n");
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
+		/* Since WDT not enable, use machine restart instead of BUG() to reset device */
+#ifdef CONFIG_MTK_WD_KICKER
 		BUG();
+#else
+		dump_stack();
+		mdelay(200);
+		machine_restart("");
+#endif
 	}
 	return 0;
 }
@@ -3817,7 +3825,14 @@ static void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 		wd_api->wd_thermal_direct_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);	/* reset mode */
 	} else {
 		pr_debug("%d FAILED TO GET WD API\n", __LINE__);
+		/* Since WDT not enable, use machine restart instead of BUG() to reset device */
+#ifdef CONFIG_MTK_WD_KICKER
 		BUG();
+#else
+		dump_stack();
+		mdelay(200);
+		machine_restart("");
+#endif
 	}
 #endif
 
@@ -4248,7 +4263,14 @@ static int tscpu_thermal_probe(struct platform_device *pdev)
 		wd_api->wd_thermal_direct_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);	/* reset mode */
 	} else {
 		pr_debug("FAILED TO GET WD API\n");
+		/* Since WDT not enable, use machine restart instead of BUG() to reset device */
+#ifdef CONFIG_MTK_WD_KICKER
 		BUG();
+#else
+		dump_stack();
+		mdelay(200);
+		machine_restart("");
+#endif
 	}
 #endif
 
