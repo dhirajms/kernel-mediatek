@@ -109,6 +109,17 @@
 		};
 	};
 
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		ram_console-reserved-memory@44400000 {
+			compatible = "ram_console-reserve-memory";
+			reg = <0 0x44400000 0 0x10000>;
+		};
+	};
+
 	psci {
 		compatible  = "arm,psci";
 		method      = "smc";
