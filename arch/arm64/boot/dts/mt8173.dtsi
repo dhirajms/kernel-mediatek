@@ -1787,7 +1787,7 @@
 			<&infracfg CLK_INFRA_SMI>,
 			<&clk_null>,
 			<&infracfg CLK_INFRA_GCE>,
-			<&infracfg CLK_INFRA_L2C_SRAM>,
+			<&clk_null>,
 			<&infracfg CLK_INFRA_M4U>,
 			<&infracfg CLK_INFRA_CPUM>,
 			<&clk_null>,
