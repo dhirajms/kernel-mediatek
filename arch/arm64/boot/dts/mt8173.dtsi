@@ -926,8 +926,9 @@
 			reg = <0 0x11260000 0 0x1000>;
 			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_LOW>;
 			/* power domain always on */
-			clocks = <&pericfg CLK_PERI_MSDC30_3>;
-			clock-names = "sdio-clock";
+			clocks = <&pericfg CLK_PERI_MSDC30_3>,
+				 <&topckgen CLK_TOP_MSDC50_2_H_SEL>;
+			clock-names = "sdio-clock","sdio-hclk";
 			host-function = <2>  /*<MSDC_SDIO>*/;
 			clk_src = <2>;  /*<MSDC30_CLKSRC_200MHZ>*/
 			status = "disabled";
@@ -1779,7 +1780,7 @@
 			<&topckgen CLK_TOP_SCAM_SEL>,
 			<&topckgen CLK_TOP_SPINFI_IFR_SEL>,
 			<&clk_null>,
-			<&topckgen CLK_TOP_MSDC50_2_H_SEL>,
+			<&clk_null>,
 			<&infracfg CLK_INFRA_DBGCLK>,
 			<&infracfg CLK_INFRA_SMI>,
 			<&clk_null>,
@@ -1808,7 +1809,7 @@
 			<&pericfg CLK_PERI_MSDC30_0>,
 			<&pericfg CLK_PERI_MSDC30_1>,
 			<&pericfg CLK_PERI_MSDC30_2>,
-			<&pericfg CLK_PERI_MSDC30_3>,
+			<&clk_null>,
 			<&pericfg CLK_PERI_NLI_ARB>,
 			<&pericfg CLK_PERI_IRDA>,
 			<&pericfg CLK_PERI_UART0>,

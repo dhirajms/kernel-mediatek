@@ -8918,6 +8918,7 @@ static int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 				struct msdc_host *host)
 {
 	int ret = 0;
+	struct clk *h_clk;
 
 	if (pdev->id == 0) {
 		host->clock_control = devm_clk_get(&pdev->dev, "MSDC0-CLOCK");
@@ -8931,6 +8932,14 @@ static int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 		host->clock_control = devm_clk_get(&pdev->dev, "MSDC2-CLOCK");
 	} else if (pdev->id == 3) {
 		host->clock_control = devm_clk_get(&pdev->dev, "sdio-clock");
+		h_clk = devm_clk_get(&pdev->dev, "sdio-hclk");
+		if (IS_ERR(h_clk)) {
+			pr_err("can not get msdc%d clock control\n", pdev->id);
+			ret = 1;
+			goto out;
+		} else {
+			clk_prepare_enable(h_clk);
+		}
 	}
 	if (IS_ERR(host->clock_control)) {
 		pr_err("can not get msdc%d clock control\n", pdev->id);
