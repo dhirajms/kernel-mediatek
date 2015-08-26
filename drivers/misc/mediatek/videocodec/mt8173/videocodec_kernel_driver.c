@@ -60,6 +60,8 @@
 #define VDO_HW_READ(ptr)           (*((volatile unsigned int * const)(ptr)))
 
 #define VCODEC_DEVNAME     "Vcodec"
+#define VENC_DEVNAME     "Venc"
+#define VENCLT_DEVNAME     "Venclt"
 #define MT8173_VCODEC_DEV_MAJOR_NUMBER 160	/* 189 */
 /* #define MT8173_VENC_USE_L2C */
 
@@ -67,6 +69,14 @@ static dev_t vcodec_devno = MKDEV(MT8173_VCODEC_DEV_MAJOR_NUMBER, 0);
 static struct cdev *vcodec_cdev;
 static struct class *vcodec_class;
 static struct device *vcodec_device;
+
+static dev_t venc_devno;
+static struct cdev *venc_cdev;
+static struct class *venc_class;
+
+static dev_t venclt_devno;
+static struct cdev *venclt_cdev;
+static struct class *venclt_class;
 
 static DEFINE_MUTEX(IsOpenedLock);
 static DEFINE_MUTEX(PWRLock);
@@ -108,12 +118,12 @@ static VAL_UINT32_T gu4VencPWRCounter;	/* mutex : VencPWRLock */
 static VAL_UINT32_T gLockTimeOutCount;
 
 static VAL_UINT32_T gu4VdecLockThreadId;
-/*#define MT8173_VCODEC_DEBUG*/
+#define MT8173_VCODEC_DEBUG
 #ifdef MT8173_VCODEC_DEBUG
 #undef VCODEC_DEBUG
-#define VCODEC_DEBUG MODULE_MFV_LOGE
+#define VCODEC_DEBUG printk /*MODULE_MFV_LOGE*/
 #undef MODULE_MFV_LOGD
-#define MODULE_MFV_LOGD  MODULE_MFV_LOGE
+#define MODULE_MFV_LOGD printk /*MODULE_MFV_LOGE*/
 #else
 #define VCODEC_DEBUG(...)
 #undef MODULE_MFV_LOGD
@@ -212,9 +222,9 @@ static struct clk *clk_smi, *clk_vdec, *clk_vdec_larb, *clk_venc_larb, *clk_venc
 static struct clk *clk_venc_lt_larb, *clk_venc_lt_clk;
 /* static struct clk *clk_venc_pwr, *clk_venc_pwr2; */
 
-struct platform_device *vdec_pdev;
-struct platform_device *venc_pdev;
-struct platform_device *venclt_pdev;
+struct platform_device *vdec_pdev = NULL;
+struct platform_device *pvenc_dev = NULL;
+struct platform_device *pvenclt_dev = NULL;
 
 #endif
 static int venc_enableIRQ(VAL_HW_LOCK_T *prHWLock);
@@ -278,18 +288,17 @@ void vdec_power_off(void)
 
 void venc_power_on(void)
 {
+	int retval = 0;
 	mutex_lock(&VencPWRLock);
 	gu4VencPWRCounter++;
 	mutex_unlock(&VencPWRLock);
 
 #ifdef CONFIG_OF
 	MODULE_MFV_LOGD("venc_power_on D+\n");
-	/* clk_prepare(clk_venc_pwr); */
-	/* clk_enable(clk_venc_pwr); */
-	/* clk_prepare(clk_venc_pwr2); */
-	/* clk_enable(clk_venc_pwr2); */
-	pm_runtime_get_sync(&venc_pdev->dev);
-	pm_runtime_get_sync(&venclt_pdev->dev);
+	retval = pm_runtime_get_sync(&pvenc_dev->dev);
+	MODULE_MFV_LOGD("venc_power_on venc pm return %d\n", retval);
+	retval = pm_runtime_get_sync(&pvenclt_dev->dev);
+	MODULE_MFV_LOGD("venc_power_on venclt pm return %d\n", retval);
 	clk_prepare(clk_smi);
 	clk_enable(clk_smi);
 	clk_prepare(clk_venc_larb);
@@ -331,12 +340,8 @@ void venc_power_off(void)
 		clk_unprepare(clk_venc_lt_larb);
 		clk_disable(clk_venc_lt_clk);
 		clk_unprepare(clk_venc_lt_clk);
-		/* clk_disable(clk_venc_pwr); */
-		/* clk_unprepare(clk_venc_pwr); */
-		/* clk_disable(clk_venc_pwr2); */
-		/* clk_unprepare(clk_venc_pwr2); */
-		pm_runtime_put_sync(&venc_pdev->dev);
-		pm_runtime_put_sync(&venclt_pdev->dev);
+		pm_runtime_put_sync(&pvenc_dev->dev);
+		pm_runtime_put_sync(&pvenclt_dev->dev);
 #else
 		disable_clock(MT_CG_VENC_VENC, "VENC");
 		disable_clock(MT_CG_VENC_LARB, "VENC");
@@ -2319,7 +2324,10 @@ static int vcodec_probe(struct platform_device *pdev)
 	BUG_ON(IS_ERR(clk_venc_lt_clk));
 
 	vdec_pdev = pdev;
-
+	if (!pdev->dev.pm_domain) {
+		MODULE_MFV_LOGD("+vcodec_probe ERROR EPROBE_DEFER\n");
+		return -EPROBE_DEFER;
+	}
 	pm_runtime_enable(&pdev->dev);
 	pm_runtime_get_sync(&pdev->dev);
 	pm_runtime_put_sync(&pdev->dev);
@@ -2405,10 +2413,82 @@ static int vcodec_probe(struct platform_device *pdev)
 	disable_irq(VENC_IRQ_ID);
 	disable_irq(VENC_LT_IRQ_ID);
 #endif
-
-
 	MODULE_MFV_LOGD("[VCODEC_DEBUG] vcodec_probe Done\n");
 
+	return 0;
+}
+
+static int venc_probe(struct platform_device *pdev)
+{
+
+#ifdef CONFIG_OF
+	int ret;
+	struct class_device *class_dev = NULL;
+
+	MODULE_MFV_LOGD("+venc_probe\n");
+
+	pvenc_dev = pdev;
+	pm_runtime_enable(&pdev->dev);
+	ret = pm_runtime_get_sync(&pvenc_dev->dev);
+	MODULE_MFV_LOGD("venc_probe venc pm return %d\n", ret);
+	if (!pdev->dev.pm_domain) {
+		MODULE_MFV_LOGD("+venc_probe ERROR pm_domain\n");
+		return -EPROBE_DEFER;
+	}
+
+	ret = alloc_chrdev_region(&venc_devno, 0, 1, VENC_DEVNAME);
+	if (ret)
+		MODULE_MFV_LOGE("Error: Can't Get Major number for VENC_DEVNAME Device\n");
+	else
+		MODULE_MFV_LOGD("Get VENC Device Major number (%d)\n", venc_devno);
+
+	venc_cdev = cdev_alloc();
+	venc_cdev->owner = THIS_MODULE;
+	venc_cdev->ops = NULL;
+
+	ret = cdev_add(venc_cdev, venc_devno, 1);
+
+	venc_class = class_create(THIS_MODULE, VENC_DEVNAME);
+	class_dev =
+		(struct class_device *)device_create(venc_class, NULL, venc_devno, NULL, VENC_DEVNAME);
+#endif
+	/* venc_power_on(); */
+	return 0;
+}
+
+static int venclt_probe(struct platform_device *pdev)
+{
+#ifdef CONFIG_OF
+	int ret;
+	struct class_device *class_dev = NULL;
+
+	MODULE_MFV_LOGD("+venclt_probe\n");
+
+	pvenclt_dev = pdev;
+
+	pm_runtime_enable(&pvenclt_dev->dev);
+	ret = pm_runtime_get_sync(&pvenclt_dev->dev);
+	MODULE_MFV_LOGD("venclt_probe venclt pm return %d\n", ret);
+	if (!pdev->dev.pm_domain) {
+		MODULE_MFV_LOGD("+vcodec_probe ERROR EPROBE_DEFER\n");
+		return -EPROBE_DEFER;
+	}
+	ret = alloc_chrdev_region(&venclt_devno, 0, 1, VENCLT_DEVNAME);
+	if (ret)
+		MODULE_MFV_LOGE("Error: Can't Get Major number for VENCLT_DEVNAME Device\n");
+	else
+		MODULE_MFV_LOGD("Get VENC Device Major number (%d)\n", venclt_devno);
+
+	venclt_cdev = cdev_alloc();
+	venclt_cdev->owner = THIS_MODULE;
+	venclt_cdev->ops = NULL;
+
+	ret = cdev_add(venclt_cdev, venclt_devno, 1);
+
+	venc_class = class_create(THIS_MODULE, VENCLT_DEVNAME);
+	class_dev =
+	    (struct class_device *)device_create(venclt_class, NULL, venclt_devno, NULL, VENCLT_DEVNAME);
+#endif
 	return 0;
 }
 
@@ -2477,11 +2557,14 @@ static int venc_enableIRQ(VAL_HW_LOCK_T *prHWLock)
 static int vcodec_remove(struct platform_device *pDev)
 {
 	pm_runtime_disable(&pDev->dev);
+	pm_runtime_disable(&pvenc_dev->dev);
+	pm_runtime_disable(&pvenclt_dev->dev);
 	MODULE_MFV_LOGD("vcodec_remove\n");
 	return 0;
 }
 
 #ifdef CONFIG_OF
+/* VDEC main device */
 static const struct of_device_id vcodec_of_ids[] = {
 	{.compatible = "mediatek,mt8173-vdec_gcon",},
 	{}
@@ -2494,6 +2577,37 @@ static struct platform_driver VCodecDriver = {
 		   .name = VCODEC_DEVNAME,
 		   .owner = THIS_MODULE,
 		   .of_match_table = vcodec_of_ids,
+		   }
+};
+/* Venc main device */
+static const struct of_device_id venc_of_ids[] = {
+	{.compatible = "mediatek,mt8173-venc",},
+	{}
+};
+
+static struct platform_driver VencDriver = {
+	.probe = venc_probe,
+	/*.remove = vcodec_venc_remove, */
+	.driver = {
+		   .name = VENC_DEVNAME,
+		   .owner = THIS_MODULE,
+		   .of_match_table = venc_of_ids,
+		   }
+};
+
+/* Venclt main device */
+static const struct of_device_id venclt_of_ids[] = {
+	{.compatible = "mediatek,mt8173-venclt",},
+	{}
+};
+
+static struct platform_driver VencltDriver = {
+	.probe = venclt_probe,
+	/*.remove = vcodec_venc_remove, */
+	.driver = {
+		   .name = VENCLT_DEVNAME,
+		   .owner = THIS_MODULE,
+		   .of_match_table = venclt_of_ids,
 		   }
 };
 #endif
@@ -2518,6 +2632,7 @@ static int __init vcodec_driver_init(void)
 {
 	VAL_RESULT_T eValHWLockRet;
 	VAL_ULONG_T ulFlags, ulFlagsLockHW, ulFlagsISR;
+	struct device_node *node = NULL;
 
 	MODULE_MFV_LOGD("+vcodec_init !!\n");
 
@@ -2525,36 +2640,22 @@ static int __init vcodec_driver_init(void)
 	MT8173Driver_Open_Count = 0;
 	mutex_unlock(&DriverOpenCountLock);
 
-	{
-		struct device_node *node = NULL;
+	/* get VENC related */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-venc");
+	KVA_VENC_BASE = (VAL_ULONG_T) of_iomap(node, 0);
+	VENC_IRQ_ID = irq_of_parse_and_map(node, 0);
+	KVA_VENC_IRQ_STATUS_ADDR = KVA_VENC_BASE + 0x05C;
+	KVA_VENC_IRQ_ACK_ADDR = KVA_VENC_BASE + 0x060;
+	KVA_VENC_SW_PAUSE = KVA_VENC_BASE + VENC_SW_PAUSE;
+	KVA_VENC_SW_HRST_N = KVA_VENC_BASE + VENC_SW_HRST_N;
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-venc");
-		venc_pdev = of_find_device_by_node(node);
-		KVA_VENC_BASE = (VAL_ULONG_T) of_iomap(node, 0);
-		VENC_IRQ_ID = irq_of_parse_and_map(node, 0);
-		KVA_VENC_IRQ_STATUS_ADDR = KVA_VENC_BASE + 0x05C;
-		KVA_VENC_IRQ_ACK_ADDR = KVA_VENC_BASE + 0x060;
-		KVA_VENC_SW_PAUSE = KVA_VENC_BASE + VENC_SW_PAUSE;
-		KVA_VENC_SW_HRST_N = KVA_VENC_BASE + VENC_SW_HRST_N;
-		pm_runtime_enable(&venc_pdev->dev);
-		pm_runtime_get_sync(&venc_pdev->dev);
-		pm_runtime_put_sync(&venc_pdev->dev);
-	}
-	{
-		struct device_node *node = NULL;
-
-		node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-venclt");
-		venclt_pdev = of_find_device_by_node(node);
-		KVA_VENC_LT_BASE = (VAL_ULONG_T) of_iomap(node, 0);
-		VENC_LT_IRQ_ID = irq_of_parse_and_map(node, 0);
-		KVA_VENC_LT_IRQ_STATUS_ADDR = KVA_VENC_LT_BASE + 0x05C;
-		KVA_VENC_LT_IRQ_ACK_ADDR = KVA_VENC_LT_BASE + 0x060;
-		KVA_VENC_LT_SW_PAUSE = KVA_VENC_LT_BASE + VENC_SW_PAUSE;
-		KVA_VENC_LT_SW_HRST_N = KVA_VENC_LT_BASE + VENC_SW_HRST_N;
-		pm_runtime_enable(&venclt_pdev->dev);
-		pm_runtime_get_sync(&venclt_pdev->dev);
-		pm_runtime_put_sync(&venclt_pdev->dev);
-	}
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-venclt");
+	KVA_VENC_LT_BASE = (VAL_ULONG_T) of_iomap(node, 0);
+	VENC_LT_IRQ_ID = irq_of_parse_and_map(node, 0);
+	KVA_VENC_LT_IRQ_STATUS_ADDR = KVA_VENC_LT_BASE + 0x05C;
+	KVA_VENC_LT_IRQ_ACK_ADDR = KVA_VENC_LT_BASE + 0x060;
+	KVA_VENC_LT_SW_PAUSE = KVA_VENC_LT_BASE + VENC_SW_PAUSE;
+	KVA_VENC_LT_SW_HRST_N = KVA_VENC_LT_BASE + VENC_SW_HRST_N;
 
 	{
 		struct device_node *node = NULL;
@@ -2613,7 +2714,9 @@ static int __init vcodec_driver_init(void)
 	if (VAL_FALSE == bIsOpened) {
 		bIsOpened = VAL_TRUE;
 #ifdef CONFIG_OF
-       platform_driver_register(&VCodecDriver);
+		platform_driver_register(&VCodecDriver);
+		platform_driver_register(&VencDriver);
+		platform_driver_register(&VencltDriver);
 #else
 		vcodec_probe(NULL);
 #endif
@@ -2695,6 +2798,16 @@ static void __exit vcodec_driver_exit(void)
 	if (VAL_TRUE == bIsOpened) {
 #ifdef CONFIG_OF
 		platform_driver_unregister(&VCodecDriver);
+
+		cdev_del(venc_cdev);
+		unregister_chrdev_region(venc_devno, 1);
+		device_destroy(venc_class, venc_devno);
+		class_destroy(venc_class);
+
+		cdev_del(venclt_cdev);
+		unregister_chrdev_region(venclt_devno, 1);
+		device_destroy(venclt_class, venclt_devno);
+		class_destroy(venclt_class);
 #else
 		bIsOpened = VAL_FALSE;
 #endif
@@ -2748,6 +2861,7 @@ static void __exit vcodec_driver_exit(void)
 	unregister_swsusp_restore_noirq_func(ID_M_VCODEC);
 #endif
 }
+
 module_init(vcodec_driver_init);
 module_exit(vcodec_driver_exit);
 MODULE_AUTHOR("Legis, Lu <legis.lu@mediatek.com>");
