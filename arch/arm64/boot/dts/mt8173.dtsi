@@ -1555,8 +1555,8 @@
 				<&vencsys CLK_VENC_CKE2>;  /* jpeg enc */
 
 			clock-names =
-				"disp-smi-jpgenc",
-				"venc-larb-jpgenc",
+				"disp-smi",
+				"venc-larb",
 				"venc-jpgenc";
 			power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
 		};
