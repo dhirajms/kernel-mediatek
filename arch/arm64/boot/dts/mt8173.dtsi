@@ -1527,6 +1527,11 @@
 					"MT_CG_VENCLT_CKE";
 		};
 
+		vdec_disp@16000000 {
+			compatible = "mediatek,mt8173-vdec_display";
+			power-domains=<&scpsys MT8173_POWER_DOMAIN_DISP>;
+		};
+
 		vdec@16020000 {
 			compatible = "mediatek,mt8173-vdec";
 			reg = <0 0x16020000 0 0x10000>;
@@ -1898,8 +1903,8 @@
 			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
-			<&vdecsys CLK_VDEC_CKEN>,
-			<&vdecsys CLK_VDEC_LARB_CKEN>,
+			<&clk_null>,
+			<&clk_null>,
 			<&clk_null>,
 			<&vencsys CLK_VENC_CKE0>,
 			<&vencsys CLK_VENC_CKE1>,
@@ -1927,16 +1932,6 @@
 			"121", "122", "123", "124", "125", "126", "127", "128", "129", "130",
 			"131", "132", "133", "134", "135", "136", "137", "138", "139", "140",
 			"141","142","143";
-	};
-
-	bring-up-pd-vdec {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT8173_POWER_DOMAIN_VDEC>;
-	};
-
-	bring-up-pd-vdec-disp {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
 	};
 
 	bring-up-pd-venc {

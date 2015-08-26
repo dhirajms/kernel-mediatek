@@ -60,6 +60,7 @@
 #define VDO_HW_READ(ptr)           (*((volatile unsigned int * const)(ptr)))
 
 #define VCODEC_DEVNAME     "Vcodec"
+#define VDECDISP_DEVNAME "VDecDisp"
 #define VENC_DEVNAME     "Venc"
 #define VENCLT_DEVNAME     "Venclt"
 #define MT8173_VCODEC_DEV_MAJOR_NUMBER 160	/* 189 */
@@ -223,6 +224,7 @@ static struct clk *clk_venc_lt_larb, *clk_venc_lt_clk;
 /* static struct clk *clk_venc_pwr, *clk_venc_pwr2; */
 
 struct platform_device *vdec_pdev = NULL;
+struct platform_device *vdecdisp_pdev = NULL;
 struct platform_device *pvenc_dev = NULL;
 struct platform_device *pvenclt_dev = NULL;
 
@@ -241,6 +243,7 @@ void vdec_power_on(void)
 	/* clk_prepare(clk_vdecpwr); */
 	/* clk_enable(clk_vdecpwr); */
 	pm_runtime_get_sync(&vdec_pdev->dev);
+	pm_runtime_get_sync(&vdecdisp_pdev->dev);
 
 	clk_prepare(clk_smi);
 	clk_enable(clk_smi);
@@ -273,6 +276,7 @@ void vdec_power_off(void)
 		clk_unprepare(clk_smi);
 		/* clk_disable(clk_vdecpwr); */
 		/* clk_unprepare(clk_vdecpwr); */
+		pm_runtime_put_sync(&vdecdisp_pdev->dev);
 		pm_runtime_put_sync(&vdec_pdev->dev);
 #else
 		disable_clock(MT_CG_VDEC0_VDEC, "VDEC");
@@ -2421,6 +2425,27 @@ static int vcodec_probe(struct platform_device *pdev)
 	return 0;
 }
 
+static int vdecdisp_probe(struct platform_device *pdev)
+{
+
+#ifdef CONFIG_OF
+
+	MODULE_MFV_LOGD("+vdecdisp_probe\n");
+	vdecdisp_pdev = pdev;
+	if (!pdev->dev.pm_domain) {
+		MODULE_MFV_LOGD("+vdecdisp_probe ERROR EPROBE_DEFER\n");
+		return -EPROBE_DEFER;
+	}
+	pm_runtime_enable(&pdev->dev);
+	pm_runtime_get_sync(&pdev->dev);
+	pm_runtime_put_sync(&pdev->dev);
+
+	MODULE_MFV_LOGD("-vdecdisp_probe\n");
+#endif
+
+	return 0;
+}
+
 static int venc_probe(struct platform_device *pdev)
 {
 
@@ -2560,6 +2585,7 @@ static int venc_enableIRQ(VAL_HW_LOCK_T *prHWLock)
 static int vcodec_remove(struct platform_device *pDev)
 {
 	pm_runtime_disable(&pDev->dev);
+	pm_runtime_disable(&vdecdisp_pdev->dev);
 	pm_runtime_disable(&pvenc_dev->dev);
 	pm_runtime_disable(&pvenclt_dev->dev);
 	MODULE_MFV_LOGD("vcodec_remove\n");
@@ -2582,6 +2608,22 @@ static struct platform_driver VCodecDriver = {
 		   .of_match_table = vcodec_of_ids,
 		   }
 };
+/* VDEC Display device */
+static const struct of_device_id vdec_display_of_ids[] = {
+	{.compatible = "mediatek,mt8173-vdec_display",},
+	{}
+};
+
+static struct platform_driver VDecDispDriver = {
+	.probe = vdecdisp_probe,
+	/* .remove = vdecdisp_remove, */
+	.driver = {
+		   .name = VDECDISP_DEVNAME,
+		   .owner = THIS_MODULE,
+		   .of_match_table = vdec_display_of_ids,
+		   }
+};
+
 /* Venc main device */
 static const struct of_device_id venc_of_ids[] = {
 	{.compatible = "mediatek,mt8173-venc",},
@@ -2718,6 +2760,7 @@ static int __init vcodec_driver_init(void)
 		bIsOpened = VAL_TRUE;
 #ifdef CONFIG_OF
 		platform_driver_register(&VCodecDriver);
+		platform_driver_register(&VDecDispDriver);
 		platform_driver_register(&VencDriver);
 		platform_driver_register(&VencltDriver);
 #else
@@ -2802,6 +2845,7 @@ static void __exit vcodec_driver_exit(void)
 		MODULE_MFV_LOGD("+vcodec_driver_exit remove device !!\n");
 #ifdef CONFIG_OF
 		platform_driver_unregister(&VCodecDriver);
+		platform_driver_unregister(&VDecDispDriver);
 
 		cdev_del(venc_cdev);
 		unregister_chrdev_region(venc_devno, 1);
