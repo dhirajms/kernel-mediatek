@@ -8,6 +8,7 @@ vcodec_kernel_driver-objs :=        \
 ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
   ccflags-y += -DCONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
 endif
+ccflags-y += -DCONFIG_MTK_VIDEO_HEVC_SUPPORT
 
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += vcodec_kernel_driver.o
 

@@ -2427,14 +2427,14 @@ static int venc_probe(struct platform_device *pdev)
 
 	MODULE_MFV_LOGD("+venc_probe\n");
 
-	pvenc_dev = pdev;
-	pm_runtime_enable(&pdev->dev);
-	ret = pm_runtime_get_sync(&pvenc_dev->dev);
-	MODULE_MFV_LOGD("venc_probe venc pm return %d\n", ret);
 	if (!pdev->dev.pm_domain) {
 		MODULE_MFV_LOGD("+venc_probe ERROR pm_domain\n");
 		return -EPROBE_DEFER;
 	}
+	pvenc_dev = pdev;
+	pm_runtime_enable(&pdev->dev);
+	ret = pm_runtime_get_sync(&pvenc_dev->dev);
+	MODULE_MFV_LOGD("venc_probe venc pm return %d\n", ret);
 
 	ret = alloc_chrdev_region(&venc_devno, 0, 1, VENC_DEVNAME);
 	if (ret)
@@ -2477,7 +2477,7 @@ static int venclt_probe(struct platform_device *pdev)
 	if (ret)
 		MODULE_MFV_LOGE("Error: Can't Get Major number for VENCLT_DEVNAME Device\n");
 	else
-		MODULE_MFV_LOGD("Get VENC Device Major number (%d)\n", venclt_devno);
+		MODULE_MFV_LOGD("Get VENCLT Device Major number (%d)\n", venclt_devno);
 
 	venclt_cdev = cdev_alloc();
 	venclt_cdev->owner = THIS_MODULE;
