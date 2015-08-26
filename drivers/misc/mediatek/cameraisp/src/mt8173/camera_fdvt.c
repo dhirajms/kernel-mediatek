@@ -142,7 +142,6 @@ static unsigned long gFDVT_Reg[FDVT_BASEADDR_NUM];
 struct clk *g_fdvtclk_fd;
 struct clk *g_fdvtclk_smi_common;
 struct device *g_fdvt_pmdev_isp;
-struct device *g_fdvt_pmdev_disp;
 #endif
 
 
@@ -364,35 +363,15 @@ static unsigned long ms_to_jiffies(unsigned long ms)
 
 static inline void Get_ccf_clock(struct platform_device *pDev)
 {
-	struct device_node *pm_node_disp=NULL;
-	struct platform_device *pmdev_disp = NULL;
-
 	LOG_INF("== MTKCAM_USING_CCF: FDVT ==");
 	if (pDev == NULL) {
 		pr_err("[%s] ERROR: pDev is Null\n", __func__);
 		return;
 	}
 
-	// we need to find out disp power domain to control disp power
-	// save power device node for later using
-	pm_node_disp = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-isp_display");
-	if(NULL == pm_node_disp)
-	{
-		LOG_ERR("of_find_compatible_node(mediatek,mt8173-isp_display) fail");
-	}
-	else
-	{
-		LOG_ERR("of_find_compatible_node(mediatek,mt8173-isp_display) success !!");
-		
-		pmdev_disp = of_find_device_by_node(pm_node_disp);
-		if (WARN_ON(!pmdev_disp)) {
-			return;
-		}
-		g_fdvt_pmdev_disp = &pmdev_disp->dev;
-		LOG_ERR("of_find_device_by_node(pmdev_disp) success !!");
-	}
+	/* save device for later power domain usage */
 	g_fdvt_pmdev_isp = &pDev->dev;
-	
+
 	g_fdvtclk_fd = devm_clk_get(&pDev->dev, "IMG_FD");
 	BUG_ON(IS_ERR(g_fdvtclk_fd));
 	g_fdvtclk_smi_common = devm_clk_get(&pDev->dev, "MM_SMI_COMMON");
@@ -403,15 +382,10 @@ static inline void Get_ccf_clock(struct platform_device *pDev)
 static inline void PrepareEnable_ccf_clock(void)
 {
 	BUG_ON(IS_ERR(g_fdvt_pmdev_isp));
-	pm_runtime_enable(g_fdvt_pmdev_isp);
 	pm_runtime_get_sync(g_fdvt_pmdev_isp);
-	
+
 	BUG_ON(IS_ERR(g_fdvtclk_fd));
 	clk_prepare_enable(g_fdvtclk_fd);
-
-	BUG_ON(IS_ERR(g_fdvt_pmdev_disp));
-	pm_runtime_enable(g_fdvt_pmdev_disp);
-	pm_runtime_get_sync(g_fdvt_pmdev_disp);
 
 	BUG_ON(IS_ERR(g_fdvtclk_smi_common));
 	clk_prepare_enable(g_fdvtclk_smi_common);
@@ -422,17 +396,12 @@ static inline void DisableUnprepare_ccf_clock(void)
 {
 	BUG_ON(IS_ERR(g_fdvtclk_fd));
 	clk_disable_unprepare(g_fdvtclk_fd);
-	
-	BUG_ON(IS_ERR(g_fdvt_pmdev_isp));
-	pm_runtime_put_sync(g_fdvt_pmdev_isp);
-	pm_runtime_disable(g_fdvt_pmdev_isp);
 
 	BUG_ON(IS_ERR(g_fdvtclk_smi_common));
 	clk_disable_unprepare(g_fdvtclk_smi_common);
-	
-	BUG_ON(IS_ERR(g_fdvt_pmdev_disp));
-	pm_runtime_put_sync(g_fdvt_pmdev_disp);
-	pm_runtime_disable(g_fdvt_pmdev_disp);
+
+	BUG_ON(IS_ERR(g_fdvt_pmdev_isp));
+	pm_runtime_put_sync(g_fdvt_pmdev_isp);
 
 	return;
 }
@@ -1109,6 +1078,7 @@ static int FDVT_probe(struct platform_device *dev)
 
 #ifdef MTKCAM_USING_CCF		/* Common Clock Framework (CCF) */
 	Get_ccf_clock(dev);
+	pm_runtime_enable(g_fdvt_pmdev_isp);
 #endif
 
 
@@ -1132,6 +1102,11 @@ static int FDVT_remove(struct platform_device *dev)
 	FDVT_WR32(0x00000000, FDVT_INT_EN);	/* BinChang 20120517 Close Interrupt */
 	g_u4MT6573FDVTIRQ = ioread32((void *)FDVT_INT);	/* BinChang 20120517 Read Clear IRQ */
 	mt_fdvt_clk_ctrl(0);	/* ISP help disable */
+
+#ifdef MTKCAM_USING_CCF
+	pm_runtime_disable(g_fdvt_pmdev_isp);
+#endif
+
 	device_destroy(FDVT_class, FDVT_devno);
 	class_destroy(FDVT_class);
 

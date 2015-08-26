@@ -100,9 +100,9 @@ typedef unsigned char BOOL;
 #define LOG_VRB(format, args...)  pr_debug("[Camera-ISP][%s] " format "\n", __func__, ##args)
 #define LOG_DBG(format, args...)  pr_debug("[Camera-ISP][%s] " format "\n", __func__, ##args)
 #define LOG_INF(format, args...)  pr_debug("[Camera-ISP][%s] " format "\n", __func__, ##args)
-#define LOG_WRN(format, args...)  pr_debug("[Camera-ISP][%s] WARNING: " format "\n", __func__, ##args)
-#define LOG_ERR(format, args...)  pr_debug("[Camera-ISP][%s, line%04d] ERROR: " format "\n", __func__, __LINE__, ##args)
-#define LOG_AST(format, args...) pr_debug("[Camera-ISP][%s, line%04d] ASSERT: " format "\n", __func__, __LINE__, ##args)
+#define LOG_WRN(format, args...)  pr_warn("[Camera-ISP][%s] WARNING: " format "\n", __func__, ##args)
+#define LOG_ERR(format, args...)  pr_err("[Camera-ISP][%s, line%04d] ERROR: " format "\n", __func__, __LINE__, ##args)
+#define LOG_AST(format, args...) pr_err("[Camera-ISP][%s, line%04d] ASSERT: " format "\n", __func__, __LINE__, ##args)
 
 
 /*******************************************************************************
@@ -3997,11 +3997,7 @@ static inline void Get_ccf_clock(struct platform_device *pDev)
 
 static inline void Prepare_ccf_clock(void)
 {
-/*
-	[Houston]: Temp disable controlling DISP power to avoid boot up fail
-	It needs to be rollbacked, after DISP power is fixed by disp driver
-*/
-/*	BUG_ON(IS_ERR(g_pmdev_disp)); pm_runtime_get_sync(g_pmdev_disp); */
+	BUG_ON(IS_ERR(g_pmdev_disp)); pm_runtime_get_sync(g_pmdev_disp);
 
 	BUG_ON(IS_ERR(g_pmdev_isp)); pm_runtime_get_sync(g_pmdev_isp);
 
@@ -4081,11 +4077,7 @@ static inline void Unprepare_ccf_clock(void)
 
 
 	BUG_ON(IS_ERR(g_pmdev_isp));	pm_runtime_put_sync(g_pmdev_isp);
-/*
-	[Houston]: Temp disable controlling DISP power to avoid boot up fail
-	It needs to be rollbacked, after DISP power is fixed by disp driver
-*/
-/*	BUG_ON(IS_ERR(g_pmdev_disp));	pm_runtime_put_sync(g_pmdev_disp); */
+	BUG_ON(IS_ERR(g_pmdev_disp));	pm_runtime_put_sync(g_pmdev_disp);
 
 	return;
 }
@@ -11530,11 +11522,7 @@ static MINT32 ISP_remove(struct platform_device *pDev)
 
 	LOG_INF("[Houston] pm_runtime_disable(ISP)");
 	BUG_ON(IS_ERR(g_pmdev_isp)); pm_runtime_disable(g_pmdev_isp);
-/*
-	[Houston] : Temp disable controlling DISP power to avoid boot up fail
-	It needs to be rollbacked, after DISP power is fixed by disp driver
-*/
-	/* BUG_ON(IS_ERR(g_pmdev_disp)); pm_runtime_disable(g_pmdev_disp); */
+	BUG_ON(IS_ERR(g_pmdev_disp)); pm_runtime_disable(g_pmdev_disp);
 
 
 	/* unregister char driver. */
@@ -14327,15 +14315,9 @@ static int disp_pm_probe(struct platform_device *pdev)
 	LOG_INF("pm_runtime_enable(DISP)");
 	pm_runtime_enable(g_pmdev_disp);
 
-/*
-	[Houston]: Temp disable controlling DISP power to avoid boot up fail
-	It needs to be rollbacked, after DISP power is fixed by disp driver
-*/
-
-/*
 	LOG_INF("pm_runtime_get_sync(DISP)");
 	pm_runtime_get_sync(g_pmdev_disp);
-*/
+
 
 	return 0;
 }
@@ -14376,16 +14358,9 @@ int __init ISP_lateinit(void)
 {
 	LOG_INF("pm_runtime_put_sync(ISP)");
 	pm_runtime_put_sync(g_pmdev_isp);
-
-/*
-	[Houston]: Temp disable controlling DISP power to avoid boot up fail
-	It needs to be rollbacked, after DISP power is fixed by disp driver
-*/
-
-/*
 	LOG_INF("pm_runtime_put_sync(DISP)");
 	pm_runtime_put_sync(g_pmdev_disp);
-*/
+
 
 	return 0;
 }
