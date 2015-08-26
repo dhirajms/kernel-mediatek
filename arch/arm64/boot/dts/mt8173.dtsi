@@ -1797,7 +1797,7 @@
 			<&clk_null>,
 			<&clk_null>,
 			<&pericfg CLK_PERI_NFI>,
-			<&pericfg CLK_PERI_THERM>,
+			<&clk_null>,
 			<&pericfg CLK_PERI_PWM1>,
 			<&pericfg CLK_PERI_PWM2>,
 			<&pericfg CLK_PERI_PWM3>,
