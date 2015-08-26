@@ -225,6 +225,12 @@
 
 &i2c3 {
 	status = "okay";
+
+	kd_camera_hw1@36 {
+		compatible = "mediatek,camera_hw_i2c";
+		reg = <0x36>;
+	};
+
 	bq24297_charger@6B {
 		compatible = "ti,bq24297";
 		reg = <0x6B>;
@@ -252,6 +258,64 @@
 		compatible = "mediatek,8173led_i2c";
 		reg = <0x2c>;
 	};
+
+	tmp103-sensor@70 {
+		compatible = "ti,tmp103_temp_sensor";
+		reg = <0x70>;
+	};
+
+	tmp103-sensor@71 {
+		compatible = "ti,tmp103_temp_sensor";
+		reg = <0x71>;
+	};
+
+	tmp103-sensor@72 {
+		compatible = "ti,tmp103_temp_sensor";
+		reg = <0x72>;
+	};
+};
+
+&i2c6 {
+	status = "okay";
+	kd_camera_hw2@30 {
+		compatible = "mediatek,camera_hw2_i2c";
+		reg = <0x30>;
+	};
+};
+/* Camera Power Regulator Framework */
+/* Redefine the camera power pins accroding to project's schematic */
+/* Main Cam */
+&kd_camera_hw1{
+	reg-vcama-supply = <&mt6397_vcama_reg>;		/* AVDD */
+	reg-vcamd-supply = <&mt6397_vgp2_reg>;		/* DVDD : not use, it only for i2c#3*/
+	reg-vcamio-supply = <&mt6397_vgp1_reg>;				/* DOVDD */
+	reg-vcamaf-supply = <&mt6397_vgp3_reg>;		/* AFVDD */
+	pinctrl-names = "default", "cam-1-gpio-rst","cam-1-gpio-pdn","cam-1-gpio-ldo",
+					"camera_1_MCLK_cfgs","camera_2_MCLK_cfgs";
+	pinctrl-0 = <&camera_pins_default>;
+	pinctrl-1 = <&camera_1_rst_cfgs>;
+	pinctrl-2 = <&camera_1_pdn_cfgs>;
+	pinctrl-3 = <&camera_1_ldo_cfgs>;
+	pinctrl-4 = <&camera_1_MCLK_cfgs>;
+	pinctrl-5 = <&camera_2_MCLK_cfgs>;
+	cam-1-gpio-rst = <&pio 15 0>;
+	cam-1-gpio-pdn = <&pio6397 25 0>;
+	cam-1-gpio-ldo = <&pio 0 0>;
+};
+
+/* Sub Cam */
+/* FIX ME: same power pins as Main ? */
+&kd_camera_hw2{
+	reg-vcama-supply = <&mt6397_vcama_reg>;		/* AVDD */
+	reg-vcamd-supply = <&mt6397_vgp2_reg>;		/* DVDD : not use, it only for i2c#3*/
+	reg-vcamio-supply = <&mt6397_vgp1_reg>;		/* DOVDD */
+	reg-vcamaf-supply = <&mt6397_vgp3_reg>;		/* AFVDD */
+	pinctrl-names = "default","cam-2-gpio-pdn";
+	pinctrl-0 = <&camera_pins_default>;
+	pinctrl-1 = <&camera_2_pdn_cfgs>;
+//	pinctrl-2 = <&camera_2_MCLK_cfgs>;
+	cam-2-gpio-pdn = <&pio6397 20 0>;
+	/* cam-2-gpio-ldo = <&pio 0 0>; */			/* non-used */
 };
 
 &lcm {
@@ -293,7 +357,22 @@
 	vqmmc-supply = <&mt6397_vmc_reg>;
 };
 
+&mmc3 {
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc3_pins_default>;
+	pinctrl-1 = <&mmc3_pins_uhs>;
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <50000000>;
+	cap-sd-highspeed;
+	sd-uhs-sdr12;
+	sd-uhs-sdr25;
+	sd-uhs-sdr50;
+};
+
 &pio {
+	pinctrl-names = "default";
+	pinctrl-0 = <&state_default>;
 
 	alsps_intpin_cfg: alspspincfg {
 		pins_cmd_dat {
@@ -320,6 +399,41 @@
 		pinmux = <MT8173_PIN_9_EINT9__FUNC_GPIO9>;
 		input-enable;
 		bias-pull-up;
+	};
+
+	camera_1_rst_cfgs: cam1@0 {
+		pins_cmd_dat {
+			pins = <MT8173_PIN_15_EINT15__FUNC_GPIO15>;/*GPIO_CAMERA_CMRST_PIN*/
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+
+	camera_1_ldo_cfgs: cam1@2 {
+		pins_cmd_dat {
+			pins = <MT8173_PIN_0_EINT0__FUNC_GPIO0>;/*GPIO_CAMERA_CMRST_PIN*/
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+
+	camera_1_MCLK_cfgs: cam1@3 {
+		pins_cmd_dat {
+			pins = <MT8173_PIN_41_CMMCLK__FUNC_CMMCLK>;/*GPIO_CAMERA_CMRST_PIN*/
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+
+	camera_2_MCLK_cfgs: cam2@2 {
+		pins_cmd_dat {
+			pins = <MT8173_PIN_39_CM2MCLK__FUNC_CM2MCLK>;/*GPIO_CAMERA_CMRST_PIN*/
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+
+	camera_pins_default: camdefault {
 	};
 
 	CTP_pins_default: eint0default {
@@ -441,6 +555,44 @@
 
 		pins_clk {
 			pinmux = <MT8173_PIN_77_MSDC1_CLK__FUNC_MSDC1_CLK>;
+			drive-strength = <MTK_DRIVE_4mA>;
+			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+		};
+	};
+
+	mmc3_pins_default: mmc3default {
+		pins_cmd_dat {
+			pinmux = <MT8173_PIN_22_MSDC3_DAT0__FUNC_MSDC3_DAT0>,
+				<MT8173_PIN_23_MSDC3_DAT1__FUNC_MSDC3_DAT1>,
+				<MT8173_PIN_24_MSDC3_DAT2__FUNC_MSDC3_DAT2>,
+				<MT8173_PIN_25_MSDC3_DAT3__FUNC_MSDC3_DAT3>,
+				<MT8173_PIN_27_MSDC3_CMD__FUNC_MSDC3_CMD>;
+			input-enable;
+			drive-strength = <MTK_DRIVE_4mA>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+		};
+
+		pins_clk {
+			pinmux = <MT8173_PIN_26_MSDC3_CLK__FUNC_MSDC3_CLK>;
+			bias-pull-down;
+			drive-strength = <MTK_DRIVE_4mA>;
+		};
+	};
+
+	mmc3_pins_uhs: mmc3@0 {
+		pins_cmd_dat {
+			pinmux = <MT8173_PIN_22_MSDC3_DAT0__FUNC_MSDC3_DAT0>,
+			     <MT8173_PIN_23_MSDC3_DAT1__FUNC_MSDC3_DAT1>,
+			     <MT8173_PIN_24_MSDC3_DAT2__FUNC_MSDC3_DAT2>,
+			     <MT8173_PIN_25_MSDC3_DAT3__FUNC_MSDC3_DAT3>,
+			     <MT8173_PIN_27_MSDC3_CMD__FUNC_MSDC3_CMD>;
+			input-enable;
+			drive-strength = <MTK_DRIVE_4mA>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+		};
+
+		pins_clk {
+			pinmux = <MT8173_PIN_26_MSDC3_CLK__FUNC_MSDC3_CLK>;
 			drive-strength = <MTK_DRIVE_4mA>;
 			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
 		};
@@ -568,11 +720,27 @@
 		interrupt-controller;
 		#interrupt-cells = <2>;
 
-		pio6397: pinctrl@c00{
+		pio6397: pinctrl@c000 {
 			compatible = "mediatek,mt6397-pinctrl";
 			pins-are-numbered;
 			gpio-controller;
 			#gpio-cells = <2>;
+
+			camera_1_pdn_cfgs: cam1@1 {
+				pins_cmd_dat {
+					pins = <MT6397_PIN_25_ROW5__FUNC_GPIO25>;/*GPIO_CAMERA_CMRST_PIN*/
+					slew-rate = <1>; /*direction 0:in, 1:out*/
+					output-low;/*direction out used only. output_low or high*/
+				};
+			};
+
+			camera_2_pdn_cfgs: cam2@1 {
+				pins_cmd_dat {
+					pins = <MT6397_PIN_20_ROW0__FUNC_GPIO20>;/*GPIO_CAMERA_CMRST_PIN*/
+					slew-rate = <1>; /*direction 0:in, 1:out*/
+					output-low;/*direction out used only. output_low or high*/
+				};
+			};
 
 			CTP_pins_rst_output0: rstoutput0 {
 				pins_cmd_dat {
