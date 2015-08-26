@@ -313,6 +313,13 @@
 	/* cam-2-gpio-ldo = <&pio 0 0>; */			/* non-used */
 };
 
+&lcm {
+	gpio_lcm_pwr_en = <&pio 103 0>;
+	gpio_lcm_pwr2_en = <&pio 102 0>;
+	gpio_lcm_rst_en = <&pio 127 0>;
+	gpio_lcm_led_en = <&pio6397 14 0>;
+};
+
 &mmc0 {
 	pinctrl-names = "default", "state_uhs";
 	pinctrl-0 = <&mmc0_pins_default>;
