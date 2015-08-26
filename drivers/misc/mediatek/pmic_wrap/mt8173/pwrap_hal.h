@@ -14,12 +14,12 @@
 #define PWRAPTAG                "[PWRAP] "
 #ifdef PMIC_WRAP_DEBUG
 #define PWRAPDEB(fmt, arg...)     pr_debug(PWRAPTAG "cpuid=%d," fmt, raw_smp_processor_id(), ##arg)
-#define PWRAPFUC(fmt, arg...)     pr_info(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
+#define PWRAPFUC(fmt, arg...)     pr_warn(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
 #endif
 
-#define PWRAPLOG(fmt, arg...)   pr_info(PWRAPTAG fmt, ##arg)
+#define PWRAPLOG(fmt, arg...)   pr_warn(PWRAPTAG fmt, ##arg)
 #define PWRAPERR(fmt, arg...)   pr_err(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#define PWRAPREG(fmt, arg...)   pr_info(PWRAPTAG fmt, ##arg)
+#define PWRAPREG(fmt, arg...)   pr_warn(PWRAPTAG fmt, ##arg)
 
 
 #ifdef CONFIG_OF

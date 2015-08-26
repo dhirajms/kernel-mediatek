@@ -1258,31 +1258,31 @@ static int pwrap_of_iomap(void)
 
 	infracfg_ao_node = of_find_compatible_node(NULL, NULL, "mediatek,INFRACFG_AO");
 	if (!infracfg_ao_node) {
-		pr_info("get INFRACFG_AO failed\n");
+		pr_debug("get INFRACFG_AO failed\n");
 		return -ENODEV;
 	}
 
 	infracfg_ao_base = of_iomap(infracfg_ao_node, 0);
 	if (!infracfg_ao_base) {
-		pr_info("INFRACFG_AO iomap failed\n");
+		pr_debug("INFRACFG_AO iomap failed\n");
 		return -ENOMEM;
 	}
 
 	topckgen_node = of_find_compatible_node(NULL, NULL, "mediatek,TOPCKGEN");
 	if (!topckgen_node) {
-		pr_info("get TOPCKGEN failed\n");
+		pr_debug("get TOPCKGEN failed\n");
 		return -ENODEV;
 	}
 
 	topckgen_base = of_iomap(topckgen_node, 0);
 	if (!topckgen_base) {
-		pr_info("TOPCKGEN iomap failed\n");
+		pr_debug("TOPCKGEN iomap failed\n");
 		return -ENOMEM;
 	}
 
 
-	pr_info("INFRACFG_AO reg: 0x%p\n", infracfg_ao_base);
-	pr_info("TOPCKGEN reg: 0x%p\n", topckgen_base);
+	pr_warn("INFRACFG_AO reg: 0x%p\n", infracfg_ao_base);
+	pr_warn("TOPCKGEN reg: 0x%p\n", topckgen_base);
 
 	return 0;
 }
@@ -1362,13 +1362,13 @@ static int pwrap_probe(struct platform_device *pdev)
 
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pwrap-base");
 	if (!res) {
-		pr_info("could not get pwrap-base resource\n");
+		pr_debug("could not get pwrap-base resource\n");
 		return -ENODEV;
 	}
 
 	pwrap_base = devm_ioremap(wrp->dev, res->start, resource_size(res));
 	if (IS_ERR(pwrap_base)) {
-		pr_info("PWRAP iomap failed\n");
+		pr_debug("PWRAP iomap failed\n");
 		return PTR_ERR(pwrap_base);
 	}
 
@@ -1443,7 +1443,7 @@ static struct platform_driver pwrap_drv = {
 
 static int __init pwrap_hal_init(void)
 {
-	pr_notice("pwrap_hal_init\n");
+	pr_warn("pwrap_hal_init\n");
 	return platform_driver_register(&pwrap_drv);
 }
 postcore_initcall(pwrap_hal_init);
