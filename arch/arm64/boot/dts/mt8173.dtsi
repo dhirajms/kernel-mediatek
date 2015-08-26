@@ -1963,11 +1963,6 @@
 		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
 	};
 
-	bring-up-pd-audio {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT8173_POWER_DOMAIN_AUDIO>;
-	};
-
 	bring-up-pd-usb {
 		compatible = "mediatek,scpsys-bring-up";
 		power-domains = <&scpsys MT8173_POWER_DOMAIN_USB>;
