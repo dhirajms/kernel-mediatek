@@ -11330,7 +11330,7 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 			/* return; */
 		}
 		g_scpsys_dev = &scpsys_dev->dev;
-		LOG_ERR("of_find_device_by_node(scpsys_node) success !!");
+		LOG_INF("of_find_device_by_node(scpsys_node) success !!");
 
 		g_scpsys_baseaddr = (unsigned long)of_iomap(g_scpsys_dev->of_node, 0);
 		LOG_INF("g_scpsys_baseaddr VA = 0x%lx", g_scpsys_baseaddr);

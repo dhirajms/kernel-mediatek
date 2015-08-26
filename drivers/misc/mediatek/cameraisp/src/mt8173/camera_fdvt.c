@@ -81,10 +81,10 @@
 #endif
 */
 
-#define LOG_VRB(format, args...)    pr_err("[Camera-FDVT][%s] " format "\n", __func__, ##args)
-#define LOG_DBG(format, args...)    pr_err("[Camera-FDVT][%s] " format "\n", __func__, ##args)
-#define LOG_INF(format, args...)    pr_err("[Camera-FDVT][%s] " format "\n", __func__, ##args)
-#define LOG_WRN(format, args...)    pr_err("[Camera-FDVT][%s] WARNING: " format "\n", __func__, ##args)
+#define LOG_VRB(format, args...)    pr_debug("[Camera-FDVT][%s] " format "\n", __func__, ##args)
+#define LOG_DBG(format, args...)    pr_debug("[Camera-FDVT][%s] " format "\n", __func__, ##args)
+#define LOG_INF(format, args...)    pr_debug("[Camera-FDVT][%s] " format "\n", __func__, ##args)
+#define LOG_WRN(format, args...)    pr_warn("[Camera-FDVT][%s] WARNING: " format "\n", __func__, ##args)
 #define LOG_ERR(format, args...)    pr_err("[Camera-FDVT][%s, line%04d] ERROR: " format "\n", __func__, __LINE__, ##args)
 #define LOG_AST(format, args...)    pr_err("[Camera-FDVT][%s, line%04d] ASSERT: " format "\n", __func__, __LINE__, ##args)
 

@@ -57,7 +57,7 @@ PowerUp PowerOnList = {
 ******************************************************************************/
 #define PFX "[mt_cam]"
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
-#define PK_DBG_FUNC(fmt, arg...)    pr_err(PFX "[%s]" fmt, __func__, ##arg)
+#define PK_DBG_FUNC(fmt, arg...)    pr_debug(PFX "[%s]" fmt, __func__, ##arg)
 
 #define DEBUG_CAMERA_HW_K
 #ifdef DEBUG_CAMERA_HW_K
