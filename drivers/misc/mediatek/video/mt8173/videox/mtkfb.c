@@ -2192,9 +2192,8 @@ bool boot_up_with_facotry_mode(void)
 #endif
 }
 
-static int mtkfb_probe(struct device *dev)
+static int mtkfb_probe(struct platform_device *pdev)
 {
-	struct platform_device *pdev;
 	struct mtkfb_device *fbdev = NULL;
 	struct fb_info *fbi;
 	int init_state;
@@ -2212,7 +2211,11 @@ static int mtkfb_probe(struct device *dev)
 
 	init_state = 0;
 
-	pdev = to_platform_device(dev);
+	if (!pdev->dev.pm_domain) {
+		MTKFB_ERR("mtkfb_probe is earlier than PM domain\n");
+		return -EPROBE_DEFER;
+	}
+
 	mtkfb_fbdev = pdev;
 
 	/* peeking lcm name before primary_display does lcm_probe */
@@ -2240,7 +2243,7 @@ static int mtkfb_probe(struct device *dev)
 	}
 #endif
 
-	fbi = framebuffer_alloc(sizeof(struct mtkfb_device), dev);
+	fbi = framebuffer_alloc(sizeof(struct mtkfb_device), &pdev->dev);
 	if (!fbi) {
 		MTKFB_ERR("unable to allocate memory for device info\n");
 		r = -ENOMEM;
@@ -2250,8 +2253,8 @@ static int mtkfb_probe(struct device *dev)
 
 	fbdev = (struct mtkfb_device *)fbi->par;
 	fbdev->fb_info = fbi;
-	fbdev->dev = dev;
-	dev_set_drvdata(dev, fbdev);
+	fbdev->dev = &pdev->dev;
+	dev_set_drvdata(&pdev->dev, fbdev);
 
 	{
 #ifdef CONFIG_OF
@@ -2431,9 +2434,9 @@ cleanup:
 }
 
 /* Called when the device is being detached from the driver */
-static int mtkfb_remove(struct device *dev)
+static int mtkfb_remove(struct platform_device *pdev)
 {
-	struct mtkfb_device *fbdev = dev_get_drvdata(dev);
+	struct mtkfb_device *fbdev = platform_get_drvdata(pdev);
 	enum mtkfb_state saved_state = fbdev->state;
 
 	MSG_FUNC_ENTER();
@@ -2449,7 +2452,7 @@ static int mtkfb_remove(struct device *dev)
 }
 
 /* PM suspend */
-static int mtkfb_suspend(struct device *pdev, pm_message_t mesg)
+static int mtkfb_suspend(struct platform_device *pdev, pm_message_t mesg)
 {
 	/*NOT_REFERENCED(pdev); */
 	MSG_FUNC_ENTER();
@@ -2485,7 +2488,7 @@ int mtkfb_ipo_init(void)
 	return 0;
 }
 
-static void mtkfb_shutdown(struct device *pdev)
+static void mtkfb_shutdown(struct platform_device *pdev)
 {
 	MTKFB_LOG("[FB Driver] mtkfb_shutdown()\n");
 	/* mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF); */
@@ -2564,7 +2567,7 @@ static void mtkfb_early_suspend(struct early_suspend *h)
 #endif
 
 /* PM resume */
-static int mtkfb_resume(struct device *pdev)
+static int mtkfb_resume(struct platform_device *pdev)
 {
 	/*NOT_REFERENCED(pdev); */
 	MSG_FUNC_ENTER();
@@ -2603,7 +2606,7 @@ int mtkfb_pm_suspend(struct device *device)
 
 	BUG_ON(pdev == NULL);
 
-	return mtkfb_suspend((struct device *)pdev, PMSG_SUSPEND);
+	return mtkfb_suspend(pdev, PMSG_SUSPEND);
 }
 
 int mtkfb_pm_resume(struct device *device)
@@ -2614,7 +2617,7 @@ int mtkfb_pm_resume(struct device *device)
 
 	BUG_ON(pdev == NULL);
 
-	return mtkfb_resume((struct device *)pdev);
+	return mtkfb_resume(pdev);
 }
 
 int mtkfb_pm_restore_noirq(struct device *device)
@@ -2655,17 +2658,17 @@ static const struct of_device_id mtkfb_of_ids[] = {
 #endif
 
 static struct platform_driver mtkfb_driver = {
+	.probe = mtkfb_probe,
+	.remove = mtkfb_remove,
+	.suspend = mtkfb_suspend,
+	.resume = mtkfb_resume,
+	.shutdown = mtkfb_shutdown,
 	.driver = {
 		   .name = MTKFB_DRIVER,
 #ifdef CONFIG_PM
 		   .pm = &mtkfb_pm_ops,
 #endif
 		   .bus = &platform_bus_type,
-		   .probe = mtkfb_probe,
-		   .remove = mtkfb_remove,
-		   .suspend = mtkfb_suspend,
-		   .resume = mtkfb_resume,
-		   .shutdown = mtkfb_shutdown,
 #ifdef CONFIG_OF
 		   .owner = THIS_MODULE,
 		   .of_match_table = mtkfb_of_ids,
