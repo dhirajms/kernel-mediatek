@@ -16,6 +16,7 @@
 #include <linux/version.h>
 
 #define DUMMY_REG_TEST		0
+#define DUMP_INIT_STATE		0
 #define CLKDBG_PM_DOMAIN	0
 #define CLKDBG_8173		1
 #define CLKDBG_8173_TK		0
@@ -859,6 +860,8 @@ static u32 measure_ca57_freq(void)
 
 #endif /* CLKDBG_8173 */
 
+#if DUMP_INIT_STATE
+
 static void print_abist_clock(enum ABIST_CLK clk)
 {
 	u32 freq = measure_abist_freq(clk);
@@ -903,6 +906,8 @@ static void print_fmeter_all(void)
 	clk_writel(PLL_HP_CON0, old_pll_hp_con0);
 #endif /* CLKDBG_8173 */
 }
+
+#endif /* DUMP_INIT_STATE */
 
 static void seq_print_abist_clock(enum ABIST_CLK clk,
 		struct seq_file *s, void *v)
@@ -1059,6 +1064,8 @@ static size_t get_regnames(struct regname *regnames, size_t size)
 	return n;
 }
 
+#if DUMP_INIT_STATE
+
 static void print_reg(void __iomem *reg, const char *name)
 {
 	if (!is_valid_reg(reg))
@@ -1077,6 +1084,8 @@ static void print_regs(void)
 	for (i = 0; i < n; i++)
 		print_reg(rn[i].reg, rn[i].name);
 }
+
+#endif /* DUMP_INIT_STATE */
 
 static void seq_print_reg(void __iomem *reg, const char *name,
 		struct seq_file *s, void *v)
@@ -2587,8 +2596,10 @@ int __init mt_clkdbg_init(void)
 {
 	init_iomap();
 
+#if DUMP_INIT_STATE
 	print_regs();
 	print_fmeter_all();
+#endif /* DUMP_INIT_STATE */
 
 	return 0;
 }
