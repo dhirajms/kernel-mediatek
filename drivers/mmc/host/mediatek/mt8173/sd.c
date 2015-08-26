@@ -9123,6 +9123,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 	int len = 0;
 	unsigned char cd_level = false;
+	int read_tmp = 0;
 
 	if (!mmc->parent || !mmc->parent->of_node)
 		return 1;
@@ -9143,7 +9144,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 		host->hw->flags |= MSDC_EXT_SDIO_IRQ;
 	}
 
-	pr_err("of msdc DT probe %s!, hostId:%d, flags:%d\n", np->name, host->id, host->hw->flags);
+	pr_err("of msdc DT probe %s!, hostId:%d\n", np->name, host->id);
 
 	/* iomap register */
 	host->base = of_iomap(np, 0);
@@ -9159,8 +9160,11 @@ int msdc_of_parse(struct mmc_host *mmc)
 	BUG_ON(host->irq < 0);
 
 	/* get clk_src */
-	if (of_property_read_u32(np, "clk_src", &host->hw->clk_src))
+	read_tmp = 0;
+	if (of_property_read_u32(np, "clk_src", &read_tmp))
 		pr_err("[MDSC%d] error: clk_src isn't found in DT.\n", host->id);
+	else
+		host->hw->clk_src = read_tmp;
 
 	/* get msdc flag(caps)*/
 	if (of_find_property(np, "msdc-sys-suspend", &len))
@@ -9170,8 +9174,11 @@ int msdc_of_parse(struct mmc_host *mmc)
 	* -ENODATA if property does not have a value, and -EOVERFLOW if the
 	* property data isn't large enough.*/
 
-	if (of_property_read_u32(np, "host-function", &host->hw->host_function))
+	read_tmp = 0;
+	if (of_property_read_u32(np, "host-function", &read_tmp))
 		pr_err("[MSDC%d] host_function isn't found in DT\n", host->id);
+	else
+		host->hw->host_function = read_tmp;
 
 	if (of_find_property(np, "bootable", &len))
 		host->hw->boot = 1;
