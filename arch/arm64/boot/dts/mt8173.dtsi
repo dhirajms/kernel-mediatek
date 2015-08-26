@@ -1923,6 +1923,66 @@
 			"131", "132", "133", "134", "135", "136", "137", "138", "139", "140",
 			"141","142","143";
 	};
+
+	bring-up-pd-vdec {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_VDEC>;
+	};
+
+	bring-up-pd-vdec-disp {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
+	};
+
+	bring-up-pd-mfg {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_MFG>;
+	};
+
+	bring-up-pd-venc {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC>;
+	};
+
+	bring-up-pd-venc-disp {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
+	};
+
+	bring-up-pd-isp {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_ISP>;
+	};
+
+	bring-up-pd-isp-disp {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
+	};
+
+	bring-up-pd-disp {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
+	};
+
+	bring-up-pd-venclt {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC_LT>;
+	};
+
+	bring-up-pd-venclt-disp {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
+	};
+
+	bring-up-pd-audio {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_AUDIO>;
+	};
+
+	bring-up-pd-usb {
+		compatible = "mediatek,scpsys-bring-up";
+		power-domains = <&scpsys MT8173_POWER_DOMAIN_USB>;
+	};
 };
 
 /include/ "cust_kpd_8173.dtsi"
