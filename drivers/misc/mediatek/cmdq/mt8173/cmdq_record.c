@@ -170,15 +170,6 @@ int32_t cmdq_append_command(cmdqRecHandle handle, enum CMDQ_CODE_ENUM code, uint
 		return -EBUSY;
 	}
 
-	if (handle->blockSize > 4 * 1024) {
-		CMDQ_ERR("warning handle[%p] scenario[%d] is over 4KB,size[%d]\n",
-			 handle, handle->scenario, handle->blockSize);
-	}
-	if (handle->blockSize > 32 * 1024) {
-		CMDQ_ERR("warning handle[%p] scenario[%d] is over 32KB,size[%d]\n",
-			 handle, handle->scenario, handle->blockSize);
-	}
-
 	/* check if we have sufficient buffer size */
 	/* we leave a 4 instruction (8 bytes each) margin. */
 	if ((handle->blockSize + 32) >= handle->bufferSize) {
