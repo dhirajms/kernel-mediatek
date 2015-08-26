@@ -2792,10 +2792,11 @@ static void __exit vcodec_driver_exit(void)
 {
 	VAL_RESULT_T eValHWLockRet;
 
-	MODULE_MFV_LOGD("[VCODEC_DEBUG] mflexvideo_driver_exit\n");
+	MODULE_MFV_LOGD("[VCODEC_DEBUG] vcodec_driver_exit\n");
 
 	mutex_lock(&IsOpenedLock);
 	if (VAL_TRUE == bIsOpened) {
+		MODULE_MFV_LOGD("+vcodec_driver_exit remove device !!\n");
 #ifdef CONFIG_OF
 		platform_driver_unregister(&VCodecDriver);
 
@@ -2808,9 +2809,15 @@ static void __exit vcodec_driver_exit(void)
 		unregister_chrdev_region(venclt_devno, 1);
 		device_destroy(venclt_class, venclt_devno);
 		class_destroy(venclt_class);
+
+		platform_driver_unregister(&VencDriver);
+		platform_device_unregister(pvenc_dev);
+		platform_driver_unregister(&VencltDriver);
+		platform_device_unregister(pvenclt_dev);
 #else
 		bIsOpened = VAL_FALSE;
 #endif
+		MODULE_MFV_LOGD("+vcodec_driver_exit remove done !!\n");
 	}
 	mutex_unlock(&IsOpenedLock);
 
