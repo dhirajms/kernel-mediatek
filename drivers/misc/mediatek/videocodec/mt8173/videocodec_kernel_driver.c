@@ -2559,7 +2559,7 @@ static int __init vcodec_driver_init(void)
 	{
 		struct device_node *node = NULL;
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-venclt");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-vdec");
 		KVA_VDEC_BASE = (VAL_ULONG_T) of_iomap(node, 0);
 		VDEC_IRQ_ID = irq_of_parse_and_map(node, 0);
 		KVA_VDEC_MISC_BASE = KVA_VDEC_BASE + 0x0000;
