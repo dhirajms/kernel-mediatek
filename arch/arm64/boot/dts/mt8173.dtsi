@@ -474,6 +474,7 @@
 
 		gce: gce@10212000 {
 			compatible = "mediatek,mt8173-gce";
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
 			reg = <0 0x10212000 0 0x1000>;
 			interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_LOW>,
 				     <GIC_SPI 136 IRQ_TYPE_LEVEL_LOW>;

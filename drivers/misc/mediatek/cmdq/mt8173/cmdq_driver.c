@@ -35,6 +35,9 @@
 #ifdef CONFIG_HAS_SBSUSPEND
 #include <linux/sbsuspend.h>
 #endif
+#ifdef CONFIG_PM_RUNTIME
+#include <linux/pm_runtime.h>
+#endif
 
 
 #ifdef CMDQ_OF_SUPPORT
@@ -1046,6 +1049,10 @@ static int cmdq_probe(struct platform_device *pDevice)
 #ifdef CMDQ_OF_SUPPORT
 	/* CCF - Common Clock Framework */
 	cmdq_core_get_clk_map(pDevice);
+#ifdef CONFIG_PM_RUNTIME
+	pm_runtime_enable(&pDevice->dev);
+	cmdq_core_set_cmdq_pdev(pDevice);
+#endif
 #endif
 	/* proc debug access point */
 	cmdq_create_debug_entries();
@@ -1066,6 +1073,11 @@ static int cmdq_probe(struct platform_device *pDevice)
 static int cmdq_remove(struct platform_device *pDevice)
 {
 	disable_irq(cmdq_dev_get_irq_id());
+#ifdef CMDQ_OF_SUPPORT
+#ifdef CONFIG_PM_RUNTIME
+	pm_runtime_disable(&pDevice->dev);
+#endif
+#endif
 
 	device_remove_file(&pDevice->dev, &dev_attr_status);
 	device_remove_file(&pDevice->dev, &dev_attr_error);

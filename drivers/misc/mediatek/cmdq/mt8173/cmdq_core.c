@@ -119,6 +119,9 @@ static struct clk *sys_vde;
 static struct clk *sys_isp;
 static struct clk *sys_dis;
 */
+#ifdef CONFIG_PM_RUNTIME
+struct platform_device *cmdq_pdev;
+#endif
 #endif
 
 static uint16_t gTaskCount[CMDQ_MAX_THREAD_COUNT];
@@ -6893,6 +6896,26 @@ int cmdq_core_disable_ccf_clk(CMDQ_CLK_ENUM clk_enum)
 	return ret;
 }
 
+int cmdq_core_enable_mtcmos_clock(bool enable)
+{
+	int status = 0;
+#ifdef CONFIG_PM_RUNTIME
+	if (cmdq_pdev != NULL) {
+		if (enable)
+			status = pm_runtime_get_sync(&cmdq_pdev->dev);
+		else
+			status = pm_runtime_put_sync(&cmdq_pdev->dev);
+	} else {
+		CMDQ_ERR("MTCMOS fail, enable=%d cmdq_pdev=NULL\n", enable);
+		status = -1;
+	}
+#endif
+	if (status != 0)
+		CMDQ_ERR("MTCMOS fail, enable=%d status=%d\n", enable, status);
+
+	return status;
+}
+
 bool cmdq_core_clock_is_on(CMDQ_CLK_ENUM clk_enum)
 {
 	if (__clk_get_enable_count(cmdq_clk_map[clk_enum]) > 0)
@@ -6930,6 +6953,14 @@ bool cmdq_core_subsys_is_on(CMDQ_SUBSYS_ENUM clk_enum)
 		return 0;
 }
 */
+#ifdef CONFIG_PM_RUNTIME
+int32_t cmdq_core_set_cmdq_pdev(struct platform_device *pdev)
+{
+	cmdq_pdev = pdev;
+
+	return 0;
+}
+#endif
 #endif
 
 int32_t cmdq_core_alloc_sec_metadata(struct cmdqCommandStruct *pCommandDesc,

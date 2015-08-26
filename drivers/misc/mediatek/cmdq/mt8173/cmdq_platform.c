@@ -529,6 +529,7 @@ void cmdq_core_enable_common_clock_locked_impl(bool enable)
 		CMDQ_LOG("[CLOCK] Enable CMDQ(GCE) Clock\n");
 		cmdq_core_enable_cmdq_clock_locked_impl(enable, CMDQ_DRIVER_DEVICE_NAME);
 
+		cmdq_core_enable_mtcmos_clock(enable);
 
 		CMDQ_LOG("[CLOCK] Enable SMI & LARB0 Clock\n");
 /* enable_clock(MT_CG_DISP0_SMI_COMMON, "CMDQ_MDP"); */
@@ -559,6 +560,8 @@ void cmdq_core_enable_common_clock_locked_impl(bool enable)
 		CMDQ_LOG("[CLOCK] disable MT_CG_DISP0_MUTEX_32K\n");
 /* disable_clock(MT_CG_DISP0_MUTEX_32K, "CMDQ_MDP"); */
 		cmdq_core_disable_ccf_clk(CMDQ_CLK_DISP0_MUTEX_32K);
+
+		cmdq_core_enable_mtcmos_clock(enable);
 	}
 #endif				/* CMDQ_PWR_AWARE */
 }
