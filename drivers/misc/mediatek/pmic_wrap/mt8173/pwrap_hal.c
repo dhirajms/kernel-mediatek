@@ -17,6 +17,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/clk.h>
 #endif
 #include <mt_pmic_wrap.h>
 #include "pwrap_hal.h"
@@ -58,6 +59,8 @@ static s32 pwrap_read_nochk(u32 adr, u32 *rdata);
 struct pmic_wrapper {
 	struct device *dev;
 	struct regmap *regmap;
+	struct clk *clk_spi;
+	struct clk *clk_wrap;
 };
 #ifdef CONFIG_OF
 static int pwrap_of_iomap(void);
@@ -1373,6 +1376,26 @@ static int pwrap_probe(struct platform_device *pdev)
 	if (IS_ERR(wrp->regmap))
 		return PTR_ERR(wrp->regmap);
 
+	wrp->clk_spi = devm_clk_get(wrp->dev, "spi");
+	if (IS_ERR(wrp->clk_spi)) {
+		dev_dbg(wrp->dev, "failed to get clock: %ld\n", PTR_ERR(wrp->clk_spi));
+		return PTR_ERR(wrp->clk_spi);
+	}
+
+	wrp->clk_wrap = devm_clk_get(wrp->dev, "wrap");
+	if (IS_ERR(wrp->clk_wrap)) {
+		dev_dbg(wrp->dev, "failed to get clock: %ld\n", PTR_ERR(wrp->clk_wrap));
+		return PTR_ERR(wrp->clk_wrap);
+	}
+
+	ret = clk_prepare_enable(wrp->clk_spi);
+	if (ret)
+		return ret;
+
+	ret = clk_prepare_enable(wrp->clk_wrap);
+	if (ret)
+		goto err_out;
+
 	pwrap_irq = platform_get_irq(pdev, 0);
 
 	ret = of_platform_populate(pwrap_node, NULL, NULL, wrp->dev);
@@ -1400,7 +1423,13 @@ static int pwrap_probe(struct platform_device *pdev)
 		PWRAPERR("not init (%d)\n", ret);
 	}
 
+	return 0;
+
+#ifdef CONFIG_OF
+err_out:
+	clk_disable_unprepare(wrp->clk_spi);
 	return ret;
+#endif
 }
 
 static struct platform_driver pwrap_drv = {
