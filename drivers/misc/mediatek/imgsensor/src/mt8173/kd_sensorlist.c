@@ -519,7 +519,7 @@ int kdReleaseI2CTriggerLock(void)
 	/* ret = mt_wait4_i2c_complete(); */
 
 	/* if (ret < 0 ) { */
-	/* printk("[error]wait i2c fail\n"); */
+	/* PK_DBG_FUNC("[error]wait i2c fail\n"); */
 	/* } */
 
 	return ret;
@@ -2327,7 +2327,7 @@ static int compat_get_acdk_sensor_getinfo_struct(COMPAT_ACDK_SENSOR_GETINFO_STRU
 	err =
 	    copy_from_user((void *)data->ScenarioId, (void *)data32->ScenarioId,
 			   sizeof(MSDK_SCENARIO_ID_ENUM) * 2);
-	printk("ScenarioId[0]: %d, ScenarioId[1]: %d\n", data->ScenarioId[0], data->ScenarioId[1]);
+	PK_DBG_FUNC("ScenarioId[0]: %d, ScenarioId[1]: %d\n", data->ScenarioId[0], data->ScenarioId[1]);
 
 	err |=
 	    copy_from_user((void *)data->pInfo, (void *)data32->pInfo, sizeof(compat_uptr_t) * 2);
@@ -2521,7 +2521,7 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 	switch (cmd) {
 		/*case COMPAT_KDIMGSENSORIOC_X_GETINFO:
 		   {
-		   printk("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_GETINFO E\n");
+		   PK_DBG_FUNC("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_GETINFO E\n");
 
 		   COMPAT_ACDK_SENSOR_GETINFO_STRUCT __user *data32;
 		   ACDK_SENSOR_GETINFO_STRUCT __user *data;
@@ -2532,22 +2532,22 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 		   if (data == NULL)
 		   return -EFAULT;
 
-		   printk("[CAMERA SENSOR] compat_get_acdk_sensor_getinfo_struct E\n");
+		   PK_DBG_FUNC("[CAMERA SENSOR] compat_get_acdk_sensor_getinfo_struct E\n");
 		   err = compat_get_acdk_sensor_getinfo_struct(data32, data);
-		   printk("[CAMERA SENSOR] compat_get_acdk_sensor_getinfo_struct, err: %d L\n", err);
+		   PK_DBG_FUNC("[CAMERA SENSOR] compat_get_acdk_sensor_getinfo_struct, err: %d L\n", err);
 
 		   if (err)
 		   return err;
 
-		   printk("[CAMERA SENSOR] unlocked_ioctl E\n");
+		   PK_DBG_FUNC("[CAMERA SENSOR] unlocked_ioctl E\n");
 		   ret = filp->f_op->unlocked_ioctl(filp, KDIMGSENSORIOC_X_GETINFO,(unsigned long)data);
-		   printk("[CAMERA SENSOR] unlocked_ioctl L\n");
+		   PK_DBG_FUNC("[CAMERA SENSOR] unlocked_ioctl L\n");
 
-		   printk("[CAMERA SENSOR] compat_put_acdk_sensor_getinfo_struct E\n");
+		   PK_DBG_FUNC("[CAMERA SENSOR] compat_put_acdk_sensor_getinfo_struct E\n");
 		   err = compat_put_acdk_sensor_getinfo_struct(data32, data);
-		   printk("[CAMERA SENSOR] compat_put_acdk_sensor_getinfo_struct, err: %d L\n", err);
+		   PK_DBG_FUNC("[CAMERA SENSOR] compat_put_acdk_sensor_getinfo_struct, err: %d L\n", err);
 		   if(err != 0)
-		   printk("[CAMERA SENSOR] compat_put_acdk_sensor_getinfo_struct failed\n");
+		   PK_DBG_FUNC("[CAMERA SENSOR] compat_put_acdk_sensor_getinfo_struct failed\n");
 		   return ret;
 		   } */
 	case COMPAT_KDIMGSENSORIOC_X_FEATURECONCTROL:
