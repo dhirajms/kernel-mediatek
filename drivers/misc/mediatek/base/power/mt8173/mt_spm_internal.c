@@ -311,7 +311,7 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		wr = WR_PCM_ABORT;
 	}
 
-	spm_print(suspend, "wake up by%s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
+	spm_print(suspend, "wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
 		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag);
 
 	spm_print(suspend, "raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
