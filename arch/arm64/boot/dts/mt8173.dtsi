@@ -1808,7 +1808,7 @@
 			<&pericfg CLK_PERI_PWM>,
 			<&pericfg CLK_PERI_USB0>,
 			<&pericfg CLK_PERI_USB1>,
-			<&pericfg CLK_PERI_AP_DMA>,
+			<&clk_null>,
 			<&pericfg CLK_PERI_MSDC30_0>,
 			<&pericfg CLK_PERI_MSDC30_1>,
 			<&pericfg CLK_PERI_MSDC30_2>,
