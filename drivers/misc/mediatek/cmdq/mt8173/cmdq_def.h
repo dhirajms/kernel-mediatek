@@ -22,6 +22,7 @@
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 #include "cmdq_sec_iwc_common.h"
 #endif
+#include "cmdq_sec_iwc_common.h"
 
 #ifdef CONFIG_MTK_SMI
 /* #define CMDQ_CONFIG_SMI (1) */
@@ -295,9 +296,8 @@ typedef struct cmdqSecDataStruct {
 	/* for MDP to copy HDCP version from srcHandle to dstHandle */
 	uint32_t srcHandle;
 	uint32_t dstHandle;
-#ifdef CMDQ_SECURE_PATH_SUPPORT
 	enum CMDQ_DISP_MODE secMode;
-#endif
+
 } cmdqSecDataStruct;
 
 struct cmdqCommandStruct {
