@@ -13,6 +13,7 @@ obj-y += cpu_dormant.o
 
 obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
+obj-y += mt_gpufreq.o
 obj-y += mt_cpufreq_tlp.o
 #obj-y += mt_vcore_dvfs.o
 obj-y += mt_pm_init.o

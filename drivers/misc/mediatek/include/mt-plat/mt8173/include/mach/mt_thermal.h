@@ -22,18 +22,8 @@ extern void __iomem *apmixed_ts_base;
 extern int mt_cpufreq_thermal_protect(unsigned int limited_power, unsigned int limitor_index);
 extern int mtktscpu_limited_dmips;
 
-/* Workaround, it will remove after GPU ready. */
-#if 1
-void __attribute__ ((weak)) mt_gpufreq_thermal_protect(unsigned int limited_power) {
-
-}
-unsigned int __attribute__ ((weak)) mt_gpufreq_get_cur_freq(void){
-	return 0;
-}
-#else
 extern void mt_gpufreq_thermal_protect(unsigned int limited_power);
 extern unsigned int mt_gpufreq_get_cur_freq(void);
-#endif
 
 extern int IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata);
 extern int IMM_IsAdcInitReady(void);
