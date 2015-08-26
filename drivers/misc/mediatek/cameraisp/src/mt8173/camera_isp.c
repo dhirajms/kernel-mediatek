@@ -97,12 +97,12 @@ typedef unsigned char BOOL;
 /* #define LOG_WRN(fmt, arg...)    printk(KERN_ERR "[ISP][%s]Warning" fmt,__FUNCTION__, ##arg) */
 /* #define LOG_ERR(fmt, arg...)    printk(KERN_ERR   "[ISP][%s]Err(%5d):" fmt, __FUNCTION__,__LINE__, ##arg) */
 
-#define LOG_VRB(format, args...)    pr_err("[Camera-ISP][%s] " format "\n", __func__, ##args)
-#define LOG_DBG(format, args...)    pr_err("[Camera-ISP][%s] " format "\n", __func__, ##args)
-#define LOG_INF(format, args...)    pr_err("[Camera-ISP][%s] " format "\n", __func__, ##args)
-#define LOG_WRN(format, args...)    pr_err("[Camera-ISP][%s] WARNING: " format "\n", __func__, ##args)
-#define LOG_ERR(format, args...)    pr_err("[Camera-ISP][%s, line%04d] ERROR: " format "\n", __func__, __LINE__, ##args)
-#define LOG_AST(format, args...)    pr_err("[Camera-ISP][%s, line%04d] ASSERT: " format "\n", __func__, __LINE__, ##args)
+#define LOG_VRB(format, args...)  pr_debug("[Camera-ISP][%s] " format "\n", __func__, ##args)
+#define LOG_DBG(format, args...)  pr_debug("[Camera-ISP][%s] " format "\n", __func__, ##args)
+#define LOG_INF(format, args...)  pr_debug("[Camera-ISP][%s] " format "\n", __func__, ##args)
+#define LOG_WRN(format, args...)  pr_debug("[Camera-ISP][%s] WARNING: " format "\n", __func__, ##args)
+#define LOG_ERR(format, args...)  pr_debug("[Camera-ISP][%s, line%04d] ERROR: " format "\n", __func__, __LINE__, ##args)
+#define LOG_AST(format, args...) pr_debug("[Camera-ISP][%s, line%04d] ASSERT: " format "\n", __func__, __LINE__, ##args)
 
 
 /*******************************************************************************
