@@ -87,6 +87,11 @@
 		clock-names = "mtcpufreq_apmixed_ca15pll";
 	};
 
+	mtgpufreq {
+		compatible = "mediatek,mt8173-gpufreq";
+		reg-vgpu-supply = <&da9212_vgpu_reg>;
+	};
+
 	chosen { };
 
 	/* Connectivity */

@@ -1994,7 +1994,7 @@ static int mt_gpufreq_pdrv_remove(struct platform_device *pdev)
 
 static const struct of_device_id mtgpufreq_of_match[] = {
 	{
-		.compatible = "mediatek,MT_GPUFREQ",
+		.compatible = "mediatek,mt8173-gpufreq",
 	},
 	{
 	}
