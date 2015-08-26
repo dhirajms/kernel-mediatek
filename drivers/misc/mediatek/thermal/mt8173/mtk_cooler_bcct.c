@@ -10,7 +10,7 @@
 #include <linux/syscalls.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 #include <mach/charging.h>
-#include <tmp_battery.h>
+#include "inc/tmp_battery.h"
 #include <linux/uidgid.h>
 
 /* ************************************ */

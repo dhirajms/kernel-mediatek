@@ -25,4 +25,4 @@ obj-$(CONFIG_THERMAL) += tmp103_temp_sensor.o
 obj-$(CONFIG_THERMAL) += mtk_ts_bts_tmp103.o
 obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
 obj-$(CONFIG_THERMAL) += tm_nth.o
-obj-$(CONFIG_THERMAL) += mtk_cooler_bcct.c
+obj-$(CONFIG_THERMAL) += mtk_cooler_bcct.o
