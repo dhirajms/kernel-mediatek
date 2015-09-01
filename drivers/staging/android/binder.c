@@ -2941,7 +2941,14 @@ static void binder_transaction(struct binder_proc *proc,
 			if (tsk == NULL) {
 				spin_unlock_irqrestore(&target_wait->lock, flag);
 				is_lock = false;
-				wake_up_interruptible(target_wait);
+				if (reply || !(t->flags & TF_ONE_WAY)) {
+					preempt_disable();
+					wake_up_interruptible_sync(target_wait);
+					sched_preempt_enable_no_resched();
+				}
+				else {
+					wake_up_interruptible(target_wait);
+				}
 				break;
 			}
 #ifdef MTK_BINDER_DEBUG
@@ -2978,7 +2985,15 @@ static void binder_transaction(struct binder_proc *proc,
 	}
 #else
 	if (target_wait)
-		wake_up_interruptible(target_wait);
+		if (reply || !(t->flags & TF_ONE_WAY)) {
+			preempt_disable();
+			wake_up_interruptible_sync(target_wait);
+			sched_preempt_enable_no_resched();
+		}
+		else {
+			wake_up_interruptible(target_wait);
+		}
+	}
 #endif
 
 #ifdef BINDER_MONITOR
