@@ -18,6 +18,7 @@
 
 static DEFINE_PER_CPU(unsigned long, pcpu_capacity);
 static DEFINE_PER_CPU(struct cpufreq_policy *, pcpu_policy);
+static DEFINE_PER_CPU(int, governor_started);
 
 /**
  * gov_data - per-policy data internal to the governor
@@ -151,6 +152,9 @@ void cpufreq_sched_set_cap(int cpu, unsigned long capacity)
 	struct cpufreq_policy *policy;
 	struct gov_data *gd;
 	unsigned long capacity_max = 0;
+
+	if (!per_cpu(governor_started, cpu))
+		return;
 
 	/* update per-cpu capacity request */
 	per_cpu(pcpu_capacity, cpu) = capacity;
@@ -311,6 +315,10 @@ static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
 	mutex_unlock(&gov_list_lock);
 
 	set_sched_energy_freq();
+
+	for_each_cpu(cpu, policy->cpus)
+		per_cpu(governor_started, cpu) = 1;
+
 	return 0;
 
 err:
@@ -324,6 +332,9 @@ static int cpufreq_sched_policy_exit(struct cpufreq_policy *policy)
 	int cpu = cpumask_first(policy->cpus);
 	pr_info("%s: exit CPU%d cluster\n", __func__, cpu);
 	WARN_ON(!policy->governor_data);
+
+	for_each_cpu(cpu, policy->cpus)
+		per_cpu(governor_started, cpu) = 0;
 
 	clear_sched_energy_freq();
 
@@ -429,6 +440,11 @@ struct cpufreq_governor cpufreq_gov_sched = {
 
 static int __init cpufreq_sched_init(void)
 {
+	int cpu;
+
+	for_each_cpu(cpu, cpu_possible_mask) {
+		per_cpu(governor_started, cpu) = 0;
+	}
 	mutex_init(&gov_list_lock);
 	freq_change_task = kthread_run(cpufreq_sched_thread, NULL, "kcpufreq_sched_task");
 	if (IS_ERR_OR_NULL(freq_change_task)) {
