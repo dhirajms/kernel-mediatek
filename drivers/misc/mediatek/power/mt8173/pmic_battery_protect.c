@@ -30,11 +30,8 @@ void (*low_battery_callback)(LOW_BATTERY_LEVEL);
 void register_low_battery_notify(void (*low_battery_callback) (LOW_BATTERY_LEVEL),
 				 LOW_BATTERY_PRIO prio_val)
 {
-	pr_info("[Power/PMIC][register_low_battery_notify] start\n");
-
 	lbcb_tb[prio_val].lbcb = low_battery_callback;
-
-	pr_info("[Power/PMIC][register_low_battery_notify] prio_val=%d\n", prio_val);
+	pr_debug("[Power/PMIC][register_low_battery_notify] prio_val=%d\n", prio_val);
 }
 
 void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level)
@@ -42,13 +39,13 @@ void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level)
 	int i = 0;
 
 	if (low_battery_stop == 1) {
-		pr_info("[Power/PMIC]" "[exec_low_battery_callback] low_battery_stop=%d\n", low_battery_stop);
+		pr_debug("[Power/PMIC]" "[exec_low_battery_callback] low_battery_stop=%d\n", low_battery_stop);
 	} else {
 		for (i = 0; i < LBCB_NUM; i++) {
 			if (lbcb_tb[i].lbcb != NULL) {
 				low_battery_callback = lbcb_tb[i].lbcb;
 				low_battery_callback(low_battery_level);
-				pr_info("[Power/PMIC]" "[exec_low_battery_callback] prio_val=%d,low_battery=%d\n",
+				pr_debug("[Power/PMIC]" "[exec_low_battery_callback] prio_val=%d,low_battery=%d\n",
 					i, low_battery_level);
 			}
 		}
@@ -117,7 +114,7 @@ void lbat_max_en_setting(int en_val)
 
 irqreturn_t bat_l_int_handler(int irq, void *dev_id)
 {
-	pr_notice("@@@ %s:\n", __func__);
+	pr_warn("[bat_protect] %s:\n", __func__);
 
 	low_battery_level++;
 	if (low_battery_level > 2)
@@ -139,7 +136,7 @@ irqreturn_t bat_l_int_handler(int irq, void *dev_id)
 
 irqreturn_t bat_h_int_handler(int irq, void *dev_id)
 {
-	pr_notice("@@@ %s:\n", __func__);
+	pr_warn("[bat_protect] %s:\n", __func__);
 
 	low_battery_level = 0;
 	exec_low_battery_callback(LOW_BATTERY_LEVEL_0);
@@ -156,7 +153,7 @@ irqreturn_t bat_h_int_handler(int irq, void *dev_id)
 static ssize_t show_low_battery_protect_ut(struct device *dev, struct device_attribute *attr,
 					   char *buf)
 {
-	pr_info("[Power/PMIC]" "[show_low_battery_protect_ut] low_battery_level=%d\n", low_battery_level);
+	pr_debug("[Power/PMIC]" "[show_low_battery_protect_ut] low_battery_level=%d\n", low_battery_level);
 	return sprintf(buf, "%u\n", low_battery_level);
 }
 
@@ -167,12 +164,12 @@ static ssize_t store_low_battery_protect_ut(struct device *dev, struct device_at
 	s32 ret = 0;
 
 	if (buf != NULL && size != 0) {
-		pr_info("[Power/PMIC] buf is %s and size is %lu\n", buf, size);
+		pr_debug("[Power/PMIC] buf is %s and size is %lu\n", buf, size);
 		ret = kstrtouint(buf, 0, &val);
 		if (ret) {
 			pr_err("[Power/PMIC]" "[store_low_battery_protect_ut] wrong number (%d)\n", val);
 		} else {
-			pr_info("[Power/PMIC]" "[store_low_battery_protect_ut] your input is %d\n", val);
+			pr_debug("[Power/PMIC]" "[store_low_battery_protect_ut] your input is %d\n", val);
 			exec_low_battery_callback(val);
 		}
 	}
@@ -186,7 +183,7 @@ static DEVICE_ATTR(low_battery_protect_ut, 0664, show_low_battery_protect_ut,
 static ssize_t show_low_battery_protect_stop(struct device *dev, struct device_attribute *attr,
 					     char *buf)
 {
-	pr_info("[Power/PMIC]" "[show_low_battery_protect_stop] low_battery_stop=%d\n", low_battery_stop);
+	pr_debug("[Power/PMIC]" "[show_low_battery_protect_stop] low_battery_stop=%d\n", low_battery_stop);
 	return sprintf(buf, "%u\n", low_battery_stop);
 }
 
@@ -197,7 +194,7 @@ static ssize_t store_low_battery_protect_stop(struct device *dev, struct device_
 	u32 val = 0;
 
 	if (buf != NULL && size != 0) {
-		pr_info("[Power/PMIC] buf is %s and size is %lu\n", buf, size);
+		pr_debug("[Power/PMIC] buf is %s and size is %lu\n", buf, size);
 		ret = kstrtouint(buf, 0, &val);
 		if ((val != 0) && (val != 1))
 			val = 0;
@@ -206,7 +203,7 @@ static ssize_t store_low_battery_protect_stop(struct device *dev, struct device_
 			pr_err("[Power/PMIC][store_low_battery_protect_stop] wrong format!");
 		else {
 			low_battery_stop = val;
-			pr_info("[Power/PMIC]" "[store_low_battery_protect_stop] low_battery_stop=%d\n",
+			pr_debug("[Power/PMIC]" "[store_low_battery_protect_stop] low_battery_stop=%d\n",
 			low_battery_stop);
 		}
 	}
@@ -219,14 +216,14 @@ static DEVICE_ATTR(low_battery_protect_stop, 0664, show_low_battery_protect_stop
 static ssize_t show_low_battery_protect_level(struct device *dev, struct device_attribute *attr,
 					      char *buf)
 {
-	pr_info("[Power/PMIC]" "[show_low_battery_protect_level] low_battery_level=%d\n", low_battery_level);
+	pr_debug("[Power/PMIC]" "[show_low_battery_protect_level] low_battery_level=%d\n", low_battery_level);
 	return sprintf(buf, "%u\n", low_battery_level);
 }
 
 static ssize_t store_low_battery_protect_level(struct device *dev, struct device_attribute *attr,
 					       const char *buf, size_t size)
 {
-	pr_info("[Power/PMIC]" "[store_low_battery_protect_level] low_battery_level=%d\n", low_battery_level);
+	pr_debug("[Power/PMIC]" "[store_low_battery_protect_level] low_battery_level=%d\n", low_battery_level);
 
 	return size;
 }

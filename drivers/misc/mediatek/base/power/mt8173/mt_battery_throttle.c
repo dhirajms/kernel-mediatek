@@ -163,15 +163,15 @@ static ssize_t store_battery_throttle_mode(struct device *dev, struct device_att
 		ret = kstrtouint(strsep(&pvalue, " "), 0, &mode);
 		if (ret) {
 			pr_err("wrong format!\n");
-			return 0;
+			return size;
 		}
 		ret = kstrtouint(pvalue, 0, &budget);
 		if (ret) {
 			pr_err("wrong format!\n");
-			return 0;
+			return size;
 		}
 
-		pr_notice("set battery throttle mode %d, test budget %d\n", mode, budget);
+		pr_debug("set battery throttle mode %d, test budget %d\n", mode, budget);
 		throttle_mode = mode;
 		test_budget = budget;
 	} else {
@@ -251,7 +251,7 @@ static int __init battery_throttle_init(void)
 		return ret;
 	}
 
-	pr_info("[battery_throttle] Initialization : DONE !!\n");
+	pr_debug("[battery_throttle] Initialization : DONE !!\n");
 	return 0;
 }
 
