@@ -51,8 +51,8 @@
 #define slp_crit2(fmt, args...)     pr_crit("[SLP] " fmt, ##args)
 #define slp_error(fmt, args...)     pr_err("[SLP] " fmt, ##args)
 #define slp_warning(fmt, args...)   pr_warn("[SLP] " fmt, ##args)
-#define slp_notice(fmt, args...)    pr_notice("[SLP] " fmt, ##args)
-#define slp_info(fmt, args...)      pr_info("[SLP] " fmt, ##args)
+#define slp_notice(fmt, args...)    pr_warn("[SLP] " fmt, ##args)
+#define slp_info(fmt, args...)      pr_warn("[SLP] " fmt, ##args)
 #define slp_debug(fmt, args...)     pr_debug("[SLP] " fmt, ##args)
 
 static DEFINE_SPINLOCK(slp_lock);

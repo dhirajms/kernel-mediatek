@@ -274,8 +274,8 @@ extern void dump_uart_reg(void);
 #define spm_crit2(fmt, args...)          pr_crit("[SPM] " fmt, ##args)
 #define spm_err(fmt, args...)		pr_err("[SPM] " fmt, ##args)
 #define spm_warn(fmt, args...)		pr_warn("[SPM] " fmt, ##args)
-#define spm_notice(fmt, args...)	pr_notice("[SPM] " fmt, ##args)
-#define spm_info(fmt, args...)		pr_info("[SPM] " fmt, ##args)
+#define spm_notice(fmt, args...)	pr_warn("[SPM] " fmt, ##args)
+#define spm_info(fmt, args...)		pr_warn("[SPM] " fmt, ##args)
 #define spm_debug(fmt, args...)		pr_debug("[SPM] " fmt, ##args)
 
 #define wfi_with_sync()					\

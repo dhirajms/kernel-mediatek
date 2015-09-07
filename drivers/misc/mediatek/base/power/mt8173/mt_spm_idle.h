@@ -10,8 +10,8 @@
 
 #define spm_idle_err(fmt, args...)		pr_emerg(TAG fmt, ##args)
 #define spm_idle_warn(fmt, args...)		pr_warn(TAG fmt, ##args)
-#define spm_idle_dbg(fmt, args...)		pr_notice(TAG fmt, ##args)
-#define spm_idle_info(fmt, args...)		pr_info(TAG fmt, ##args)
+#define spm_idle_dbg(fmt, args...)		pr_warn(TAG fmt, ##args)
+#define spm_idle_info(fmt, args...)		pr_warn(TAG fmt, ##args)
 #define spm_idle_ver(fmt, args...)		pr_debug(TAG fmt, ##args)
 
 
