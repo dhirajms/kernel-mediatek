@@ -169,11 +169,11 @@ static int mt8173_evb_dev_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	int ret;
 
-	pr_notice("%s dev name %s\n", __func__, dev_name(dev));
+	pr_debug("%s dev name %s\n", __func__, dev_name(dev));
 
 	if (dev->of_node) {
 		dev_set_name(dev, "%s", MT_SOC_MACHINE_NAME);
-		pr_notice("%s set dev name %s\n", __func__, dev_name(dev));
+		pr_debug("%s set dev name %s\n", __func__, dev_name(dev));
 	}
 
 	card->dev = dev;
