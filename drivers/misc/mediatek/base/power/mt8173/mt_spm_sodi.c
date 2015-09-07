@@ -1,18 +1,15 @@
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/spinlock.h>
 #include <linux/delay.h>
-
-/* #include <mt-plat/irqs.h> */
+#include <linux/init.h>
+#include <linux/irqchip/mt-gic.h>
+#include <linux/kernel.h>
+#include <linux/lockdep.h>
+#include <linux/module.h>
+#include <linux/spinlock.h>
 #include <mt-plat/mt_cirq.h>
-#include "mt_spm_idle.h"
-#include "mt_cpuidle.h"
+
 #include "mt_cpufreq.h"
-
-/* FIXME: for FPGA early porting */
-/* #include <asm/hardware/gic.h> */
-
+#include "mt_cpuidle.h"
+#include "mt_spm_idle.h"
 #include "mt_spm_internal.h"
 
 #ifdef CONFIG_OF
@@ -443,9 +440,7 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
-/* TODO: wait irq driver ready
 	struct mtk_irq_mask mask;
-*/
 	wake_reason_t wr = WR_NONE;
 	struct pcm_desc *pcmdesc = __spm_sodi.pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
@@ -462,13 +457,10 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 	/* set PMIC WRAP table for SODI power control */
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_SODI);
 
+	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
-
-/* TODO: wait irq driver ready
 	mt_irq_mask_all(&mask);
-	mt_irq_unmask_for_sleep(MT_SPM_IRQ_ID);
-*/
-
+	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 
@@ -514,11 +506,9 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 
 	mt_cirq_flush();
 	mt_cirq_disable();
-/* TODO: wait irq driver ready
 	mt_irq_mask_restore(&mask);
-*/
-
 	spin_unlock_irqrestore(&__spm_lock, flags);
+	lockdep_on();
 
 	/* set PMIC WRAP table for normal power control */
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_NORMAL);
