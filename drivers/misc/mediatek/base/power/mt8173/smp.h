@@ -15,25 +15,15 @@
 #define __MT_SMP_H
 
 #include <asm/cputype.h>
-#include <mt-plat/mt_chip.h>
-#include <linux/of.h>
 
 #ifdef CONFIG_ARM64
 static inline int get_HW_cpuid(void)
 {
 	u64 mpidr;
 	u32 id;
-	int num_little;
-	struct device_node *node = NULL;
-
-	for (num_little = 0;; num_little++) {
-		node = of_find_compatible_node(node, "cpu", "arm,cortex-a53");
-		if (!node)
-			break;
-	}
 
 	mpidr = read_cpuid_mpidr();
-	id = (mpidr & 0xf) + ((mpidr >> 8) & 0xf) * num_little;
+	id = (mpidr & 0xf) + ((mpidr & 0xf00) ? num_possible_cpus() - 2 : 0);
 
 	return id;
 }
