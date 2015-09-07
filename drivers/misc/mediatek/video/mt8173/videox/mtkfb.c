@@ -798,6 +798,10 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 #endif
 		/* home screen use eRGBA8888 */
 		input.fmt = (0 == var->blue.offset) ? eBGRA8888 : eRGBA8888;
+		/* recovery mode default source data is eRGBA8888, but not notify driver! */
+		if (get_boot_mode() == RECOVERY_BOOT)
+			input.fmt = eRGBA8888;
+
 		layerpitch = 4;
 		input.aen = false;
 		break;
