@@ -22,7 +22,7 @@ unsigned int headsetdebounce;
 unsigned int accdet_eint_type;
 struct headset_mode_settings *cust_headset_settings;
 #define ACCDET_DEBUG(format, args...) pr_debug(format, ##args)
-#define ACCDET_INFO(format, args...) pr_info(format, ##args)
+#define ACCDET_INFO(format, args...) pr_debug(format, ##args)
 #define ACCDET_ERROR(format, args...) pr_err(format, ##args)
 static struct switch_dev accdet_data;
 static struct input_dev *kpd_accdet_dev;
