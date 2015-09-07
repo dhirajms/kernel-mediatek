@@ -922,8 +922,6 @@ STATIC_ASSERT(0x0098 == offsetof(DSI_REGS, DSI_3D_CON));
 #define DDP_REG_BASE_DISP_OD       ddp_regbase_va[DISP_MODULE_OD]
 #define MIPI_TX0_REG_BASE		   ddp_regbase_va[DISP_MODULE_MIPITX0]
 #define MIPI_TX1_REG_BASE		   ddp_regbase_va[DISP_MODULE_MIPITX1]
-#define DDP_REG_BASE_MMSYS_CONFIG2 ddp_regbase_va[DISP_MODULE_CONFIG2]
-#define DDP_REG_BASE_MMSYS_CONFIG3 ddp_regbase_va[DISP_MODULE_CONFIG3]
 #define DDP_REG_IO_DRIVING         ddp_regbase_va[DISP_MODULE_IO_DRIVING]
 #define DDP_REG_TVDPLL_CON6        ddp_regbase_va[DISP_MODULE_TVDPLL_CFG6]
 #define DDP_REG_TVDPLL_CON0        ddp_regbase_va[DISP_MODULE_TVDPLL_CON0]
@@ -960,8 +958,6 @@ STATIC_ASSERT(0x0098 == offsetof(DSI_REGS, DSI_3D_CON));
 #define DISPSYS_OD_BASE             DDP_REG_BASE_DISP_OD
 #define MIPITX0_BASE				MIPI_TX0_REG_BASE
 #define MIPITX1_BASE				MIPI_TX1_REG_BASE
-#define DISPSYS_CONFIG2_BASE		DDP_REG_BASE_MMSYS_CONFIG2
-#define DISPSYS_CONFIG3_BASE		DDP_REG_BASE_MMSYS_CONFIG3
 #define DISPSYS_IO_DRIVING		    DDP_REG_IO_DRIVING
 
 
@@ -1436,10 +1432,6 @@ extern void _disp_primary_path_exit_idle(const char *caller, unsigned int need_p
 #define DISP_REG_CONFIG_MDP_DL_READY_1					(DISPSYS_CONFIG_BASE + 0x8cc)
 #define DISP_REG_CONFIG_SMI_LARB0_GREQ					(DISPSYS_CONFIG_BASE + 0x8d0)
 #define DISP_REG_CONFIG_C08					            (DISPSYS_CONFIG_BASE + 0xc08)
-#define DISP_REG_CONFIG_C09                             (DISPSYS_CONFIG2_BASE + 0x40)	/* 0x10206040 */
-#define DISP_REG_CONFIG_C10                             (DISPSYS_CONFIG2_BASE + 0x44)	/* 0x10206044 */
-#define DISP_REG_CONFIG_C11                             (DISPSYS_CONFIG3_BASE + 0x40)	/* 0x10000040 */
-#define DISP_REG_CLK_CFG_0_MM_CLK                       (DISPSYS_CONFIG3_BASE+0x40)	/* BIT31 0 */
 #define DISP_REG_CLK_CFG_0_CLR                          (DISPSYS_CONFIG_BASE+0x48)	/* BIT31  1 clear for mms */
 #define DISP_REG_CLK_CFG_1_CLR                          (DISPSYS_CONFIG_BASE+0x58)	/* bit7 1 clear for pwm */
 #define DISP_REG_CLK_CFG_6_DPI                          (DISPSYS_CONFIG_BASE+0xA0)	/* bit7 0 */

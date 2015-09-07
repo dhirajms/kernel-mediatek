@@ -261,13 +261,6 @@ static void dbg_opt_ext(const char *opt, char *buf)
 
 		DDPMSG("DDP: dbg_log_level=%d\n", dbg_log_level);
 		sprintf(buf, "dbg_log_level: %d\n", dbg_log_level);
-	} else if (enable == 8) {
-		DDPDUMP("clock_mm setting:%u\n", DISP_REG_GET(DISP_REG_CONFIG_C11));
-		if ((DISP_REG_GET(DISP_REG_CONFIG_C11) & 0xff000000) != 0xff000000) {
-			DDPDUMP
-			    ("error, MM clock bit 24~bit31 should be 1, but real value=0x%x",
-			     DISP_REG_GET(DISP_REG_CONFIG_C11));
-		}
 	} else if (enable == 9) {
 		gOVLBackground = 0xFF0000FF;
 		DDPMSG("DDP: gOVLBackground=%d\n", gOVLBackground);

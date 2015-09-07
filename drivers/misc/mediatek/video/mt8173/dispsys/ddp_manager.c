@@ -1626,10 +1626,6 @@ const char *dpmgr_module_name_spy(DISP_MODULE_ENUM module)
 		return "mediatek,mt8173-disp_mipitx1";
 	case DISP_MODULE_MUTEX:
 		return "mediatek,mt8173-disp_mutex";
-	case DISP_MODULE_CONFIG2:
-		return "mediatek,mt8173-disp_config2";
-	case DISP_MODULE_CONFIG3:
-		return "mediatek,mt8173-disp_config3";
 	case DISP_MODULE_IO_DRIVING:
 		return "mediatek,mt8173-disp_io_driving";
 	case DISP_MODULE_TVDPLL_CFG6:

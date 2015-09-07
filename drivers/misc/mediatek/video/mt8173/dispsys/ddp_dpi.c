@@ -1072,35 +1072,10 @@ PLVDS_TX2_REGS LVDS_TX2_REG;	/*=(PLVDS_TX2_REGS)(MIPITX1_BASE + 0x800);*/
 
 void LVDS_Clk_Path_Config(void)
 {
-	/* top_clk setting */
-	/* MASKREG32(0x100000c0, (0x07 << 24), (0x02 << 24));    // bit24~bit26 */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0xc0, (0x01 << 28), (0x00 << 28));	/* bit28 */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0xc0, (0x01 << 31), (0x00 << 31));	/* bit31 */
-
-	/* ddds_clk setting */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0xc4, (0x01 << 24), (0x01 << 24));	/* bit24 */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0xc8, (0x01 << 25), (0x01 << 25));	/* bit25 */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0xc8, (0x01 << 26), (0x01 << 26));	/* bit26 */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0xc8, (0x01 << 28), (0x01 << 28));	/* bit28 */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0xc8, (0x01 << 31), (0x01 << 31));	/* bit31 */
-
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0x28, (0x01 << 8), (0x00 << 8));	/* bit8 */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0x28, (0x01 << 9), (0x00 << 9));	/* bit9 */
-
-	/* lvds_cts_clk setting */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0x28, (0x01 << 4), (0x00 << 4));	/* bit4 */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0x28, (0x01 << 5), (0x00 << 5));	/* bit5 */
-
 	/* dpi1 pixel/engine clock setting */
 	MASKREG32(DDP_REG_BASE_MMSYS_CONFIG + 0x118, (0x01 << 10), (0x01 << 10));	/* bit10 */
 	MASKREG32(DDP_REG_BASE_MMSYS_CONFIG + 0x118, (0x01 << 11), (0x01 << 11));	/* bit11 */
-
 	MASKREG32(DDP_REG_BASE_MMSYS_CONFIG + 0x118, (0x01 << 17), (0x01 << 17));	/* bit17 */
-
-	/* lvds_pxl_clk setting */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0x28, (0x01 << 2), (0x00 << 2));	/* bit2 */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0x28, (0x01 << 3), (0x00 << 3));	/* bit3 */
-
 	MASKREG32(DDP_REG_BASE_MMSYS_CONFIG + 0x118, (0x01 << 16), (0x01 << 16));	/* bit16 */
 }
 
@@ -1326,7 +1301,6 @@ void LVDS_PLL_Init(DISP_MODULE_ENUM module, unsigned int pixel_clock, cmdqRecHan
 
 	DPI_OUTREG32(cmdq, APMIXEDSYS_VA + 0x2d0, (1 << 8) | (postdiv << 4) | (1 << 0));	/* LVDSPLL_CON0 */
 	DPI_OUTREG32(cmdq, APMIXEDSYS_VA + 0x2d4, pcw);	/* LVDSPLL_CON1 */
-	MASKREG32(DISPSYS_CONFIG3_BASE + 0xc0, (0x07 << 24), (ck_div << 24));	/* CLK_CFG_12  bit24~bit26 */
 }
 
 void ddp_dpi_lvds_config(DISP_MODULE_ENUM module, LCM_DPI_PARAMS *dpi_config, void *cmdq_handle)

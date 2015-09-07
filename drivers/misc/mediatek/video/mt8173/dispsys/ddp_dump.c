@@ -438,9 +438,6 @@ static void mmsys_config_dump_analysis(void)
 	unsigned int ready1 = DISP_REG_GET(DISPSYS_CONFIG_BASE + 0x8bc);
 
 	DDPDUMP("==DISP MMSYS_CONFIG ANALYSIS==\n");
-	DDPDUMP("mmsys clock=0x%x\n", DISP_REG_GET(DISP_REG_CLK_CFG_0_MM_CLK));
-	if ((DISP_REG_GET(DISP_REG_CLK_CFG_0_MM_CLK) >> 31) & 0x1)
-		DDPERR("mmsys clock abnormal!!\n");
 #if 0
 	DDPDUMP("PLL clock=0x%x\n", DISP_REG_GET(DISP_REG_VENCPLL_CON0));
 	if (!(DISP_REG_GET(DISP_REG_VENCPLL_CON0) & 0x1))
@@ -469,8 +466,6 @@ static void mmsys_config_dump_analysis(void)
 				      ddp_clock_1(i));
 	}
 	DDPDUMP("clock on modules:%s\n", clock_on);
-	DDPDUMP("clock1 setting:0x%x,0x%x\n",
-		DISP_REG_GET(DISP_REG_CONFIG_C09), DISP_REG_GET(DISP_REG_CONFIG_C10));
 
 	DDPDUMP("valid0=0x%x, valid1=0x%x, ready0=0x%x, ready1=0x%x\n",
 		valid0, valid1, ready0, ready1);

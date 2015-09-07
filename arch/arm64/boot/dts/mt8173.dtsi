@@ -1212,16 +1212,6 @@
 			interrupts = <GIC_SPI 169 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		DISP_CONFIG2@10206000 {
-			compatible = "mediatek,mt8173-disp_config2";
-			reg = <0 0x10206000 0 0x1000>;
-		};
-
-		DISP_CONFIG3@10000000 {
-			compatible = "mediatek,mt8173-disp_config3";
-			reg = <0 0x10000000 0 0x1000>;
-		};
-
 		DISP_IO_DRIVING@100020f0 {
 			compatible = "mediatek,mt8173-disp_io_driving";
 			reg = <0 0x100020f0 0 0x1000>;
