@@ -2437,8 +2437,6 @@ static int vdecdisp_probe(struct platform_device *pdev)
 		return -EPROBE_DEFER;
 	}
 	pm_runtime_enable(&pdev->dev);
-	pm_runtime_get_sync(&pdev->dev);
-	pm_runtime_put_sync(&pdev->dev);
 
 	MODULE_MFV_LOGD("-vdecdisp_probe\n");
 #endif
