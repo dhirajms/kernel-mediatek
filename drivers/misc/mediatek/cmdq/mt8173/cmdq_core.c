@@ -5722,7 +5722,7 @@ int32_t cmdqCoreSuspend(void)
 	struct list_head *p = NULL;
 	int i = 0;
 
-#ifndef CMDQ_SECURE_PATH_SUPPORT
+#ifdef CMDQ_SECURE_PATH_SUPPORT
 	/* destroy secure path notify thread */
 	cmdq_core_stop_secure_path_notify_thread();
 #endif
