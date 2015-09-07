@@ -5,6 +5,7 @@
 #include <linux/of_address.h>
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
+#include <mt-plat/mt_chip.h>
 
 #include "mt_dcm.h"
 
@@ -27,16 +28,6 @@
 #define dcm_clrl(addr, val)	dcm_writel(addr, dcm_readl(addr) & ~(val))
 
 #if !DCM_HAVE_CHIP_VER /* TODO: remove it when mt_get_chip_id() done */
-
-enum CHIP_SW_VER {
-	CHIP_SW_VER_01 = 0x0000,
-	CHIP_SW_VER_02 = 0x0101
-};
-
-__weak enum CHIP_SW_VER mt_get_chip_sw_ver(void)
-{
-	return CHIP_SW_VER_02;
-}
 
 #endif /* !DCM_HAVE_CHIP_VER */
 
@@ -305,7 +296,7 @@ static void print_dcm_reg(const char *type, const char *regname,
 void dcm_dump_regs(uint32_t type)
 {
 	const char *t;
-	enum CHIP_SW_VER ver = mt_get_chip_sw_ver();
+	enum chip_sw_ver chip_sw_ver = mt_get_chip_sw_ver();
 
 	if (!dcm_reg_init)
 		return;
@@ -319,7 +310,7 @@ void dcm_dump_regs(uint32_t type)
 		DUMP(t, L2C_SRAM_CTRL);
 		DUMP(t, CCI_CLK_CTRL);
 #if DCM_CPU_2
-		if (ver >= CHIP_SW_VER_02) {
+		if (chip_sw_ver >= CHIP_SW_VER_02) {
 			DUMP(t, MP0_SYNC_DCM_DIV);
 			DUMP(t, MP1_SYNC_DCM_DIV);
 		}
@@ -423,7 +414,7 @@ void dcm_dump_regs(uint32_t type)
 
 void dcm_enable(uint32_t type)
 {
-	enum CHIP_SW_VER ver = mt_get_chip_sw_ver();
+	enum chip_sw_ver chip_sw_ver = mt_get_chip_sw_ver();
 
 	if (!dcm_reg_init)
 		return;
@@ -440,7 +431,7 @@ void dcm_enable(uint32_t type)
 		dcm_setl(CCI_CLK_CTRL, BIT(8));
 
 #if DCM_CPU_2
-		if (ver >= CHIP_SW_VER_02) {
+		if (chip_sw_ver >= CHIP_SW_VER_02) {
 			dcm_setl(MP0_SYNC_DCM_DIV, 0x00000006);
 			dcm_setl(MP0_SYNC_DCM_DIV, 0x00000040);
 			dcm_clrl(MP0_SYNC_DCM_DIV, 0x00000040);
@@ -457,12 +448,16 @@ void dcm_enable(uint32_t type)
 
 	if (type & IFR_DCM) {
 		dcm_dbg("[%s][IFR_DCM]=0x%08x\n", __func__, IFR_DCM);
-		dcm_dbg("[%s] ver: %d\n", __func__, ver);
+		dcm_dbg("[%s] chip_sw_ver: %d\n", __func__, chip_sw_ver);
 
 		dcm_clrl(CA7_CKDIV1, 0x0000001F);
 
-		dcm_setl(INFRA_TOPCKGEN_DCMCTL, 0x00000001);
-		dcm_clrl(INFRA_TOPCKGEN_DCMCTL, 0x00000770);
+		if (chip_sw_ver == CHIP_SW_VER_01) {
+			dcm_setl(INFRA_TOPCKGEN_DCMCTL, 0x00000001);
+			dcm_clrl(INFRA_TOPCKGEN_DCMCTL, 0x00000770);
+		} else {
+			dcm_setl(INFRA_TOPCKGEN_DCMCTL, 0x00000771);
+		}
 
 #if INFRA_DCM
 		dcm_setl(INFRA_GLOBALCON_DCMCTL, 0x00000303);
@@ -609,7 +604,7 @@ void dcm_enable(uint32_t type)
 
 void dcm_disable(uint32_t type)
 {
-	enum CHIP_SW_VER ver = mt_get_chip_sw_ver();
+	enum chip_sw_ver chip_sw_ver = mt_get_chip_sw_ver();
 
 	if (!dcm_reg_init)
 		return;
@@ -626,7 +621,7 @@ void dcm_disable(uint32_t type)
 		dcm_clrl(CCI_CLK_CTRL, BIT(8));
 
 #if DCM_CPU_2
-		if (ver >= CHIP_SW_VER_02) {
+		if (chip_sw_ver >= CHIP_SW_VER_02) {
 			dcm_clrl(MP0_SYNC_DCM_DIV, 0x00000001);
 			dcm_clrl(MP1_SYNC_DCM_DIV, 0x00010000);
 		}
