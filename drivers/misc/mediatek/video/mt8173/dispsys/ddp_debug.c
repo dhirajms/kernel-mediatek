@@ -85,7 +85,7 @@ unsigned int gDebugSvpOption = 0;
 
 #if defined(MTK_ALPS_BOX_SUPPORT)
 #else
-/*#define DISP_ENABLE_SODI */
+#define DISP_ENABLE_SODI
 #endif
 
 

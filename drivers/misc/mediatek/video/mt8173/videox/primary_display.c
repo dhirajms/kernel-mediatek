@@ -1748,11 +1748,6 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 	if (primary_display_is_video_mode() == 1)
 		disp_set_sodi(1, pgc->cmdq_handle_config);
 
-#ifdef DISP_ENABLE_SODI
-	if (gPrefetchControl == 1 && cnt >= 20)
-		cmdqRecDisablePrefetch(pgc->cmdq_handle_config);
-#endif
-
 	if (_should_wait_path_idle())
 		dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
 
@@ -1801,14 +1796,8 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 	#endif
 	}
 
-	if (_should_reset_cmdq_config_handle()) {
+	if (_should_reset_cmdq_config_handle())
 		_cmdq_reset_config_handle();
-#ifdef DISP_ENABLE_SODI
-		/* do not have to enable/disable prefetch at power on stage. */
-		if (gPrefetchControl == 1 && cnt >= 20)
-			cmdqRecEnablePrefetch(pgc->cmdq_handle_config);
-#endif
-	}
 
 	if (_should_insert_wait_frame_done_token() && (!_is_decouple_mode(pgc->session_mode))) {
 
