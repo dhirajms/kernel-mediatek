@@ -121,7 +121,6 @@ static void lcm_set_gpio_output(unsigned int GPIO, unsigned int output)
 		printf("[LK/LCM] GPIO_LCD_PWR_EN =   0x%x\n", GPIO_LCD_PWR_EN);
 		printf("[LK/LCM] GPIO_LCD_PWR2_EN =  0x%x\n", GPIO_LCD_PWR2_EN);
 		printf("[LK/LCM] GPIO_LCD_RST_EN =  0x%x\n", GPIO_LCD_RST_EN);
-#elif (defined BUILD_UBOOT)
 #else
 #endif
 
@@ -191,7 +190,7 @@ static void lcm_init(void)
 #ifdef BUILD_LK
 	printf("%s, LK\n", __func__);
 #else
-	pr_notice("%s, KE\n", __func__);
+	pr_debug("%s, KE\n", __func__);
 #endif
 
 #ifdef BUILD_LK
@@ -209,9 +208,6 @@ static void lcm_init(void)
 
 	lcm_set_gpio_output(GPIO_LCD_PWR2_EN, GPIO_OUT_ONE);
 	MDELAY(10);
-
-	/* lcm_set_gpio_output(GPIO_LCD_LED_EN, GPIO_OUT_ONE);
-	MDELAY(10); */
 #else
 #endif
 
@@ -225,11 +221,8 @@ static void lcm_suspend(void)
 #ifdef BUILD_LK
 	printf("%s, LK\n", __func__);
 #else
-	pr_notice("%s, kernel", __func__);
+	pr_debug("%s, kernel", __func__);
 #endif
-
-	/* lcm_set_gpio_output(GPIO_LCD_LED_EN, GPIO_OUT_ZERO);
-	MDELAY(10); */
 
 	lcm_set_gpio_output(GPIO_LCD_PWR_EN, GPIO_OUT_ZERO);
 	MDELAY(200);
@@ -256,7 +249,7 @@ static void lcm_resume(void)
 #ifdef BUILD_LK
 	printf("%s, LK\n", __func__);
 #else
-	pr_notice("%s, kernel", __func__);
+	pr_debug("%s, kernel", __func__);
 #endif
 
 	lcm_set_gpio_output(GPIO_LCD_RST_EN, GPIO_OUT_ONE);
