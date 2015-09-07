@@ -8,6 +8,179 @@
 #ifdef CMDQ_MET_READY
 #include <linux/met_drv.h>
 #endif
+
+typedef struct CmdqMdpModuleBaseVA {
+	long MDP_RDMA0;
+	long MDP_RDMA1;
+	long MDP_RSZ0;
+	long MDP_RSZ1;
+	long MDP_RSZ2;
+	long MDP_TDSHP0;
+	long MDP_TDSHP1;
+	long MDP_MOUT0;
+	long MDP_MOUT1;
+	long MDP_WROT0;
+	long MDP_WROT1;
+	long MDP_WDMA;
+	long VENC;
+} CmdqMdpModuleBaseVA;
+static CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
+
+#define IMP_MDP_MODULE_BASE_VA(BASE_SYMBOL) \
+const long cmdq_mdp_get_module_base_VA_##BASE_SYMBOL(void)	\
+{	\
+return gCmdqMdpModuleBaseVA.BASE_SYMBOL; \
+}
+IMP_MDP_MODULE_BASE_VA(MDP_RDMA0);
+IMP_MDP_MODULE_BASE_VA(MDP_RDMA1);
+IMP_MDP_MODULE_BASE_VA(MDP_RSZ0);
+IMP_MDP_MODULE_BASE_VA(MDP_RSZ1);
+IMP_MDP_MODULE_BASE_VA(MDP_RSZ2);
+IMP_MDP_MODULE_BASE_VA(MDP_TDSHP0);
+IMP_MDP_MODULE_BASE_VA(MDP_TDSHP1);
+IMP_MDP_MODULE_BASE_VA(MDP_MOUT0);
+IMP_MDP_MODULE_BASE_VA(MDP_MOUT1);
+IMP_MDP_MODULE_BASE_VA(MDP_WROT0);
+IMP_MDP_MODULE_BASE_VA(MDP_WROT1);
+IMP_MDP_MODULE_BASE_VA(MDP_WDMA);
+IMP_MDP_MODULE_BASE_VA(VENC);
+#undef IMP_MDP_MODULE_BASE_VA
+
+#ifdef CMDQ_OF_SUPPORT
+#define MDP_RDMA0_BASE_VA cmdq_mdp_get_module_base_VA_MDP_RDMA0()
+#define MDP_RDMA1_BASE_VA cmdq_mdp_get_module_base_VA_MDP_RDMA1()
+#define MDP_RSZ0_BASE_VA cmdq_mdp_get_module_base_VA_MDP_RSZ0()
+#define MDP_RSZ1_BASE_VA cmdq_mdp_get_module_base_VA_MDP_RSZ1()
+#define MDP_RSZ2_BASE_VA cmdq_mdp_get_module_base_VA_MDP_RSZ2()
+#define MDP_TDSHP0_BASE_VA cmdq_mdp_get_module_base_VA_MDP_TDSHP0()
+#define MDP_TDSHP1_BASE_VA cmdq_mdp_get_module_base_VA_MDP_TDSHP1()
+#define MDP_MOUT0_BASE_VA cmdq_mdp_get_module_base_VA_MDP_MOUT0()
+#define MDP_MOUT1_BASE_VA cmdq_mdp_get_module_base_VA_MDP_MOUT1()
+#define MDP_WROT0_BASE_VA cmdq_mdp_get_module_base_VA_MDP_WROT0()
+#define MDP_WROT1_BASE_VA cmdq_mdp_get_module_base_VA_MDP_WROT1()
+#define MDP_WDMA_BASE_VA cmdq_mdp_get_module_base_VA_MDP_WDMA()
+#define VENC_BASE_VA cmdq_mdp_get_module_base_VA_VENC()
+#else
+#include <mach/mt_reg_base.h>
+#endif
+
+struct RegDef {
+	int offset;
+	const char *name;
+};
+
+void cmdq_core_dump_mmsys_config(void)
+{
+	int i = 0;
+	uint32_t value = 0;
+
+	static const struct RegDef configRegisters[] = {
+		{0x01c, "ISP_MOUT_EN"},
+		{0x020, "MDP_RDMA0_MOUT_EN"},
+		{0x024, "MDP_PRZ0_MOUT_EN"},
+		{0x028, "MDP_PRZ1_MOUT_EN"},
+		{0x02C, "MDP_PRZ2_MOUT_EN"},
+		{0x030, "MDP_TDSHP0_MOUT_EN"},
+		{0x034, "MDP_TDSHP1_MOUT_EN"},
+		{0x038, "MDP0_MOUT_EN"},
+		{0x03C, "MDP1_MOUT_EN"},
+		{0x040, "DISP_OVL0_MOUT_EN"},
+		{0x044, "DISP_OVL1_MOUT_EN"},
+		{0x048, "DISP_OD_MOUT_EN"},
+		{0x04C, "DISP_GAMMA_MOUT_EN"},
+		{0x050, "DISP_UFOE_MOUT_EN"},
+		{0x054, "MMSYS_MOUT_RST"},
+		{0x058, "MDP_PRZ0_SEL_IN"},
+		{0x05C, "MDP_PRZ1_SEL_IN"},
+		{0x060, "MDP_PRZ2_SEL_IN"},
+
+		{0x064, "MDP_TDSHP0_SEL_IN"},
+		{0x068, "MDP_TDSHP1_SEL_IN"},
+		{0x06C, "MDP0_SEL_IN"},
+		{0x070, "MDP1_SEL_IN"},
+		{0x074, "MDP_CROP_SEL_IN"},
+		{0x078, "MDP_WDMA_SEL_IN"},
+
+		{0x07C, "MDP_WROT0_SEL_IN"},
+		{0x080, "MDP_WROT1_SEL_IN"},
+		{0x084, "DISP_COLOR0_SEL_IN"},
+		{0x088, "DISP_COLOR1_SEL_IN"},
+		{0x08C, "DISP_AAL_SEL_IN"},
+		{0x090, "DISP_PATH0_SEL_IN"},
+		{0x094, "DISP_PATH1_SEL_IN"},
+		{0x098, "DISP_WDMA0_SEL_IN"},
+		{0x09C, "DISP_WDMA1_SEL_IN"},
+		{0x0A0, "DISP_UFOE_SEL_IN"},
+		{0x0A4, "DSI0_SEL_IN"},
+		{0x0A8, "DSI1_SEL_IN"},
+		{0x0AC, "DPI_SEL_IN"},
+		{0x0B0, "DISP_RDMA0_SOUT_SEL_IN"},
+		{0x0B4, "DISP_RDMA1_SOUT_SEL_IN"},
+		{0x0B8, "DISP_RDMA2_SOUT_SEL_IN"},
+		{0x0BC, "DISP_COLOR0_SOUT_SEL_IN"},
+		{0x0C0, "DISP_COLOR1_SOUT_SEL_IN"},
+		{0x0C4, "DISP_PATH0_SOUT_SEL_IN"},
+		{0x0C8, "DISP_PATH1_SOUT_SEL_IN"},
+
+		{0x0F0, "MMSYS_MISC"},
+		/* ACK and REQ related */
+		{0x8B0, "DISP_DL_VALID_0"},
+		{0x8B4, "DISP_DL_VALID_1"},
+		{0x8B8, "DISP_DL_READY_0"},
+		{0x8BC, "DISP_DL_READY_1"},
+
+		{0x8C0, "MDP_DL_VALID_0"},
+		{0x8C4, "MDP_DL_VALID_1"},
+		{0x8C8, "MDP_DL_READY_0"},
+		{0x8C8, "MDP_DL_READY_1"},
+	};
+
+	for (i = 0; i < sizeof(configRegisters) / sizeof(configRegisters[0]); ++i) {
+		value = CMDQ_REG_GET16(MMSYS_CONFIG_BASE_VA + configRegisters[i].offset);
+		CMDQ_ERR("%s: 0x%08x\n", configRegisters[i].name, value);
+	}
+}
+
+void cmdq_mdp_init_module_base_VA(void)
+{
+	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(CmdqMdpModuleBaseVA));
+
+#ifdef CMDQ_OF_SUPPORT
+	gCmdqMdpModuleBaseVA.MDP_RDMA0 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_RDMA0");
+	gCmdqMdpModuleBaseVA.MDP_RDMA1 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_RDMA1");
+	gCmdqMdpModuleBaseVA.MDP_RSZ0 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_RSZ0");
+	gCmdqMdpModuleBaseVA.MDP_RSZ1 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_RSZ1");
+	gCmdqMdpModuleBaseVA.MDP_RSZ2 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_RSZ2");
+	gCmdqMdpModuleBaseVA.MDP_WDMA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_WDMA");
+	gCmdqMdpModuleBaseVA.MDP_WROT0 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_WROT0");
+	gCmdqMdpModuleBaseVA.MDP_WROT1 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_WROT1");
+	gCmdqMdpModuleBaseVA.MDP_TDSHP0 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_TDSHP0");
+	gCmdqMdpModuleBaseVA.MDP_TDSHP1 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_TDSHP1");
+	gCmdqMdpModuleBaseVA.VENC = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-venc");
+#endif
+}
+
+void cmdq_mdp_deinit_module_base_VA(void)
+{
+#ifdef CMDQ_OF_SUPPORT
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_RDMA0());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_RDMA1());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_RSZ0());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_RSZ1());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_RSZ2());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_WDMA());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_WROT0());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_WROT1());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_TDSHP0());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_TDSHP1());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_VENC());
+
+	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(CmdqMdpModuleBaseVA));
+#else
+	/* do nothing, registers' IOMAP will be destroyed by platform */
+#endif
+}
+
 /*enable MDP clock */
 int32_t cmdqMdpClockOn(uint64_t engineFlag)
 {

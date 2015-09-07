@@ -25,6 +25,7 @@
 #include "cmdq_mutex.h"
 #include "cmdq_device.h"
 #include "cmdq_platform.h"
+#include "cmdq_mdp.h"
 
 #include <linux/kthread.h>
 #include <linux/delay.h>
@@ -119,9 +120,6 @@ static struct clk *sys_vde;
 static struct clk *sys_isp;
 static struct clk *sys_dis;
 */
-#ifdef CONFIG_PM_RUNTIME
-struct platform_device *cmdq_pdev;
-#endif
 #endif
 
 static uint16_t gTaskCount[CMDQ_MAX_THREAD_COUNT];
@@ -209,9 +207,9 @@ void cmdq_core_run_print_log(struct work_struct *workItem)
 			cmdq_print_log_task =
 			    kthread_create(cmdq_core_print_log_kthread, NULL,
 					   "cmdq_core_print_log_kthread");
-			if (IS_ERR(cmdq_print_log_task)) {
+			if (IS_ERR(cmdq_print_log_task))
 				CMDQ_ERR(" can not create cmdq_print_log_task kthread\n");
-			}
+
 			wake_up_process(cmdq_print_log_task);
 		}
 	} else {
@@ -591,14 +589,7 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 	static const char *const engineNames[] = {
 	    CMDQ_FOREACH_STATUS_MODULE_PRINT(GENERATE_STRING) };
 
-#ifdef CMDQ_PWR_AWARE
-	pBuffer += sprintf(pBuffer, "====== Clock Status =======\n");
-	pBuffer += sprintf(pBuffer, "MT_CG_INFRA_GCE: %d, MT_CG_DISP0_MUTEX_32K: %d\n",
-			   cmdq_core_clock_is_on(CMDQ_CLK_INFRA_GCE),
-			   cmdq_core_clock_is_on(CMDQ_CLK_DISP0_MUTEX_32K));
-/*			   clock_is_on(MT_CG_INFRA_GCE), clock_is_on(MT_CG_DISP0_MUTEX_32K));*/
-/* CCF */
-#endif
+	cmdqCorePrintStatus_idv(pBuffer);
 
 	pBuffer += sprintf(pBuffer, "====== Events =======\n");
 	pBuffer += cmdq_core_print_event(pBuffer);
@@ -742,11 +733,9 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 	} while (0);
 
 	/* dump display registers... */
-#ifdef CMDQ_DISPLAY_READY
 	length = pBuffer - buf;
 	if (length < PAGE_SIZE)
 		pBuffer += primary_display_check_path(pBuffer, (PAGE_SIZE - length));
-#endif
 
 	mutex_unlock(&gCmdqTaskMutex);
 
@@ -1071,14 +1060,7 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 	static const char *const engineNames[] = {
 	    CMDQ_FOREACH_STATUS_MODULE_PRINT(GENERATE_STRING) };
 
-#ifdef CMDQ_PWR_AWARE
-	seq_puts(m, "====== Clock Status =======\n");
-	seq_printf(m, "MT_CG_INFRA_GCE: %d, MT_CG_DISP0_MUTEX_32K: %d\n",
-		   cmdq_core_clock_is_on(CMDQ_CLK_INFRA_GCE),
-		   cmdq_core_clock_is_on(CMDQ_CLK_DISP0_MUTEX_32K));
-/*		   clock_is_on(MT_CG_INFRA_GCE), clock_is_on(MT_CG_DISP0_MUTEX_32K));*/
-/* CCF */
-#endif
+	cmdqCorePrintStatusSeq_idv(m);
 
 	seq_puts(m, "====== Mutex Usage =======\n");
 	for (listIdx = 0; listIdx < DISP_MUTEX_MDP_COUNT; ++listIdx) {
@@ -5194,6 +5176,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 	if (pThread->taskCount <= 0) {
 		bool enablePrefetch;
+
 		CMDQ_MSG("EXEC: new HW thread(%d)\n", thread);
 
 		if (cmdq_core_reset_HW_thread(thread) < 0) {
@@ -6901,47 +6884,6 @@ void cmdqCoreLongString(bool forceLog, char *buf, uint32_t *offset, int32_t *max
 }
 
 #ifdef CMDQ_OF_SUPPORT
-char *cmdq_core_get_clk_name(CMDQ_CLK_ENUM clk_enum)
-{
-	switch (clk_enum) {
-	case CMDQ_CLK_INFRA_GCE:
-		return "MT_CG_INFRA_GCE";
-	case CMDQ_CLK_DISP0_MUTEX_32K:
-		return "MT_CG_DISP0_MUTEX_32K";
-	case CMDQ_CLK_DISP0_SMI_COMMON:
-		return "MT_CG_DISP0_SMI_COMMON";
-	case CMDQ_CLK_DISP0_SMI_LARB0:
-		return "MT_CG_DISP0_SMI_LARB0";
-	case CMDQ_CLK_DISP0_SMI_LARB4:
-		return "MT_CG_DISP0_SMI_LARB4";
-	case CMDQ_CLK_DISP0_CAM_MDP:
-		return "MT_CG_DISP0_CAM_MDP";
-	case CMDQ_CLK_DISP0_MDP_RDMA0:
-		return "MT_CG_DISP0_MDP_RDMA0";
-	case CMDQ_CLK_DISP0_MDP_RDMA1:
-		return "MT_CG_DISP0_MDP_RDMA1";
-	case CMDQ_CLK_DISP0_MDP_RSZ0:
-		return "MT_CG_DISP0_MDP_RSZ0";
-	case CMDQ_CLK_DISP0_MDP_RSZ1:
-		return "MT_CG_DISP0_MDP_RSZ1";
-	case CMDQ_CLK_DISP0_MDP_RSZ2:
-		return "MT_CG_DISP0_MDP_RSZ2";
-	case CMDQ_CLK_DISP0_MDP_TDSHP0:
-		return "MT_CG_DISP0_MDP_TDSHP0";
-	case CMDQ_CLK_DISP0_MDP_TDSHP1:
-		return "MT_CG_DISP0_MDP_TDSHP1";
-	case CMDQ_CLK_DISP0_MDP_WROT0:
-		return "MT_CG_DISP0_MDP_WROT0";
-	case CMDQ_CLK_DISP0_MDP_WROT1:
-		return "MT_CG_DISP0_MDP_WROT1";
-	case CMDQ_CLK_DISP0_MDP_WDMA:
-		return "MT_CG_DISP0_MDP_WDMA";
-	default:
-		CMDQ_ERR("invalid clk id=%d\n", clk_enum);
-		return "UNKWON";
-	}
-}
-
 void cmdq_core_get_clk_map(struct platform_device *pDevice)
 {
 	int i;
@@ -7013,11 +6955,11 @@ int cmdq_core_enable_mtcmos_clock(bool enable)
 {
 	int status = 0;
 #ifdef CONFIG_PM_RUNTIME
-	if (cmdq_pdev != NULL) {
+	if (cmdq_dev_get() != NULL) {
 		if (enable)
-			status = pm_runtime_get_sync(&cmdq_pdev->dev);
+			status = pm_runtime_get_sync(cmdq_dev_get());
 		else
-			status = pm_runtime_put_sync(&cmdq_pdev->dev);
+			status = pm_runtime_put_sync(cmdq_dev_get());
 	} else {
 		CMDQ_ERR("MTCMOS fail, enable=%d cmdq_pdev=NULL\n", enable);
 		status = -1;
@@ -7066,14 +7008,6 @@ bool cmdq_core_subsys_is_on(CMDQ_SUBSYS_ENUM clk_enum)
 		return 0;
 }
 */
-#ifdef CONFIG_PM_RUNTIME
-int32_t cmdq_core_set_cmdq_pdev(struct platform_device *pdev)
-{
-	cmdq_pdev = pdev;
-
-	return 0;
-}
-#endif
 #endif
 
 int32_t cmdq_core_alloc_sec_metadata(struct cmdqCommandStruct *pCommandDesc,

@@ -4,7 +4,7 @@
 $(warning start to build cmdq normal)
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/hv1/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/include/linux
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
@@ -14,7 +14,7 @@ $(warning start to build cmdq secure)
 	ccflags-y += -I$(srctree)/include
 	ccflags-y += -I$(srctree)/include/trustzone
 
-	ccflags-y += -DMTK_SEC_VIDEO_PATH_SUPPORT
+#	ccflags-y += -DMTK_SEC_VIDEO_PATH_SUPPORT
 	ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
 	ccflags-y += -DDEBUG_SVP_INFO
 	obj-y += cmdq_sec.o
@@ -38,7 +38,9 @@ obj-y += cmdq_mmp.o
 obj-y += cmdq_mdp_common.o
 #obj-y += cmdq_prof.o
 obj-y += cmdq_test.o
-obj-y += cmdq_mdp.o
+#obj-y += cmdq_mdp.o
 obj-y += cmdq_device.o
 obj-y += cmdq_platform.o
 obj-y += cmdq_mutex.o
+
+obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/

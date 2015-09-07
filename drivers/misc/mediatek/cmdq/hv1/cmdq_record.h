@@ -374,9 +374,8 @@ extern "C" {
  *     handle: the command queue recorder handle
  */
 	void cmdqRecDestroy(cmdqRecHandle handle);
-#ifdef CMDQ_SECURE_PATH_SUPPORT
+
 	int32_t cmdqRecSetSecureMode(cmdqRecHandle handle, enum CMDQ_DISP_MODE mode);
-#endif
 
 	int32_t cmdqRecWaitThreadIdleWithTimeout(int threadID, unsigned int retryCount);
 

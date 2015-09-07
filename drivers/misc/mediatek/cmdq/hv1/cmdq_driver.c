@@ -49,6 +49,7 @@
 **/
 static const struct of_device_id cmdq_of_ids[] = {
 	{.compatible = "mediatek,mt8173-gce",},
+	{.compatible = "mediatek,mt8163-gce",},
 	{}
 };
 #endif
@@ -1051,7 +1052,6 @@ static int cmdq_probe(struct platform_device *pDevice)
 	cmdq_core_get_clk_map(pDevice);
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(&pDevice->dev);
-	cmdq_core_set_cmdq_pdev(pDevice);
 #endif
 #endif
 	/* proc debug access point */

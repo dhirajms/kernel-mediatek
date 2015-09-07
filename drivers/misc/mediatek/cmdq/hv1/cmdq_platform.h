@@ -5,6 +5,7 @@
 
 #include "cmdq_def.h"
 #include "cmdq_core.h"
+#include "cmdq_platform_idv.h"
 
 /*
  * GCE capability
@@ -56,22 +57,7 @@ const char *cmdq_core_parse_error_module_by_hwflag_impl(struct TaskStruct *pTask
  *
  */
 
-/* use to generate [CMDQ_ENGINE_ENUM_id and name] mapping for status print */
-#define CMDQ_FOREACH_STATUS_MODULE_PRINT(ACTION)\
-	ACTION(CMDQ_ENG_ISP_IMGI,   ISP_IMGI) \
-	ACTION(CMDQ_ENG_MDP_RDMA0,  MDP_RDMA0) \
-	ACTION(CMDQ_ENG_MDP_RDMA1,  MDP_RDMA1) \
-	ACTION(CMDQ_ENG_MDP_RSZ0,   MDP_RSZ0) \
-	ACTION(CMDQ_ENG_MDP_RSZ1,   MDP_RSZ1) \
-	ACTION(CMDQ_ENG_MDP_RSZ2,   MDP_RSZ2) \
-	ACTION(CMDQ_ENG_MDP_TDSHP0, MDP_TDSHP0) \
-	ACTION(CMDQ_ENG_MDP_TDSHP1, MDP_TDSHP1) \
-	ACTION(CMDQ_ENG_MDP_WROT0,  MDP_WROT0) \
-	ACTION(CMDQ_ENG_MDP_WROT1,  MDP_WROT1) \
-	ACTION(CMDQ_ENG_MDP_WDMA,   MDP_WDMA)
 
-
-void cmdq_core_dump_mmsys_config(void);
 void cmdq_core_dump_clock_gating(void);
 int cmdq_core_dump_smi(const int showSmiDump);
 void cmdq_core_gpr_dump(void);

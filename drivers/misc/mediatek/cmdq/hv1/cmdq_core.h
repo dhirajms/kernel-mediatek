@@ -8,6 +8,7 @@
 #include <linux/printk.h>
 #include "cmdqSecTl_Api.h"
 #include "cmdq_def.h"
+#include "cmdq_core_idv.h"
 #include <linux/platform_device.h>
 #include <mt-plat/aee.h>
 #ifdef CONFIG_PM_RUNTIME
@@ -150,18 +151,6 @@ typedef unsigned long long CMDQ_TIME;
 #define CMDQ_ENG_ISP_GROUP_BITS                 ((1LL << CMDQ_ENG_ISP_IMGI) |       \
 						 (1LL << CMDQ_ENG_ISP_IMGO) |       \
 						 (1LL << CMDQ_ENG_ISP_IMG2O))
-
-#define CMDQ_ENG_MDP_GROUP_BITS                 ((1LL << CMDQ_ENG_MDP_CAMIN) |      \
-						 (1LL << CMDQ_ENG_MDP_RDMA0) |      \
-						 (1LL << CMDQ_ENG_MDP_RDMA1) |      \
-						 (1LL << CMDQ_ENG_MDP_RSZ0) |       \
-						 (1LL << CMDQ_ENG_MDP_RSZ1) |       \
-						 (1LL << CMDQ_ENG_MDP_RSZ2) |       \
-						 (1LL << CMDQ_ENG_MDP_TDSHP0) |     \
-						 (1LL << CMDQ_ENG_MDP_TDSHP1) |     \
-						 (1LL << CMDQ_ENG_MDP_WROT0) |      \
-						 (1LL << CMDQ_ENG_MDP_WROT1) |      \
-						 (1LL << CMDQ_ENG_MDP_WDMA))
 
 #define CMDQ_ENG_DISP_GROUP_BITS                ((1LL << CMDQ_ENG_DISP_UFOE) |      \
 						 (1LL << CMDQ_ENG_DISP_AAL) |       \
@@ -722,9 +711,6 @@ bool cmdq_core_clock_is_on(CMDQ_CLK_ENUM clk_enum);
 /*
 bool cmdq_core_subsys_is_on(CMDQ_SUBSYS_ENUM clk_enum);
 */
-#ifdef CONFIG_PM_RUNTIME
-int32_t cmdq_core_set_cmdq_pdev(struct platform_device *pdev);
-#endif
 #endif
 
 int32_t cmdq_core_alloc_sec_metadata(struct cmdqCommandStruct *pCommandDesc,

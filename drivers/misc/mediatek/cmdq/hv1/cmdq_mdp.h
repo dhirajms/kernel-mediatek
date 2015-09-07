@@ -7,6 +7,12 @@
 extern "C" {
 #endif
 
+	void cmdq_core_dump_mmsys_config(void);
+
+	void cmdq_mdp_init_module_base_VA(void);
+
+	void cmdq_mdp_deinit_module_base_VA(void);
+
 	int32_t cmdqMdpClockOn(uint64_t engineFlag);
 
 	int32_t cmdqMdpDumpInfo(uint64_t engineFlag, int level);

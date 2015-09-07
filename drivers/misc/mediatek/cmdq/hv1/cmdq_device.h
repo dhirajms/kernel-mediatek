@@ -11,17 +11,6 @@ extern const long cmdq_dev_get_module_base_VA_GCE(void);
 extern const long cmdq_dev_get_module_base_PA_GCE(void);
 
 extern const long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void);
-extern const long cmdq_dev_get_module_base_VA_MDP_RDMA0(void);
-extern const long cmdq_dev_get_module_base_VA_MDP_RDMA1(void);
-extern const long cmdq_dev_get_module_base_VA_MDP_RSZ0(void);
-extern const long cmdq_dev_get_module_base_VA_MDP_RSZ1(void);
-extern const long cmdq_dev_get_module_base_VA_MDP_RSZ2(void);
-extern const long cmdq_dev_get_module_base_VA_MDP_WDMA(void);
-extern const long cmdq_dev_get_module_base_VA_MDP_WROT0(void);
-extern const long cmdq_dev_get_module_base_VA_MDP_WROT1(void);
-extern const long cmdq_dev_get_module_base_VA_MDP_TDSHP0(void);
-extern const long cmdq_dev_get_module_base_VA_MDP_TDSHP1(void);
-extern const long cmdq_dev_get_module_base_VA_VENC(void);
 
 const long cmdq_dev_alloc_module_base_VA_by_name(const char *name);
 void cmdq_dev_free_module_base_VA(const long VA);
@@ -30,17 +19,6 @@ void cmdq_dev_init(struct platform_device *pDevice);
 void cmdq_dev_deinit(void);
 
 #define MMSYS_CONFIG_BASE_VA	cmdq_dev_get_module_base_VA_MMSYS_CONFIG()
-#define MDP_RDMA0_BASE_VA		cmdq_dev_get_module_base_VA_MDP_RDMA0()
-#define MDP_RDMA1_BASE_VA		cmdq_dev_get_module_base_VA_MDP_RDMA1()
-#define MDP_RSZ0_BASE_VA		cmdq_dev_get_module_base_VA_MDP_RSZ0()
-#define MDP_RSZ1_BASE_VA		cmdq_dev_get_module_base_VA_MDP_RSZ1()
-#define MDP_RSZ2_BASE_VA		cmdq_dev_get_module_base_VA_MDP_RSZ2()
-#define MDP_WDMA_BASE_VA		cmdq_dev_get_module_base_VA_MDP_WDMA()
-#define MDP_WROT0_BASE_VA		cmdq_dev_get_module_base_VA_MDP_WROT0()
-#define MDP_WROT1_BASE_VA		cmdq_dev_get_module_base_VA_MDP_WROT1()
-#define MDP_TDSHP0_BASE_VA		cmdq_dev_get_module_base_VA_MDP_TDSHP0()
-#define MDP_TDSHP1_BASE_VA		cmdq_dev_get_module_base_VA_MDP_TDSHP1()
-#define VENC_BASE_VA			cmdq_dev_get_module_base_VA_VENC()
 #define GCE_BASE_VA				cmdq_dev_get_module_base_VA_GCE()
 
 
