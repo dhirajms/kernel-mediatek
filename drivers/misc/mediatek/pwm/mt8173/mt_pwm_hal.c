@@ -46,18 +46,7 @@ enum {
 	PWM_VALID
 } PWM_REG_OFF;
 
-enum PWN_NO {
-	PWM_MIN,
-	PWM1 = PWM_MIN,
-	PWM2,
-	PWM3,
-	PWM4,
-	PWM5,
-	PWM6,
-	PWM7,
-	PWM_NUM,
-	PWM_MAX = PWM_NUM
-};
+
 
 #if defined(CONFIG_MTK_CLKMGR)
 int pwm_power_id[] = {
