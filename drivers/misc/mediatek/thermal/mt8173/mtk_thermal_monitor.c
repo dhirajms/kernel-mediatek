@@ -2311,8 +2311,6 @@ static int mtk_cooling_wrapper_set_cur_state
 					THRML_ERROR_LOG("[.set_cur_state]E tz unregistered.\n");
 					/* BUG(); */
 					trip_temp = 120000;
-				} else {
-						BUG();
 				}
 
 				if ((last_temp >= (int)trip_temp)
