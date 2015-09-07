@@ -46,7 +46,6 @@ static DEFINE_MUTEX(gM4u_seq_mutex);
 #define TF_PROTECT_BUFFER_SIZE 128L
 
 int gM4U_L2_enable = 1;
-int gM4U_4G_DRAM_Mode = 0;
 
 static spinlock_t gM4u_reg_lock;
 int gM4u_port_num = M4U_PORT_UNKNOWN;
@@ -1973,7 +1972,7 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 		m4u_enable_intr(m4u_id);
 
 		/* set translation fault proctection buffer address */
-		if (!gM4U_4G_DRAM_Mode)
+		if (ProtectPA <= 0xffffffffL)
 			M4U_WriteReg32(gM4UBaseAddr[m4u_id], REG_MMU_IVRP_PADDR,
 				       (unsigned int)F_MMU_IVRP_PA_SET(ProtectPA));
 		else

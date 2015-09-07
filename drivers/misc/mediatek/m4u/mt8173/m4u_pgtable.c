@@ -397,7 +397,8 @@ int m4u_clean_pte(m4u_domain_t *domain, unsigned int mva, unsigned int size)
 struct kmem_cache *gM4u_pte_kmem = NULL;
 int m4u_pte_allocator_init(void)
 {
-	gM4u_pte_kmem = kmem_cache_create("m4u_pte", IMU_BYTES_PER_PTE, IMU_BYTES_PER_PTE, 0, NULL);
+	gM4u_pte_kmem = kmem_cache_create("m4u_pte", IMU_BYTES_PER_PTE, IMU_BYTES_PER_PTE,
+					  SLAB_CACHE_DMA, NULL);
 	M4UINFO("%s: gM4u_pte_kmem = 0x%p, IMU_BYTES_PER_PTE = 0x%lx\n", __func__,
 		gM4u_pte_kmem, IMU_BYTES_PER_PTE);
 
@@ -428,7 +429,7 @@ int m4u_alloc_pte(m4u_domain_t *domain, imu_pgd_t *pgd, unsigned int pgprot)
 	phys_addr_t pte_new;
 	/* pte_new_va = (unsigned int)kzalloc(IMU_BYTES_PER_PTE, GFP_KERNEL); */
 	/* pte_new_va = (unsigned int)get_zeroed_page(GFP_KERNEL); */
-	pte_new_va = kmem_cache_zalloc(gM4u_pte_kmem, GFP_KERNEL);
+	pte_new_va = kmem_cache_zalloc(gM4u_pte_kmem, GFP_KERNEL | GFP_DMA);
 	if (unlikely(!pte_new_va)) {
 		m4u_aee_print("%s: fail, nomemory\n", __func__);
 		return -ENOMEM;
@@ -969,7 +970,8 @@ int m4u_pgtable_init(struct m4u_device *m4u_dev, m4u_domain_t *m4u_domain)
 
 	/* ======= alloc pagetable======================= */
 	m4u_domain->pgd =
-	    dma_alloc_coherent(m4u_dev->pDev[0], M4U_PGD_SIZE, &(m4u_domain->pgd_pa), GFP_KERNEL);
+	    dma_alloc_coherent(m4u_dev->pDev[0], M4U_PGD_SIZE, &(m4u_domain->pgd_pa),
+				GFP_KERNEL | GFP_DMA);
 
 	if (!(m4u_domain->pgd)) {
 		M4UMSG("dma_alloc_coherent error!  dma memory not available.\n");
