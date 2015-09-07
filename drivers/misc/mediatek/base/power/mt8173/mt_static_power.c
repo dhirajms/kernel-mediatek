@@ -23,9 +23,9 @@
 #if (SPOWER_LOG_PRINT == SPOWER_LOG_NONE)
 #define SPOWER_INFO(fmt, args...)
 #elif (SPOWER_LOG_PRINT == SPOWER_LOG_WITH_XLOG)
-#define SPOWER_INFO(fmt, args...)	/* xlog_printk(ANDROID_LOG_INFO, "Power/spower", fmt, ##args) */
+#define SPOWER_INFO(fmt, args...)
 #elif (SPOWER_LOG_PRINT == SPOWER_LOG_WITH_PRINTK)
-#define SPOWER_INFO(fmt, args...)	/* printk("[Power/spower] "fmt, ##args) */
+#define SPOWER_INFO(fmt, args...)
 #endif
 
 

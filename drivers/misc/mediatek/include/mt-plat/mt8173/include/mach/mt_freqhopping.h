@@ -29,23 +29,21 @@
 #define DEBUG_MSG_ENABLE 0
 
 #if VERBOSE_DEBUG
-#define FH_MSG(fmt, args...) \
-	printk(FHTAG""fmt" <- %s(): L<%d>  PID<%s><%d>\n", \
-	##args , __func__, __LINE__, current->comm, current->pid)
+#define FH_MSG(fmt, args...) pr_debug(fmt, ##args)
 
 #define FH_MSG_DEBUG   FH_MSG
 #else
 #if 1				/* log level is 6 xlog */
 #define FH_MSG(fmt, args...) pr_debug(fmt, ##args)
 
-#else				/* log level is 4 (printk) */
-#define FH_MSG(fmt, args...) printk(FHTAG""fmt"\n", ##args)
+#else				/* log level is 4 */
+#define FH_MSG(fmt, args...) pr_debug(fmt, ##args)
 #endif
 
 #define FH_MSG_DEBUG(fmt, args...)\
 	do {    \
 		if (DEBUG_MSG_ENABLE)           \
-			printk(FHTAG""fmt"\n", ##args); \
+			pr_debug(fmt, ##args); \
 	} while (0)
 #endif
 

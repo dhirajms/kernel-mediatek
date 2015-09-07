@@ -115,9 +115,9 @@ static struct kobj_attribute _name##_attr = {	\
 #define vcorefs_crit(fmt, args...)	pr_crit(fmt, ##args)
 #define vcorefs_err(fmt, args...)	pr_err(fmt, ##args)
 #define vcorefs_warn(fmt, args...)	pr_warn(fmt, ##args)
-#define vcorefs_notice(fmt, args...)	pr_notice(fmt, ##args)
-#define vcorefs_info(fmt, args...)	pr_info(fmt, ##args)
-#define vcorefs_debug(fmt, args...)	pr_info(fmt, ##args)	/* pr_debug show nothing */
+#define vcorefs_notice(fmt, args...)	pr_warn(fmt, ##args)
+#define vcorefs_info(fmt, args...)	pr_warn(fmt, ##args)
+#define vcorefs_debug(fmt, args...)	pr_warn(fmt, ##args)	/* pr_debug show nothing */
 
 /**************************************
  * Define and Declare
