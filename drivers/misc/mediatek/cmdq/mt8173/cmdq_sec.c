@@ -239,8 +239,8 @@ static int32_t cmdq_sec_fill_iwc_cancel_msg_unlocked(iwcCmdqMessage_t *_pIwc,
 	pIwc->debug.logLevel =
 	    cmdq_core_get_sec_print_count() ? LOG_LEVEL_MSG : cmdq_core_get_log_level();
 	pIwc->debug.enableProfile = cmdq_core_profile_enabled();
-	CMDQ_LOG("FILL:CANCEL_TASK: task: %p, thread:%d, cookie:%d\n",
-		 pTask, thread, pTask->secData.waitCookie);
+	CMDQ_LOG("FILL:CANCEL_TASK: task: %p, thread:%d, cookie:%d, resetExecCnt:%d\n",
+		 pTask, thread, pTask->secData.waitCookie, pTask->secData.resetExecCnt);
 #else
 	CMDQ_ERR("SVP feature is not on\n");
 #endif

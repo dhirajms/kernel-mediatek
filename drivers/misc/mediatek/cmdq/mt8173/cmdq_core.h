@@ -449,6 +449,12 @@ struct ContextStruct {
 	struct ErrorStruct error[CMDQ_MAX_ERROR_COUNT];
 };
 
+struct PrintStruct {
+	struct work_struct CmdqPrintWork;
+	struct workqueue_struct *CmdqPrintWQ;
+	bool enablePrint;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -461,9 +467,7 @@ extern "C" {
 
 
 /*	extern void mt_irq_dump_status(int irq); */
-#ifdef CMDQ_DISPLAY_READY
 	extern int primary_display_check_path(char *stringbuf, int buf_len);
-#endif
 
 	int32_t cmdqCoreInitialize(void);
 
@@ -734,6 +738,8 @@ void cmdq_core_dump_instructions_to_file(uint64_t *pInstrBuffer, uint32_t buffer
 					 const char *fileName);
 struct ThreadStruct *cmdq_core_getThreadStruct(int threadID);
 #endif
+
+void cmdq_core_invalidate_hw_fetched_buffer(int32_t thread);
 
 
 

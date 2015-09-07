@@ -181,12 +181,19 @@ int32_t cmdq_append_command(cmdqRecHandle handle, enum CMDQ_CODE_ENUM code, uint
 	/* GCE deadlocks if we don't do so */
 	if (CMDQ_CODE_EOC != code && cmdq_core_should_enable_prefetch(handle->scenario)) {
 		if (handle->prefetchCount >= CMDQ_MAX_PREFETCH_INSTUCTION) {
+			CMDQ_MSG("prefetchCount(%d) > MAX_PREFETCH_INSTUCTION, force insert disable prefetch marker\n",
+						handle->prefetchCount);
 			/* Mark END of prefetch section */
-			cmdqRecMark(handle);
+			cmdqRecDisablePrefetch(handle);
 			/* BEGING of next prefetch section */
 			cmdqRecMark(handle);
 		} else {
-			++handle->prefetchCount;
+			/* prefetch enabled marker exist */
+			if (1 <= handle->prefetchCount) {
+				++handle->prefetchCount;
+				CMDQ_VERBOSE("handle->prefetchCount: %d, %s, %d\n",
+					     handle->prefetchCount, __func__, __LINE__);
+			}
 		}
 	}
 	/* we must re-calculate current PC because we may already insert MARKER inst. */
@@ -316,11 +323,6 @@ int32_t cmdqRecReset(cmdqRecHandle handle)
 		handle->secData.addrMetadatas = (cmdqU32Ptr_t) (unsigned long)NULL;
 		handle->secData.addrMetadataMaxCount = 0;
 		handle->secData.addrMetadataCount = 0;
-	}
-
-	if (cmdq_core_should_enable_prefetch(handle->scenario)) {
-		/* enable prefetch */
-		cmdqRecMark(handle);
 	}
 
 	return 0;
@@ -823,6 +825,52 @@ int32_t cmdqRecBackupUpdateSlot(cmdqRecHandle handle,
 
 }
 
+int32_t cmdqRecEnablePrefetch(cmdqRecHandle handle)
+{
+#if 1/* #ifdef _CMDQ_DISABLE_MARKER_ */
+		/* disable pre-fetch marker feature but use auto prefetch mechanism */
+		CMDQ_MSG("not allow enable prefetch, scenario: %d\n", handle->scenario);
+		return true;
+#else
+	if (cmdq_core_should_enable_prefetch(handle->scenario)) {
+		/* enable prefetch */
+		CMDQ_VERBOSE("REC: enable prefetch\n");
+		cmdqRecMark(handle);
+		return true;
+	}
+	CMDQ_MSG("not allow enable prefetch, scenario: %d\n", handle->scenario);
+	return -EFAULT;
+#endif
+}
+
+int32_t cmdqRecDisablePrefetch(cmdqRecHandle handle)
+{
+	uint32_t argB = 0;
+	uint32_t argA = 0;
+	int32_t status = 0;
+
+	if (!handle->finalized) {
+		if (handle->prefetchCount > 0) {
+			/* with prefetch threads we should end with */
+			/* bit 48: no_inc_exec_cmds_cnt = 1 */
+			/* bit 20: prefetch_mark = 1 */
+			/* bit 17: prefetch_mark_en = 0 */
+			/* bit 16: prefetch_en = 0 */
+			argB = 0x00100000;
+			argA = (0x1 << 16); /* not increse execute counter */
+			/* since we're finalized, no more prefetch */
+			handle->prefetchCount = 0;
+			status = cmdq_append_command(handle, CMDQ_CODE_EOC, argA, argB);
+		}
+
+		if (0 != status)
+			return status;
+
+	}
+
+	CMDQ_MSG("cmdqRecDisablePrefetch, status:%d\n", status);
+	return status;
+}
 
 int32_t cmdq_rec_finalize_command(cmdqRecHandle handle, bool loop)
 {
@@ -833,17 +881,18 @@ int32_t cmdq_rec_finalize_command(cmdqRecHandle handle, bool loop)
 		return -EFAULT;
 
 	if (!handle->finalized) {
-		argB = 0x1;	/* generate IRQ for each command iteration */
-		if (handle->prefetchCount > 0) {
-			/* with prefetch threads we should end with */
-			/* bit 17: prefetch_mark_en = 1 */
-			/* bit 20: prefetch_mark = 1 */
-			/* bit 16: prefetch_en = 0 */
-			argB |= 0x00120000;
+		if ((handle->prefetchCount > 0) && cmdq_core_should_enable_prefetch(handle->scenario)) {
+			CMDQ_ERR
+			    ("not insert prefetch disble marker when prefetch enabled, prefetchCount:%d\n",
+			     handle->prefetchCount);
+			cmdqRecDumpCommand(handle);
 
-			/* since we're finalized, no more prefetch */
-			handle->prefetchCount = 0;
+			status = -EFAULT;
+			return status;
 		}
+
+		/* insert EOF instruction */
+		argB = 0x1;	/* generate IRQ for each command iteration */
 		status = cmdq_append_command(handle, CMDQ_CODE_EOC, 0, argB);
 
 		if (0 != status)
@@ -1154,45 +1203,61 @@ int32_t cmdqRecWaitThreadIdleWithTimeout(int threadID, unsigned int retryCount)
 	uint32_t currentThreadData = 0;
 	struct ThreadStruct *pThread = NULL;
 
-	CMDQ_MSG("func|cmdqRecWaitThreadIdleWithTimeout\n");
+	CMDQ_LOG("func|cmdqRecWaitThreadIdleWithTimeout\n");
 	/*
 	 ** disp thread 0 ~ 4
+	 ** for secure thread 12/13
 	 */
-	if (0 > threadID || 4 < threadID) {
+	if ((0 > threadID || 4 < threadID) && (12 != threadID) && (13 != threadID)) {
 		CMDQ_ERR("invalid theadID[%d]\n", threadID);
 		return -1;
 	}
 
 	pThread = cmdq_core_getThreadStruct(threadID);
-	while (count < retryCount) {
-		currentThreadData = CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR);
+	if (12 != threadID && 13 != threadID) {
+		/*for normal thread*/
+		while (count < retryCount) {
+			currentThreadData = CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR);
 
-		if (currentThreadData & 0x8000)
-			threadIsRunning = ((currentThreadData & 0x00FF) == (1 << threadID));
-		else
-			threadIsRunning = 0;
+			if (currentThreadData & 0x8000)
+				threadIsRunning = ((currentThreadData & 0x00FF) == (1 << threadID));
+			else
+				threadIsRunning = 0;
 
-		idle = (!threadIsRunning &&
-			(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(threadID)) ==
-			 CMDQ_REG_GET32(CMDQ_THR_END_ADDR(threadID)))) && pThread->taskCount == 0;
-		if (idle)
-			break;
+			idle = (!threadIsRunning &&
+					(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(threadID)) ==
+					 CMDQ_REG_GET32(CMDQ_THR_END_ADDR(threadID)))) &&
+				pThread->taskCount == 0;
+			if (idle)
+				break;
 
-		udelay(1000);
-		count++;
+			udelay(1000);
+			count++;
+		}
+	} else {
+		/*for secure thread*/
+		while (count < retryCount) {
+			idle = (pThread->taskCount == 0);
+			if (idle)
+				break;
+
+			udelay(1000);
+			count++;
+		}
 	}
 
 	if (count > 0 && count < retryCount)
 		CMDQ_LOG("check hw thread[%d] idle count[%d]\n", threadID, count);
 	else if (count >= retryCount) {
 		CMDQ_LOG("check hw thread[%d] idle timeout[%d]\n", threadID, count);
-		CMDQ_LOG
-		    ("current load thread = %x status = %x CURR_ADDR = 0x%08x END_ADDR = 0x%08x task count[%d]\n",
-		     CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR),
-		     (CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(threadID))),
-		     CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(threadID)),
-		     CMDQ_REG_GET32(CMDQ_THR_END_ADDR(threadID)), pThread->taskCount);
+		CMDQ_LOG("current load thread = %x status = %x CURR_ADDR = 0x%08x END_ADDR = 0x%08x task count[%d]\n",
+				CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR),
+				(CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(threadID))),
+				CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(threadID)),
+				CMDQ_REG_GET32(CMDQ_THR_END_ADDR(threadID)),
+				pThread->taskCount);
 	}
+	CMDQ_LOG("func|cmdqRecWaitThreadIdleWithTimeout done\n");
 
 	return 0;
 }

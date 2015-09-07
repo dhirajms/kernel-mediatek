@@ -40,6 +40,7 @@
 #define CMDQ_THR_EXEC_CNT(id)        (GCE_BASE_VA + (0x080 * id) + 0x128)
 #define CMDQ_THR_WAIT_TOKEN(id)      (GCE_BASE_VA + (0x080 * id) + 0x130)
 #define CMDQ_THR_CFG(id)             (GCE_BASE_VA + (0x080 * id) + 0x140)
+#define CMDQ_THR_PREFETCH(id)        (GCE_BASE_VA + (0x080 * id) + 0x144)
 #define CMDQ_THR_INST_CYCLES(id)     (GCE_BASE_VA + (0x080 * id) + 0x150)
 #define CMDQ_THR_INST_THRESX(id)     (GCE_BASE_VA + (0x080 * id) + 0x154)
 #define CMDQ_THR_STATUS(id)			 (GCE_BASE_VA + (0x080 * id) + 0x18C)

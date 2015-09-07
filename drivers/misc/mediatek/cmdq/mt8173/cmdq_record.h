@@ -89,6 +89,24 @@ extern "C" {
 	int32_t cmdqRecMark(cmdqRecHandle handle);
 
 /**
+ * Append mark command to enable prefetch
+ * Parameter:
+ *     handle: the command queue recorder handle
+ * Return:
+ *     0 for success; else the error code is returned
+ */
+	int32_t cmdqRecEnablePrefetch(cmdqRecHandle handle);
+
+/**
+ * Append mark command to disable prefetch
+ * Parameter:
+ *     handle: the command queue recorder handle
+ * Return:
+ *     0 for success; else the error code is returned
+ */
+	int32_t cmdqRecDisablePrefetch(cmdqRecHandle handle);
+
+/**
  * Append write command to the recorder
  * Parameter:
  *     handle: the command queue recorder handle
