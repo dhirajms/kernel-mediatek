@@ -1610,6 +1610,34 @@ static int mtkfb_pan_display_proxy(struct fb_var_screeninfo *var, struct fb_info
 	return mtkfb_pan_display_impl(var, info);
 }
 
+static void mtkfb_blank_suspend(void);
+static void mtkfb_blank_resume(void);
+
+#if defined(CONFIG_PM_AUTOSLEEP)
+static int mtkfb_blank(int blank_mode, struct fb_info *info)
+{
+	switch (blank_mode) {
+	case FB_BLANK_UNBLANK:
+	case FB_BLANK_NORMAL:
+		mtkfb_blank_resume();
+		if (!lcd_fps)
+			msleep(30);
+		else
+			msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
+		break;
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+		break;
+	case FB_BLANK_POWERDOWN:
+		mtkfb_blank_suspend();
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+#endif
 
 /* Callback table for the frame buffer framework. Some of these pointers
  * will be changed according to the current setting of fb_info->accel_flags.
@@ -1627,6 +1655,9 @@ static struct fb_ops mtkfb_ops = {
 	.fb_check_var = mtkfb_check_var,
 	.fb_set_par = mtkfb_set_par,
 	.fb_ioctl = mtkfb_ioctl,
+#if defined(CONFIG_PM_AUTOSLEEP)
+	.fb_blank = mtkfb_blank,
+#endif
 };
 
 /*
@@ -2540,6 +2571,32 @@ void mtkfb_clear_lcm(void)
 }
 
 
+static void mtkfb_blank_suspend(void)
+{
+	int ret = 0;
+
+	MSG_FUNC_ENTER();
+
+	MTKFB_MSG("enter early_suspend\n");
+#ifdef CONFIG_MTK_LEDS
+/*	mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF);*/
+#endif
+	msleep(30);
+
+	ret = primary_display_suspend();
+	if (ret < 0) {
+		MTKFB_ERR("primary display suspend failed\n");
+		return;
+	}
+/*	disp_clear_current_fb_buffer();*/
+
+	MSG_FUNC_LEAVE();
+	MTKFB_MSG("leave early_suspend\n");
+
+}
+
+
+#if 0
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void mtkfb_early_suspend(struct early_suspend *h)
 {
@@ -2565,6 +2622,7 @@ static void mtkfb_early_suspend(struct early_suspend *h)
 
 }
 #endif
+#endif
 
 /* PM resume */
 static int mtkfb_resume(struct platform_device *pdev)
@@ -2576,6 +2634,25 @@ static int mtkfb_resume(struct platform_device *pdev)
 	return 0;
 }
 
+static void mtkfb_blank_resume(void)
+{
+	int ret = 0;
+
+	MTKFB_MSG("enter late_resume\n");
+	MSG_FUNC_ENTER();
+
+	ret = primary_display_resume();
+	if (ret) {
+		MTKFB_ERR("primary display resume failed\n");
+		return;
+	}
+
+	MSG_FUNC_LEAVE();
+	MTKFB_MSG("leave late_resume\n");
+}
+
+
+#if 0
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void mtkfb_late_resume(struct early_suspend *h)
 {
@@ -2593,6 +2670,7 @@ static void mtkfb_late_resume(struct early_suspend *h)
 	MSG_FUNC_LEAVE();
 	MTKFB_MSG("leave late_resume\n");
 }
+#endif
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -2676,12 +2754,14 @@ static struct platform_driver mtkfb_driver = {
 		   },
 };
 
+#if 0
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static const struct early_suspend mtkfb_early_suspend_handler = {
 	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB,
 	.suspend = mtkfb_early_suspend,
 	.resume = mtkfb_late_resume,
 };
+#endif
 #endif
 
 
@@ -2759,8 +2839,10 @@ int __init mtkfb_init(void)
 		r = -ENODEV;
 		goto exit;
 	}
+#if 0
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&mtkfb_early_suspend_handler);
+#endif
 #endif
 	PanelMaster_Init();
 	DBG_Init();
@@ -2778,8 +2860,10 @@ static void __exit mtkfb_cleanup(void)
 
 	platform_driver_unregister(&mtkfb_driver);
 
+#if 0
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	unregister_early_suspend(&mtkfb_early_suspend_handler);
+#endif
 #endif
 
 	PanelMaster_Deinit();
