@@ -37,11 +37,10 @@ extern char dprec_error_log_buffer[];
 		pr_debug("[DISP][%s #%d]"string, __func__, __LINE__, ##args); \
 	} while (0)
 
-#define DISPMSG(string, args...) pr_notice("[DISP]"string, ##args)
+#define DISPMSG(string, args...) pr_warn("[DISP]"string, ##args)
 #define DISPDBG(string, args...) pr_debug("[DISP]"string, ##args)
 #define DISPERR	DISPPR_ERROR
 
-/* #define DISPFUNC() pr_info("[DISP]func|%s\n", __func__) */
 #define DISPFUNC() pr_err("[DISP]func|%s\n", __func__)
 #define DISPDBGFUNC() DISPDBG("[DISP]func|%s\n", __func__)
 #define DISPCHECK(string, args...) pr_debug("[DISPCHECK]"string, ##args)

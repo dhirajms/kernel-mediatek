@@ -992,7 +992,7 @@ char *dprec_logger_get_dump_addr(void)
 
 unsigned int dprec_logger_get_dump_len(void)
 {
-	printk("dump_len %d\n", analysize_length);
+/*	printk("dump_len %d\n", analysize_length);*/
 
 	return analysize_length;
 }

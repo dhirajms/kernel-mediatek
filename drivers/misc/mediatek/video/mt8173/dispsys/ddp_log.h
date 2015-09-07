@@ -58,7 +58,7 @@
 			dprec_logger_dump(log);             \
 		}                                       \
 		else                                    \
-			pr_notice("[DDP/"LOG_TAG"]"fmt, ##__VA_ARGS__);\
+			pr_warn("[DDP/"LOG_TAG"]"fmt, ##__VA_ARGS__);\
 	} while (0)
 
 #ifndef ASSERT
