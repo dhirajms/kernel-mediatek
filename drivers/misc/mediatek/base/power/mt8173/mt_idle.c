@@ -1484,7 +1484,7 @@ int mcidle_enter(int cpu)
 
 	return ret;
 }
-EXPORT_SYMBOL(soidle_enter);
+EXPORT_SYMBOL(mcidle_enter);
 
 int slidle_enter(int cpu)
 {
