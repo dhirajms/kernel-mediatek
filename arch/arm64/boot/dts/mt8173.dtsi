@@ -739,16 +739,17 @@
 
 		spi: spi@1100a000 {
 			compatible = "mediatek,mt8173-spi";
+			#address-cells = <1>;
+			#size-cells = <0>;
 			reg = <0 0x1100a000 0 0x1000>;
 			interrupts = <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&pericfg CLK_PERI_SPI0>;
-			clock-names = "main";
+			clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
+				 <&topckgen CLK_TOP_SPI_SEL>,
+				 <&pericfg CLK_PERI_SPI0>;
+			clock-names = "parent-clk", "sel-clk", "spi-clk";
 			pinctrl-names = "default";
 			pinctrl-0 = <&spi_pins_a>;
-			cell-index = <0>;
-			pad-select = <1>;
-			#address-cells = <0x1>;
-			#size-cells = <0>;
+			mediatek,pad-select = <0>;
 			status = "disabled";
 		};
 
