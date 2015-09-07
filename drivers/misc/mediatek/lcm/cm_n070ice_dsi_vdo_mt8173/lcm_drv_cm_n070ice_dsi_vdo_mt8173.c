@@ -26,7 +26,7 @@ void lcm_request_gpio_control(struct device *dev)
 	GPIO_LCD_PWR_EN = of_get_named_gpio(dev->of_node, "gpio_lcm_pwr_en", 0);
 	GPIO_LCD_PWR2_EN = of_get_named_gpio(dev->of_node, "gpio_lcm_pwr2_en", 0);
 	GPIO_LCD_RST_EN = of_get_named_gpio(dev->of_node, "gpio_lcm_rst_en", 0);
-	GPIO_LCD_LED_EN = of_get_named_gpio(dev->of_node, "gpio_lcm_led_en", 0);
+	/* GPIO_LCD_LED_EN = of_get_named_gpio(dev->of_node, "gpio_lcm_led_en", 0); */
 
 	gpio_request(GPIO_LCD_PWR_EN, "GPIO_LCD_PWR_EN");
 	pr_notice("[KE/LCM] GPIO_LCD_PWR_EN = 0x%x\n", GPIO_LCD_PWR_EN);
@@ -37,8 +37,8 @@ void lcm_request_gpio_control(struct device *dev)
 	gpio_request(GPIO_LCD_RST_EN, "GPIO_LCD_RST_EN");
 	pr_notice("[KE/LCM] GPIO_LCD_RST_EN = 0x%x\n", GPIO_LCD_RST_EN);
 
-	gpio_request(GPIO_LCD_LED_EN, "GPIO_LCD_LED_EN");
-	pr_notice("[KE/LCM] GPIO_LCD_LED_EN = 0x%x\n", GPIO_LCD_LED_EN);
+	/* gpio_request(GPIO_LCD_LED_EN, "GPIO_LCD_LED_EN");
+	pr_notice("[KE/LCM] GPIO_LCD_LED_EN = 0x%x\n", GPIO_LCD_LED_EN); */
 }
 
 static int lcm_probe(struct device *dev)

@@ -70,7 +70,7 @@ static LCM_UTIL_FUNCS lcm_util = {
 unsigned int GPIO_LCD_PWR_EN;
 unsigned int GPIO_LCD_PWR2_EN;
 unsigned int GPIO_LCD_RST_EN;
-unsigned int GPIO_LCD_LED_EN;
+/* unsigned int GPIO_LCD_LED_EN; */
 
 /* --------------------------------------------------------------------------- */
 /* Local Functions */
@@ -121,7 +121,6 @@ static void lcm_set_gpio_output(unsigned int GPIO, unsigned int output)
 		printf("[LK/LCM] GPIO_LCD_PWR_EN =   0x%x\n", GPIO_LCD_PWR_EN);
 		printf("[LK/LCM] GPIO_LCD_PWR2_EN =  0x%x\n", GPIO_LCD_PWR2_EN);
 		printf("[LK/LCM] GPIO_LCD_RST_EN =  0x%x\n", GPIO_LCD_RST_EN);
-		printf("[LK/LCM] GPIO_LCD_LED_EN =   0x%x\n", GPIO_LCD_LED_EN);
 #elif (defined BUILD_UBOOT)
 #else
 #endif
@@ -211,8 +210,8 @@ static void lcm_init(void)
 	lcm_set_gpio_output(GPIO_LCD_PWR2_EN, GPIO_OUT_ONE);
 	MDELAY(10);
 
-	lcm_set_gpio_output(GPIO_LCD_LED_EN, GPIO_OUT_ONE);
-	MDELAY(10);
+	/* lcm_set_gpio_output(GPIO_LCD_LED_EN, GPIO_OUT_ONE);
+	MDELAY(10); */
 #else
 #endif
 
@@ -229,8 +228,8 @@ static void lcm_suspend(void)
 	pr_notice("%s, kernel", __func__);
 #endif
 
-	lcm_set_gpio_output(GPIO_LCD_LED_EN, GPIO_OUT_ZERO);
-	MDELAY(10);
+	/* lcm_set_gpio_output(GPIO_LCD_LED_EN, GPIO_OUT_ZERO);
+	MDELAY(10); */
 
 	lcm_set_gpio_output(GPIO_LCD_PWR_EN, GPIO_OUT_ZERO);
 	MDELAY(200);
@@ -269,8 +268,8 @@ static void lcm_resume(void)
 	lcm_set_gpio_output(GPIO_LCD_PWR2_EN, GPIO_OUT_ONE);
 	MDELAY(10);
 
-	lcm_set_gpio_output(GPIO_LCD_LED_EN, GPIO_OUT_ONE);
-	MDELAY(10);
+	/* lcm_set_gpio_output(GPIO_LCD_LED_EN, GPIO_OUT_ONE);
+	MDELAY(10); */
 
 	init_lcm_registers();
 
