@@ -122,6 +122,11 @@
 			compatible = "ram_console-reserve-memory";
 			reg = <0 0x44400000 0 0x10000>;
 		};
+
+		minirdump-reserved-memory@444f0000 {
+			compatible = "minirdump-reserve-memory";
+			reg = <0 0x444f0000 0 0x10000>;
+		};
 	};
 
 	psci {
