@@ -9,7 +9,6 @@
 #include <linux/cpu.h>			/* cpu_up */
 #include <linux/platform_device.h>	/* platform_driver_register */
 #include <linux/wakelock.h>		/* wake_lock_init */
-
 #include "mt_hotplug_strategy_internal.h"
 
 /*
@@ -359,8 +358,11 @@ static void hps_early_suspend(struct early_suspend *h)
 
 		for (cpu = hps_ctxt.big_cpu_id_max;
 			cpu >= hps_ctxt.big_cpu_id_min; --cpu) {
-			if (cpu_online(cpu))
+			if (cpu_online(cpu)) {
+				lock_device_hotplug();
 				device_offline(get_cpu_device(cpu));
+				unlock_device_hotplug();
+			}
 		}
 	}
 	mutex_unlock(&hps_ctxt.lock);
@@ -476,8 +478,11 @@ static int hps_freeze(struct device *dev)
 
 		for (cpu = hps_ctxt.big_cpu_id_max;
 			cpu >= hps_ctxt.big_cpu_id_min; --cpu) {
-			if (cpu_online(cpu))
+			if (cpu_online(cpu)) {
+				lock_device_hotplug();
 				device_offline(get_cpu_device(cpu));
+				unlock_device_hotplug();
+			}
 		}
 	}
 	mutex_unlock(&hps_ctxt.lock);
