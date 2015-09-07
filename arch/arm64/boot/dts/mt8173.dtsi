@@ -1826,6 +1826,9 @@
 			gpios = <&pio6397 14 0>;
 		};
 /* led end*/
+		mtee {
+			compatible = "mediatek,mtee";
+		};
 	};
 
 	mediatek,battery_meter {
