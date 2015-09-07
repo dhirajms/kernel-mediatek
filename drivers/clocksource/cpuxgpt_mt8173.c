@@ -441,11 +441,11 @@ int localtimer_set_next_event(unsigned int evt)
 {
 	unsigned int ctrl;
 
-	asm volatile("mrs %0,  cntv_ctl_el0" : "=r" (ctrl));
+	asm volatile("mrs %0,  cntp_ctl_el0" : "=r" (ctrl));
 	ctrl |= ARCH_TIMER_CTRL_ENABLE;
 	ctrl &= ~ARCH_TIMER_CTRL_IT_MASK;
-	asm volatile("msr cntv_tval_el0, %0" : : "r" (evt));
-	asm volatile("msr cntv_ctl_el0,  %0" : : "r" (ctrl));
+	asm volatile("msr cntp_tval_el0, %0" : : "r" (evt));
+	asm volatile("msr cntp_ctl_el0,  %0" : : "r" (ctrl));
 
 	return 0;
 }
@@ -454,7 +454,7 @@ unsigned int localtimer_get_counter(void)
 {
 	unsigned int val;
 
-	asm volatile("mrs %0, cntv_tval_el0" : "=r" (val));
+	asm volatile("mrs %0, cntp_tval_el0" : "=r" (val));
 
 	return val;
 }
