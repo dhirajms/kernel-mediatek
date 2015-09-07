@@ -3512,6 +3512,14 @@ int primary_display_resume(void)
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("dpmanager path power on[end]\n");
 
+	/* reconfig used module m4u port after resume*/
+	config_display_m4u_port(M4U_PORT_DISP_OVL0, DISP_MODULE_OVL0);
+	config_display_m4u_port(M4U_PORT_DISP_RDMA0, DISP_MODULE_RDMA0);
+	config_display_m4u_port(M4U_PORT_DISP_WDMA0, DISP_MODULE_WDMA0);
+	config_display_m4u_port(M4U_PORT_DISP_OVL1, DISP_MODULE_OVL1);
+	config_display_m4u_port(M4U_PORT_DISP_RDMA1, DISP_MODULE_RDMA1);
+	config_display_m4u_port(M4U_PORT_DISP_WDMA1, DISP_MODULE_WDMA1);
+
 	if (_is_decouple_mode(pgc->session_mode))
 		dpmgr_path_power_on(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
