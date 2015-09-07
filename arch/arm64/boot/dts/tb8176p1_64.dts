@@ -178,6 +178,8 @@
 		reg = <0x20>;
 		interrupt-parent = <&pio>;
 		interrupts = <14 IRQ_TYPE_EDGE_FALLING>;
+		int-gpio = <&pio 14 0>;
+		rst-gpio = <&pio6397 12 0>;
 	};
 };
 
