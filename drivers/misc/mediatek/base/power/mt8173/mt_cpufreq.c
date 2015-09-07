@@ -2005,11 +2005,16 @@ static int set_cur_volt_big(struct mt_cpu_dvfs *p, unsigned int mv)
 	}
 	if (!
 	       ((cur_vsram_mv >= cur_vproc_mv) /* VSRAM with upper limit */
-		&& (MAX_DIFF_VSRAM_VPROC + MAX_DIFF_VSRAM_VPROC_TOLERANCE >= (cur_vsram_mv - cur_vproc_mv))))
+		&& (MAX_DIFF_VSRAM_VPROC + MAX_DIFF_VSRAM_VPROC_TOLERANCE >= (cur_vsram_mv - cur_vproc_mv)))) {
 		cpufreq_err("%s, [cur_vsram_mv, cur_vproc_mv] = [%d, %d]\n", __func__, cur_vsram_mv, cur_vproc_mv);
+		return -1;
+	}
+
+	#if 0  /* TBD: there is vproc == 300mV issue, ignore for now */
 	BUG_ON(!
 	       ((cur_vsram_mv >= cur_vproc_mv) /* VSRAM with upper limit */
 		&& (MAX_DIFF_VSRAM_VPROC + MAX_DIFF_VSRAM_VPROC_TOLERANCE >= (cur_vsram_mv - cur_vproc_mv))));
+	#endif
 
 	/* UP */
 	if (mv > cur_vproc_mv) {
