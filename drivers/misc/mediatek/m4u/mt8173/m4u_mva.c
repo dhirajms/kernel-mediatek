@@ -1,6 +1,5 @@
 
 #include <linux/spinlock.h>
-#include <linux/printk.h>
 #include "m4u_priv.h"
 
 /* ((va&0xfff)+size+0xfff)>>12 */
@@ -49,9 +48,9 @@ void m4u_mvaGraph_dump_raw(void)
 	unsigned long irq_flags;
 
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
-	pr_info("[M4U_K] dump raw data of mvaGraph:============>\n");
+	M4ULOG_HIGH("[M4U_K] dump raw data of mvaGraph:============>\n");
 	for (i = 0; i < MVA_MAX_BLOCK_NR + 1; i++)
-		pr_info("0x%4x: 0x%08x\n", i, mvaGraph[i]);
+		M4ULOG_HIGH("0x%4x: 0x%08x\n", i, mvaGraph[i]);
 	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 }
 
@@ -65,8 +64,8 @@ void m4u_mvaGraph_dump(void)
 	short nr_free = 0, nr_alloc = 0;
 	unsigned long irq_flags;
 
-	pr_info("[M4U_K] mva allocation info dump:====================>\n");
-	pr_info("start      size     blocknum    busy\n");
+	M4ULOG_HIGH("[M4U_K] mva allocation info dump:====================>\n");
+	M4ULOG_HIGH("start      size     blocknum    busy\n");
 
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 	for (index = 1; index < MVA_MAX_BLOCK_NR + 1; index += nr) {
@@ -87,21 +86,21 @@ void m4u_mvaGraph_dump(void)
 			}
 			frag[max_bit]++;
 		}
-		pr_info("0x%08x  0x%08x  %4d    %d\n", addr, size, nr, is_busy);
+		M4ULOG_HIGH("0x%08x  0x%08x  %4d    %d\n", addr, size, nr, is_busy);
 
 	}
 
 	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 
-	pr_info("\n");
-	pr_info("[M4U_K] mva alloc summary: (unit: blocks)========================>\n");
-	pr_info("free: %d , alloc: %d, total: %d\n", nr_free, nr_alloc, nr_free + nr_alloc);
-	pr_info("[M4U_K] free region fragments in 2^x blocks unit:===============\n");
-	pr_info("  0     1     2     3     4     5     6     7     8     9     10    11\n");
-	pr_info("%4d  %4d  %4d  %4d  %4d  %4d  %4d  %4d  %4d  %4d  %4d  %4d\n",
+	M4ULOG_HIGH("\n");
+	M4ULOG_HIGH("[M4U_K] mva alloc summary: (unit: blocks)========================>\n");
+	M4ULOG_HIGH("free: %d , alloc: %d, total: %d\n", nr_free, nr_alloc, nr_free + nr_alloc);
+	M4ULOG_HIGH("[M4U_K] free region fragments in 2^x blocks unit:===============\n");
+	M4ULOG_HIGH("  0     1     2     3     4     5     6     7     8     9     10    11\n");
+	M4ULOG_HIGH("%4d  %4d  %4d  %4d  %4d  %4d  %4d  %4d  %4d  %4d  %4d  %4d\n",
 	       frag[0], frag[1], frag[2], frag[3], frag[4], frag[5], frag[6], frag[7], frag[8],
 	       frag[9], frag[10], frag[11]);
-	pr_info("[M4U_K] mva alloc dump done=========================<\n");
+	M4ULOG_HIGH("[M4U_K] mva alloc dump done=========================<\n");
 
 }
 

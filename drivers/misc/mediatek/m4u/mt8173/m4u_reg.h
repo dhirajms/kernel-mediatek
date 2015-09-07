@@ -315,7 +315,6 @@ static inline unsigned int M4U_ReadReg32(unsigned long M4uBase, unsigned int Off
 
 static inline void M4U_WriteReg32(unsigned long M4uBase, unsigned int Offset, unsigned int Val)
 {
-	/* printk("M4U_WriteReg32: M4uBase: 0x%lx, Offset:0x%x, val:0x%x\n", M4uBase, Offset, Val); */
 	COM_WriteReg32((M4uBase + Offset), Val);
 }
 

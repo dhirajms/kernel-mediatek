@@ -2,6 +2,7 @@
 #define __M4U_PRIV_H__
 #include <linux/ioctl.h>
 #include <linux/fs.h>
+#include <aee.h>
 #include <linux/debugfs.h>
 #include <linux/platform_device.h>
 #include <linux/miscdevice.h>
@@ -16,20 +17,26 @@
 #define M4U_TEE_SERVICE_ENABLE
 #endif
 
-#define M4UMSG(string, args...) pr_err("M4U"string, ##args)
-#define M4UINFO(string, args...) pr_warn("M4U"string, ##args)
+#define M4UMSG(string, args...) pr_err("[M4U]"string, ##args)
+#define M4UINFO(string, args...) pr_debug("[M4U]"string, ##args)
 
 #include "m4u_hw.h"
 
 #if defined(CONFIG_FPGA_EARLY_PORTING)
 #define M4U_FPGAPORTING
 #endif
-/* #define M4U_PROFILE */
+#define M4U_PROFILE
 
 #ifndef M4U_PROFILE
 #define MMProfileLogEx(...)
 #define MMProfileEnable(...)
 #define MMProfileStart(...)
+#else
+#include <mmprofile.h>
+
+extern void MMProfileEnable(int enable);
+extern void MMProfileStart(int start);
+
 #endif
 
 #ifndef dmac_map_area
@@ -176,30 +183,34 @@ extern int gM4U_log_to_uart;
 	do {\
 		if (level > gM4U_log_level) {\
 			if (level > gM4U_log_to_uart)\
-				pr_warn("M4U"string, ##args);\
+				pr_warn("[M4U] "string, ##args);\
 			else\
-				pr_warn("M4U"string, ##args);\
+				pr_debug("[M4U] "string, ##args);\
 		} \
 	} while (0)
 #define M4ULOG_LOW(string, args...) _M4ULOG(M4U_LOG_LEVEL_LOW, string, ##args)
 #define M4ULOG_MID(string, args...) _M4ULOG(M4U_LOG_LEVEL_MID, string, ##args)
 #define M4ULOG_HIGH(string, args...) _M4ULOG(M4U_LOG_LEVEL_HIGH, string, ##args)
 
-#define M4UERR(string, args...)  pr_err("M4U error: "string, ##args)
+
+#define M4UERR(string, args...) do {\
+	pr_err("[M4U] error:"string, ##args);  \
+	aee_kernel_exception("M4U", "[M4U] error:"string, ##args);  \
+	} while (0)
 
 #define m4u_aee_print(string, args...) do {\
 	char m4u_name[100];\
 	snprintf(m4u_name, 100, "[M4U]"string, ##args); \
-	pr_err("M4U error: "string, ##args);  \
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_MMPROFILE_BUFFER, m4u_name, "[M4U] error"string, ##args);  \
+	pr_err("[M4U] error:"string, ##args);  \
 } while (0)
-	/*aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_MMPROFILE_BUFFER, m4u_name, "[M4U] error"string, ##args);*/
 
 #define M4U_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
 	do {\
 		if (seq_file)\
 			seq_printf(seq_file, fmt, ##args);\
 		else\
-			printk(fmt, ##args);\
+			pr_debug(fmt, ##args);\
 	} while (0)
 
 

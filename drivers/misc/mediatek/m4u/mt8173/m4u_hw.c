@@ -1072,8 +1072,8 @@ int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 		return -EFAULT;
 	}
 
-	M4ULOG_MID("config_port:%s,v%d,s%d tee %d\n", m4u_get_port_name(PortID),
-		   pM4uPort->Virtuality, pM4uPort->Security, m4u_tee_en);
+	M4ULOG_MID("config_port:%s,v%d,s%d\n", m4u_get_port_name(PortID),
+		   pM4uPort->Virtuality, pM4uPort->Security);
 
 	_m4u_port_clock_toggle(m4u_index, larb, 1);
 
