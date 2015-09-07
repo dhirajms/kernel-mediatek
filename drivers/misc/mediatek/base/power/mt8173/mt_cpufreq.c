@@ -3695,46 +3695,46 @@ int mt_cpufreq_thermal_protect(unsigned int limited_power, unsigned int limitor_
 				p->limited_max_freq =
 				    p->power_tbl[p->nr_power_tbl - 1].cpufreq_khz;
 			}
-		} else {
-			/* search index that power is less than or equal to limited power */
-			hps_get_tlp(&tlp);
-			tlp = tlp / 100 + ((tlp % 100) ? 1 : 0);
-			if (tlp > max_tlp)
-				tlp = max_tlp;
-			else if (tlp < 1)
-				tlp = 1;
-			tlp--;
-			for (i = 0; i < cpu_tlp_power_tbl[tlp].nr_power_table; i++) {
-				if (cpu_tlp_power_tbl[tlp].power_tbl[i].ncpu_little == 0)
+		}
+	} else {
+		/* search index that power is less than or equal to limited power */
+		hps_get_tlp(&tlp);
+		tlp = tlp / 100 + ((tlp % 100) ? 1 : 0);
+		if (tlp > max_tlp)
+			tlp = max_tlp;
+		else if (tlp < 1)
+			tlp = 1;
+		tlp--;
+		for (i = 0; i < cpu_tlp_power_tbl[tlp].nr_power_table; i++) {
+			if (cpu_tlp_power_tbl[tlp].power_tbl[i].ncpu_little == 0)
+				continue;
+			if (cpu_tlp_power_tbl[tlp].power_tbl[i].power <= limited_power)
+				break;
+		}
+
+		if (i < cpu_tlp_power_tbl[tlp].nr_power_table) {
+
+			for (j = i; j < cpu_tlp_power_tbl[tlp].nr_power_table; j++) {
+				if (cpu_tlp_power_tbl[tlp].power_tbl[j].ncpu_little == 0)
 					continue;
-				if (cpu_tlp_power_tbl[tlp].power_tbl[i].power <= limited_power)
-					break;
+				if (cpu_tlp_power_tbl[tlp].power_tbl[j].performance >
+				    cpu_tlp_power_tbl[tlp].power_tbl[i].performance)
+					i = j;
 			}
 
-			if (i < cpu_tlp_power_tbl[tlp].nr_power_table) {
-
-				for (j = i; j < cpu_tlp_power_tbl[tlp].nr_power_table; j++) {
-					if (cpu_tlp_power_tbl[tlp].power_tbl[j].ncpu_little == 0)
-						continue;
-					if (cpu_tlp_power_tbl[tlp].power_tbl[j].performance >
-					    cpu_tlp_power_tbl[tlp].power_tbl[i].performance)
-						i = j;
-				}
-
-				if (cpu_dvfs_is_available((&cpu_dvfs[MT_CPU_DVFS_BIG]))) {
-					cpu_dvfs[MT_CPU_DVFS_BIG].limited_max_ncpu =
-					    cpu_tlp_power_tbl[tlp].power_tbl[i].ncpu_big;
-					cpu_dvfs[MT_CPU_DVFS_BIG].limited_max_freq =
-					    cpu_dvfs_get_freq_by_idx((&cpu_dvfs[MT_CPU_DVFS_BIG]),
-								     cpu_tlp_power_tbl[tlp].power_tbl[i].khz_big);
-				}
-				if (cpu_dvfs_is_available((&cpu_dvfs[MT_CPU_DVFS_LITTLE]))) {
-					cpu_dvfs[MT_CPU_DVFS_LITTLE].limited_max_ncpu =
-					    cpu_tlp_power_tbl[tlp].power_tbl[i].ncpu_little;
-					cpu_dvfs[MT_CPU_DVFS_LITTLE].limited_max_freq =
-					    cpu_dvfs_get_freq_by_idx((&cpu_dvfs[MT_CPU_DVFS_LITTLE]),
-							cpu_tlp_power_tbl[tlp].power_tbl[i].khz_little);
-				}
+			if (cpu_dvfs_is_available((&cpu_dvfs[MT_CPU_DVFS_BIG]))) {
+				cpu_dvfs[MT_CPU_DVFS_BIG].limited_max_ncpu =
+				    cpu_tlp_power_tbl[tlp].power_tbl[i].ncpu_big;
+				cpu_dvfs[MT_CPU_DVFS_BIG].limited_max_freq =
+				    cpu_dvfs_get_freq_by_idx((&cpu_dvfs[MT_CPU_DVFS_BIG]),
+							     cpu_tlp_power_tbl[tlp].power_tbl[i].khz_big);
+			}
+			if (cpu_dvfs_is_available((&cpu_dvfs[MT_CPU_DVFS_LITTLE]))) {
+				cpu_dvfs[MT_CPU_DVFS_LITTLE].limited_max_ncpu =
+				    cpu_tlp_power_tbl[tlp].power_tbl[i].ncpu_little;
+				cpu_dvfs[MT_CPU_DVFS_LITTLE].limited_max_freq =
+				    cpu_dvfs_get_freq_by_idx((&cpu_dvfs[MT_CPU_DVFS_LITTLE]),
+						cpu_tlp_power_tbl[tlp].power_tbl[i].khz_little);
 			}
 		}
 	}
