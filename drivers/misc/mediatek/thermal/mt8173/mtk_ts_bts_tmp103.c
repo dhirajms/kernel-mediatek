@@ -16,7 +16,7 @@
 #include <linux/list.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mach/mt_thermal.h"
-#include "mt-plat/mt_typedefs.h"
+#include <linux/types.h>
 #include "inc/tmp103_cooler.h"
 #include "inc/thermal_framework.h"
 #include "mt_cpufreq.h"

@@ -11,7 +11,7 @@
 #include <linux/seq_file.h>
 #include <linux/reboot.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mt-plat/mt_typedefs.h"
+#include <linux/types.h>
 #include "mach/mt_thermal.h"
 
 #define MTK_TS_ABB_SW_FILTER         (1)

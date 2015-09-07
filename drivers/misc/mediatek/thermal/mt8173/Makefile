@@ -10,6 +10,7 @@ else
     obj-y += mtk_thermal_dummy.o
 endif
 
+obj-$(CONFIG_THERMAL) += mtk_thermal_monitor.o
 obj-$(CONFIG_THERMAL) += mtk_thermal_platform.o
 
 # Only included in non-EVB projects
@@ -23,6 +24,7 @@ obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
 obj-$(CONFIG_THERMAL) += tmp103_temp_sensor.o
 obj-$(CONFIG_THERMAL) += mtk_ts_bts_tmp103.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
 obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
 obj-$(CONFIG_THERMAL) += tm_nth.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_bcct.o
