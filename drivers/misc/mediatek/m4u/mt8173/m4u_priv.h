@@ -12,8 +12,7 @@
 #include "m4u_pgtable.h"
 #include "mt_smi.h"
 
-#if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
-/*&& defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)*/
+#if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) || defined(CONFIG_TRUSTY)
 #define M4U_TEE_SERVICE_ENABLE
 #endif
 
