@@ -3705,6 +3705,7 @@ int mt_cpufreq_thermal_protect(unsigned int limited_power, unsigned int limitor_
 		else if (tlp < 1)
 			tlp = 1;
 		tlp--;
+		tlp = 5; /* workaround to wait hps_get_tlp() ready */
 		for (i = 0; i < cpu_tlp_power_tbl[tlp].nr_power_table; i++) {
 			if (cpu_tlp_power_tbl[tlp].power_tbl[i].ncpu_little == 0)
 				continue;
@@ -3923,6 +3924,7 @@ static int _thermal_limited_verify(struct mt_cpu_dvfs *p, int new_opp_idx)
 		else if (tlp < 1)
 			tlp = 1;
 		tlp--;
+		tlp = 5; /* workaround to wait hps_get_tlp() ready */
 
 		for (i = 0; i < cpu_tlp_power_tbl[tlp].nr_power_table; i++) {
 			if (cpu_tlp_power_tbl[tlp].power_tbl[i].ncpu_little == 0)
@@ -5297,6 +5299,7 @@ static ssize_t cpufreq_limited_power_proc_write(struct file *file, const char __
 			else if (tlp < 1)
 				tlp = 1;
 			tlp--;
+			tlp = 5; /* workaround to wait hps_get_tlp() ready */
 			for (i = 0; i < cpu_tlp_power_tbl[tlp].nr_power_table; i++) {
 				mt_cpufreq_thermal_protect(cpu_tlp_power_tbl[tlp].
 							   power_tbl[i].power, 0);
