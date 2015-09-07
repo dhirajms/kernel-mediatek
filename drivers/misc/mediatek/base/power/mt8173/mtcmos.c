@@ -128,7 +128,7 @@ __init int spm_mtcmos_cpu_init(void)
 {
 	mt_spm_mtcmos_init();
 
-	pr_info("CPU num: %d\n", num_possible_cpus());
+	pr_debug("CPU num: %d\n", num_possible_cpus());
 
 	if (num_possible_cpus() == 4) {
 		spm_cpu_mtcmos_ctrl_funcs[0] = spm_mtcmos_ctrl_cpu0;
