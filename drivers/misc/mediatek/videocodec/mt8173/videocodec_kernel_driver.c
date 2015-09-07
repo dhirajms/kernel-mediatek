@@ -119,12 +119,12 @@ static VAL_UINT32_T gu4VencPWRCounter;	/* mutex : VencPWRLock */
 static VAL_UINT32_T gLockTimeOutCount;
 
 static VAL_UINT32_T gu4VdecLockThreadId;
-/* #define MT8173_VCODEC_DEBUG */
+#define MT8173_VCODEC_DEBUG
 #ifdef MT8173_VCODEC_DEBUG
 #undef VCODEC_DEBUG
-#define VCODEC_DEBUG printk /*MODULE_MFV_LOGE*/
+#define VCODEC_DEBUG printk
 #undef MODULE_MFV_LOGD
-#define MODULE_MFV_LOGD printk /*MODULE_MFV_LOGE*/
+#define MODULE_MFV_LOGD  printk
 #else
 #define VCODEC_DEBUG(...)
 #undef MODULE_MFV_LOGD
