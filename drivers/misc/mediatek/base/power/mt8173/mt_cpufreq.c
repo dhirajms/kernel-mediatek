@@ -4487,6 +4487,7 @@ static struct cpufreq_driver _mt_cpufreq_driver = {
 	.get = _mt_cpufreq_get,
 	.name = "mt-cpufreq",
 	.attr = _mt_cpufreq_attr,
+	.flags = CPUFREQ_HAVE_GOVERNOR_PER_POLICY,
 };
 
 /*
