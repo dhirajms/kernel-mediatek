@@ -1,3 +1,0 @@
-config TB8173_EVB
-	bool "Support TB8173 EVB board"
-
