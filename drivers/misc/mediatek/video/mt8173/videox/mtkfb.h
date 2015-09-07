@@ -380,5 +380,8 @@ extern char *saved_command_line;
 #endif
 #endif /* CONFIG_ARCH_MT6735 */
 
+#ifdef CONFIG_MTK_LEDS
+extern int mt65xx_leds_brightness_set(int type, int level);
+#endif
 
 #endif	/* __MTKFB_H */

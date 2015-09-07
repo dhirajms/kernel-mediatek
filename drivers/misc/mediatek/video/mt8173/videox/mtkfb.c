@@ -1628,11 +1628,21 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 			msleep(30);
 		else
 			msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
+	#ifdef CONFIG_MTK_LEDS
+		if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT ||
+			get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT)
+			mt65xx_leds_brightness_set(6, 255);
+	#endif
 		break;
 	case FB_BLANK_VSYNC_SUSPEND:
 	case FB_BLANK_HSYNC_SUSPEND:
 		break;
 	case FB_BLANK_POWERDOWN:
+	#ifdef CONFIG_MTK_LEDS
+		if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT ||
+			get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT)
+			mt65xx_leds_brightness_set(6, 0);
+	#endif
 		mtkfb_blank_suspend();
 		break;
 	default:
