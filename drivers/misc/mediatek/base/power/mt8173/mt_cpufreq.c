@@ -1994,18 +1994,22 @@ static int set_cur_volt_big(struct mt_cpu_dvfs *p, unsigned int mv)
 	if ((cur_vproc_mv >= 1000) && (mv < 1000))
 		turn_off_SPARK("Big voltage less then 1 V");
 
-	if (cur_vsram_mv == 0 && cur_vproc_mv == 0) {
-		cpufreq_dbg("%s, cur_vsram_mv == cur_vproc_mv == 0\n", __func__);
-		return ret;
+	if (cur_vproc_mv == 0) {
+		cpufreq_dbg("%s, [cur_vsram_mv, cur_vproc_mv] = [%d, %d]\n", __func__, cur_vsram_mv, cur_vproc_mv);
+		return -1;
 	}
 
 	if (p->dvfs_disable_by_ptpod) {
 		cpufreq_err("@%s():%d, mv = %d\n", __func__, __LINE__, mv);
 		mv = 1000;
 	}
-	BUG_ON(!((cur_vsram_mv >= cur_vproc_mv)	/* VSRAM with upper limit */
-		&& (MAX_DIFF_VSRAM_VPROC + MAX_DIFF_VSRAM_VPROC_TOLERANCE >=
-			(cur_vsram_mv - cur_vproc_mv))));
+	if (!
+	       ((cur_vsram_mv >= cur_vproc_mv) /* VSRAM with upper limit */
+		&& (MAX_DIFF_VSRAM_VPROC + MAX_DIFF_VSRAM_VPROC_TOLERANCE >= (cur_vsram_mv - cur_vproc_mv))))
+		cpufreq_err("%s, [cur_vsram_mv, cur_vproc_mv] = [%d, %d]\n", __func__, cur_vsram_mv, cur_vproc_mv);
+	BUG_ON(!
+	       ((cur_vsram_mv >= cur_vproc_mv) /* VSRAM with upper limit */
+		&& (MAX_DIFF_VSRAM_VPROC + MAX_DIFF_VSRAM_VPROC_TOLERANCE >= (cur_vsram_mv - cur_vproc_mv))));
 
 	/* UP */
 	if (mv > cur_vproc_mv) {
