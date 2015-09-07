@@ -112,21 +112,24 @@ static void algo_hmp_base(
 		val = min(lb, ll) - lo;
 		if (bo > hps_ctxt.big_num_base_perf_serv)
 			val -= bo - hps_ctxt.big_num_base_perf_serv;
-		for (cpu = hps_ctxt.little_cpu_id_min;
-			cpu <= hps_ctxt.little_cpu_id_max; ++cpu) {
-			if (cpumask_test_cpu(cpu, little_online_cpumask))
-				continue;
+		if (val > 0) {
+			for (cpu = hps_ctxt.little_cpu_id_min;
+				cpu <= hps_ctxt.little_cpu_id_max; ++cpu) {
+				if (cpumask_test_cpu(cpu,
+						little_online_cpumask))
+					continue;
 
-			lock_device_hotplug();
-			device_online(get_cpu_device(cpu));
-			unlock_device_hotplug();
-			cpumask_set_cpu(cpu, little_online_cpumask);
-			++lo;
-			if (--val == 0)
-				break;
+				lock_device_hotplug();
+				device_online(get_cpu_device(cpu));
+				unlock_device_hotplug();
+				cpumask_set_cpu(cpu, little_online_cpumask);
+				++lo;
+				if (--val == 0)
+					break;
+			}
+			BUG_ON(val);
+			hps_ctxt.action |= BIT(ACTION_BASE_LITTLE);
 		}
-		BUG_ON(val);
-		hps_ctxt.action |= BIT(ACTION_BASE_LITTLE);
 	}
 }
 
