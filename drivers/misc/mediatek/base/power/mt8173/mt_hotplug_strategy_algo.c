@@ -38,7 +38,7 @@ static void algo_hmp_limit(
 			if (!cpumask_test_cpu(cpu, big_online_cpumask))
 				continue;
 
-			cpu_down(cpu);
+			device_offline(get_cpu_device(cpu));
 			cpumask_clear_cpu(cpu, big_online_cpumask);
 			--big_num_online;
 			if (--val == 0)
@@ -55,7 +55,7 @@ static void algo_hmp_limit(
 			if (!cpumask_test_cpu(cpu, little_online_cpumask))
 				continue;
 
-			cpu_down(cpu);
+			device_offline(get_cpu_device(cpu));
 			cpumask_clear_cpu(cpu, little_online_cpumask);
 			--little_num_online;
 			if (--val == 0)
@@ -90,7 +90,7 @@ static void algo_hmp_base(
 			if (cpumask_test_cpu(cpu, big_online_cpumask))
 				continue;
 
-			cpu_up(cpu);
+			device_online(get_cpu_device(cpu));
 			cpumask_set_cpu(cpu, big_online_cpumask);
 			++bo;
 			if (--val == 0)
@@ -111,7 +111,7 @@ static void algo_hmp_base(
 			if (cpumask_test_cpu(cpu, little_online_cpumask))
 				continue;
 
-			cpu_up(cpu);
+			device_online(get_cpu_device(cpu));
 			cpumask_set_cpu(cpu, little_online_cpumask);
 			++lo;
 			if (--val == 0)
@@ -160,7 +160,7 @@ static void algo_hmp_rush_boost(
 			if (cpumask_test_cpu(cpu, little_online_cpumask))
 				continue;
 
-			cpu_up(cpu);
+			device_online(get_cpu_device(cpu));
 			cpumask_set_cpu(cpu, little_online_cpumask);
 			++little_num_online;
 			if (--val == 0)
@@ -174,7 +174,7 @@ static void algo_hmp_rush_boost(
 			if (cpumask_test_cpu(cpu, big_online_cpumask))
 				continue;
 
-			cpu_up(cpu);
+			device_online(get_cpu_device(cpu));
 			cpumask_set_cpu(cpu, big_online_cpumask);
 			++big_num_online;
 			if (--val == 0)
@@ -232,7 +232,7 @@ static void algo_hmp_up(
 		for (cpu = hps_ctxt.little_cpu_id_min;
 			cpu <= hps_ctxt.little_cpu_id_max; ++cpu) {
 			if (!cpumask_test_cpu(cpu, little_online_cpumask)) {
-				cpu_up(cpu);
+				device_online(get_cpu_device(cpu));
 				cpumask_set_cpu(cpu, little_online_cpumask);
 				++little_num_online;
 				break;
@@ -244,7 +244,7 @@ static void algo_hmp_up(
 		for (cpu = hps_ctxt.big_cpu_id_min;
 			cpu <= hps_ctxt.big_cpu_id_max; ++cpu) {
 			if (!cpumask_test_cpu(cpu, big_online_cpumask)) {
-				cpu_up(cpu);
+				device_online(get_cpu_device(cpu));
 				cpumask_set_cpu(cpu, big_online_cpumask);
 				++big_num_online;
 				break;
@@ -308,7 +308,7 @@ static void algo_hmp_down(
 			if (!cpumask_test_cpu(cpu, big_online_cpumask))
 				continue;
 
-			cpu_down(cpu);
+			device_offline(get_cpu_device(cpu));
 			cpumask_clear_cpu(cpu, big_online_cpumask);
 			--big_num_online;
 			if (--val == 0)
@@ -322,7 +322,7 @@ static void algo_hmp_down(
 			if (!cpumask_test_cpu(cpu, little_online_cpumask))
 				continue;
 
-			cpu_down(cpu);
+			device_offline(get_cpu_device(cpu));
 			cpumask_clear_cpu(cpu, little_online_cpumask);
 			--little_num_online;
 			if (--val == 0)
@@ -375,14 +375,14 @@ static void algo_hmp_big_to_little(
 		if (cpumask_test_cpu(cpu, little_online_cpumask))
 			continue;
 
-		cpu_up(cpu);
+		device_online(get_cpu_device(cpu));
 		cpumask_set_cpu(cpu, little_online_cpumask);
 		++little_num_online;
 		break;
 	}
 
 	/* down 1 big */
-	cpu_down(val);
+	device_offline(get_cpu_device(val));
 	cpumask_clear_cpu(cpu, big_online_cpumask);
 	--big_num_online;
 	hps_ctxt.action |= BIT(ACTION_BIG_TO_LITTLE);
@@ -617,7 +617,7 @@ static void algo_smp_limit(
 		if (!cpumask_test_cpu(cpu, little_online_cpumask))
 			continue;
 
-		cpu_down(cpu);
+		device_offline(get_cpu_device(cpu));
 		cpumask_clear_cpu(cpu, little_online_cpumask);
 		--little_num_online;
 
@@ -650,7 +650,7 @@ static void algo_smp_base(
 		if (cpumask_test_cpu(cpu, little_online_cpumask))
 			continue;
 
-		cpu_up(cpu);
+		device_online(get_cpu_device(cpu));
 		cpumask_set_cpu(cpu, little_online_cpumask);
 		++little_num_online;
 
@@ -699,7 +699,7 @@ static void algo_smp_rush_boost(
 		if (cpumask_test_cpu(cpu, little_online_cpumask))
 			continue;
 
-		cpu_up(cpu);
+		device_online(get_cpu_device(cpu));
 		cpumask_set_cpu(cpu, little_online_cpumask);
 		++little_num_online;
 
@@ -757,7 +757,7 @@ static void algo_smp_up(
 		if (cpumask_test_cpu(cpu, little_online_cpumask))
 			continue;
 
-		cpu_up(cpu);
+		device_online(get_cpu_device(cpu));
 		cpumask_set_cpu(cpu, little_online_cpumask);
 		++little_num_online;
 		break;
@@ -817,7 +817,7 @@ static void algo_smp_down(
 		if (!cpumask_test_cpu(cpu, little_online_cpumask))
 			continue;
 
-		cpu_down(cpu);
+		device_offline(get_cpu_device(cpu));
 		cpumask_clear_cpu(cpu, little_online_cpumask);
 		--little_num_online;
 
