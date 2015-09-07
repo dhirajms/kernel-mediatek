@@ -360,7 +360,7 @@ static void hps_early_suspend(struct early_suspend *h)
 		for (cpu = hps_ctxt.big_cpu_id_max;
 			cpu >= hps_ctxt.big_cpu_id_min; --cpu) {
 			if (cpu_online(cpu))
-				cpu_down(cpu);
+				device_offline(get_cpu_device(cpu));
 		}
 	}
 	mutex_unlock(&hps_ctxt.lock);
@@ -477,7 +477,7 @@ static int hps_freeze(struct device *dev)
 		for (cpu = hps_ctxt.big_cpu_id_max;
 			cpu >= hps_ctxt.big_cpu_id_min; --cpu) {
 			if (cpu_online(cpu))
-				cpu_down(cpu);
+				device_offline(get_cpu_device(cpu));
 		}
 	}
 	mutex_unlock(&hps_ctxt.lock);
