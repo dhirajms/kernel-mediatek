@@ -714,6 +714,10 @@
 	/* ------ Connectivity GPIO configs ------ */
 };
 
+&ptp_od {
+	reg-vcore-supply = <&mt6397_vcore_reg>;
+};
+
 &pwrap {
 	pmic: mt6397 {
 		compatible = "mediatek,mt6397";

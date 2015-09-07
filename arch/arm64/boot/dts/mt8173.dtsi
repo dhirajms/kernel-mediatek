@@ -781,6 +781,20 @@
 			pericfg = <&pericfg>;
 		};
 
+		ptp_od: ptp_od@1100b000 {
+			compatible = "mediatek,mt8173-ptp_od";
+			reg = <0 0x1100b000 0 0x1000>;
+			interrupts = <GIC_SPI 117 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&topckgen CLK_TOP_SYSPLL1_D2>,
+				 <&topckgen CLK_TOP_UNIVPLL2_D2>,
+				 <&topckgen CLK_TOP_AXI_SEL>,
+				 <&pericfg CLK_PERI_THERM>;
+			clock-names = "syspll1_d2",
+				      "univpll2_d2",
+				      "axi_sel",
+				      "ptp_peri_therm";
+		};
+
 		i2c3: i2c@11010000 {
 			compatible = "mediatek,mt8173-i2c";
 			reg = <0 0x11010000 0 0x70>,
