@@ -14,8 +14,10 @@ typedef int M4U_PORT_ID;
 				   (just for engines who wants to use CCI bandwidth) */
 #define M4U_PROT_SEC    (1<<4)	/* buffer can only be accessed by secure engine. */
 
+/* public flags */
 #define M4U_FLAGS_SEQ_ACCESS (1<<0)	/* engine access this buffer in sequncial way. */
 #define M4U_FLAGS_FIX_MVA   (1<<1)	/* fix allocation, we will use mva user specified. */
+#define M4U_FLAGS_SEC_SHAREABLE   (1<<2)  /* the mva will share in SWd */
 
 /* m4u internal flags (DO NOT use them for other purpers) */
 #define M4U_FLAGS_MVA_IN_FREE (1<<8)	/* this mva is in deallocating. */
@@ -54,6 +56,17 @@ typedef enum {
 	M4U_CACHE_FLUSH_ALL,
 } M4U_CACHE_SYNC_ENUM;
 
+typedef enum {
+	M4U_DMA_MAP_AREA,
+	M4U_DMA_UNMAP_AREA,
+} M4U_DMA_TYPE;
+
+typedef enum {
+	M4U_DMA_FROM_DEVICE,
+	M4U_DMA_TO_DEVICE,
+	M4U_DMA_BIDIRECTIONAL,
+} M4U_DMA_DIR;
+
 typedef struct {
 	/* mutex to protect mvaList */
 	/* should get this mutex whenever add/delete/interate mvaList */
@@ -71,8 +84,9 @@ int m4u_power_on(int m4u_index);
 int m4u_power_off(int m4u_index);
 
 int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
-		  unsigned long va, struct sg_table *sg_table,
-		  unsigned int size, unsigned int prot, unsigned int flags, unsigned int *pMva);
+		unsigned long va, struct sg_table *sg_table,
+		unsigned int size, unsigned int prot, unsigned int flags,
+		unsigned int *pMva);
 
 int m4u_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva);
 
@@ -105,7 +119,7 @@ int m4u_mva_unmap_kernel(unsigned int mva, unsigned int size, unsigned long va);
 m4u_client_t *m4u_create_client(void);
 int m4u_destroy_client(m4u_client_t *client);
 
-
+int m4u_dump_reg_for_smi_hang_issue(void);
 
 
 typedef enum m4u_callback_ret {

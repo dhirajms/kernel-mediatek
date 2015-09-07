@@ -113,7 +113,7 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size);
 /* ================================= */
 /* ==== define in m4u_pgtable.c===== */
 void m4u_dump_pgtable(m4u_domain_t *domain, struct seq_file *seq);
-void m4u_dump_pte_nolock(m4u_domain_t *domain, unsigned int mva);
+unsigned long m4u_dump_pte_nolock(m4u_domain_t *domain, unsigned int mva);
 void m4u_dump_pte(m4u_domain_t *domain, unsigned int mva);
 int m4u_pgtable_init(struct m4u_device *m4u_dev, m4u_domain_t *m4u_domain);
 int m4u_map_4K(m4u_domain_t *m4u_domain, unsigned int mva, unsigned long pa, unsigned int prot);
@@ -251,6 +251,14 @@ typedef struct {
 	unsigned int mva;
 } M4U_CACHE_STRUCT;
 
+typedef struct _M4U_DMA {
+	M4U_PORT_ID port;
+	M4U_DMA_TYPE eDMAType;
+	M4U_DMA_DIR eDMADir;
+	unsigned long va;
+	unsigned int size;
+	unsigned int mva;
+} M4U_DMA_STRUCT;
 
 /* IOCTL commnad */
 #define MTK_M4U_MAGICNO 'g'
@@ -279,6 +287,9 @@ typedef struct {
 #define MTK_M4U_T_REGISTER_BUFFER     _IOW(MTK_M4U_MAGICNO, 22, int)
 #define MTK_M4U_T_CACHE_FLUSH_ALL     _IOW(MTK_M4U_MAGICNO, 23, int)
 #define MTK_M4U_T_CONFIG_PORT_ARRAY   _IOW(MTK_M4U_MAGICNO, 26, int)
+#define MTK_M4U_T_CONFIG_MAU	  _IOW(MTK_M4U_MAGICNO, 27, int)
+#define MTK_M4U_T_CONFIG_TF	   _IOW(MTK_M4U_MAGICNO, 28, int)
+#define MTK_M4U_T_DMA_OP	      _IOW(MTK_M4U_MAGICNO, 29, int)
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 extern bool m4u_tee_en;

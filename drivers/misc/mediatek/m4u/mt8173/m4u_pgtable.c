@@ -225,13 +225,15 @@ void *m4u_for_each_pte(m4u_domain_t *domain, m4u_pte_fn_t *fn, void *data)
 
 /* dump pte info for mva, no matter it's valid or not */
 /* this function doesn't lock pgtable lock. */
-void m4u_dump_pte_nolock(m4u_domain_t *domain, unsigned int mva)
+unsigned long m4u_dump_pte_nolock(m4u_domain_t *domain, unsigned int mva)
 {
 	m4u_pte_info_t pte_info;
 
 	m4u_get_pte_info(domain, mva, &pte_info);
 
 	__m4u_print_pte(&pte_info, NULL);
+
+	return pte_info.pa;
 }
 
 void m4u_dump_pte(m4u_domain_t *domain, unsigned int mva)
@@ -784,7 +786,7 @@ int m4u_map_phys_range(m4u_domain_t *m4u_domain, unsigned int iova,
 		pgsize_idx = __fls(pgsize);
 		pgsize = 1UL << pgsize_idx;
 
-		pr_debug("mapping: iova 0x%x pa 0x%lx pgsize %lu\n", iova, paddr, pgsize);
+		pr_debug_ratelimited("mapping: iova 0x%x pa 0x%lx pgsize %lu\n", iova, paddr, pgsize);
 
 		ret = m4u_map_phys_align(m4u_domain, iova, paddr, pgsize, prot);
 		if (ret)
