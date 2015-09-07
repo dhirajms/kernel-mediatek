@@ -197,7 +197,6 @@
 				regulator-min-microamp	= <2000000>;
 				regulator-max-microamp	= <4400000>;
 				regulator-ramp-delay = <10000>;
-				regulator-always-on;
 			};
 			da9212_vgpu_reg: BUCKB {
 				regulator-name = "VBUCKB";

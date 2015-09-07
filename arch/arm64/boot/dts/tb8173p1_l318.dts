@@ -13,12 +13,12 @@
  */
 
 /dts-v1/;
-#include "mt8173_plus.dtsi"
+#include "mt8173.dtsi"
 #include <dt-bindings/pinctrl/mt6397-pinfunc.h>
 
 / {
 	model = "MediaTek mt8173 tablet p1 evaluation board";
-	compatible = "mediatek,tb8176p1_2k_64", "mediatek,mt8173";
+	compatible = "mediatek,tb8173p1", "mediatek,mt8173";
 
 	aliases {
 		serial0 = &uart0;
@@ -35,6 +35,13 @@
 	mediatek,battery_meter {
 		compatible = "mediatek,battery_meter";
 		battery = "p1v1_battery";
+	};
+
+	vibrator0:vibrator@0 {
+		compatible = "mediatek,vibrator";
+		vib_timer = <25>;
+		vib_limit = <9>;
+		vib_vol= <5>;
 	};
 
 /* sensor standardization */
@@ -170,16 +177,20 @@
 	status = "okay";
 };
 
+&hdmi0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&hdmi_pins_default>;
+	hdmi_power_control = <&pio6397 37 0>;
+};
+
 &i2c0 {
 	clock-frequency = <400000>;
 	status = "okay";
-	cap_touch@5d {
+	cap_touch@20 {
 		compatible = "mediatek,cap_touch";
-		reg = <0x5d>;
+		reg = <0x20>;
 		interrupt-parent = <&pio>;
-		interrupts = <14 IRQ_TYPE_EDGE_RISING>;
-		rst-gpio = <&pio6397 12 0>;
-		int-gpio = <&pio 14 0>;
+		interrupts = <14 IRQ_TYPE_EDGE_FALLING>;
 	};
 };
 
@@ -229,12 +240,6 @@
 
 &i2c3 {
 	status = "okay";
-
-	kd_camera_hw1@36 {
-		compatible = "mediatek,camera_hw_i2c";
-		reg = <0x36>;
-	};
-
 	bq24297_charger@6B {
 		compatible = "ti,bq24297";
 		reg = <0x6B>;
@@ -258,14 +263,14 @@
 		int-gpio = <&pio 6 0>;
 	};
 
-	lp8557_led@2c {
-		compatible = "mediatek,8173led_i2c";
-		reg = <0x2c>;
-	};
-
 	tmp103-sensor@70 {
 		compatible = "ti,tmp103_temp_sensor";
 		reg = <0x70>;
+	};
+
+	lp8557_led@2c {
+		compatible = "mediatek,8173led_i2c";
+		reg = <0x2c>;
 	};
 
 	tmp103-sensor@71 {
@@ -279,53 +284,11 @@
 	};
 };
 
-&i2c6 {
-	status = "okay";
-	kd_camera_hw2@30 {
-		compatible = "mediatek,camera_hw2_i2c";
-		reg = <0x30>;
-	};
-};
-/* Camera Power Regulator Framework */
-/* Redefine the camera power pins accroding to project's schematic */
-/* Main Cam */
-&kd_camera_hw1{
-	reg-vcama-supply = <&mt6397_vcama_reg>;		/* AVDD */
-	reg-vcamd-supply = <&mt6397_vgp2_reg>;		/* DVDD : not use, it only for i2c#3*/
-	reg-vcamio-supply = <&mt6397_vgp1_reg>;				/* DOVDD */
-	reg-vcamaf-supply = <&mt6397_vgp3_reg>;		/* AFVDD */
-	pinctrl-names = "default", "cam-1-gpio-rst","cam-1-gpio-pdn","cam-1-gpio-ldo",
-					"camera_1_MCLK_cfgs","camera_2_MCLK_cfgs";
-	pinctrl-0 = <&camera_pins_default>;
-	pinctrl-1 = <&camera_1_rst_cfgs>;
-	pinctrl-2 = <&camera_1_pdn_cfgs>;
-	pinctrl-3 = <&camera_1_ldo_cfgs>;
-	pinctrl-4 = <&camera_1_MCLK_cfgs>;
-	pinctrl-5 = <&camera_2_MCLK_cfgs>;
-	cam-1-gpio-rst = <&pio 15 0>;
-	cam-1-gpio-pdn = <&pio6397 25 0>;
-	cam-1-gpio-ldo = <&pio 0 0>;
-};
-
-/* Sub Cam */
-/* FIX ME: same power pins as Main ? */
-&kd_camera_hw2{
-	reg-vcama-supply = <&mt6397_vcama_reg>;		/* AVDD */
-	reg-vcamd-supply = <&mt6397_vgp2_reg>;		/* DVDD : not use, it only for i2c#3*/
-	reg-vcamio-supply = <&mt6397_vgp1_reg>;		/* DOVDD */
-	reg-vcamaf-supply = <&mt6397_vgp3_reg>;		/* AFVDD */
-	pinctrl-names = "default","cam-2-gpio-pdn";
-	pinctrl-0 = <&camera_pins_default>;
-	pinctrl-1 = <&camera_2_pdn_cfgs>;
-//	pinctrl-2 = <&camera_2_MCLK_cfgs>;
-	cam-2-gpio-pdn = <&pio6397 20 0>;
-	/* cam-2-gpio-ldo = <&pio 0 0>; */			/* non-used */
-};
-
 &lcm {
 	gpio_lcm_pwr_en = <&pio 103 0>;
-	gpio_lcm_rst_en = <&pio 105 0>;
-	gpio_lcm_led_en = <&pio 102 0>;
+	gpio_lcm_pwr2_en = <&pio 102 0>;
+	gpio_lcm_rst_en = <&pio 127 0>;
+	gpio_lcm_led_en = <&pio6397 14 0>;
 };
 
 &mmc0 {
@@ -405,41 +368,6 @@
 		bias-pull-up;
 	};
 
-	camera_1_rst_cfgs: cam1@0 {
-		pins_cmd_dat {
-			pins = <MT8173_PIN_15_EINT15__FUNC_GPIO15>;/*GPIO_CAMERA_CMRST_PIN*/
-			slew-rate = <1>; /*direction 0:in, 1:out*/
-			output-low;/*direction out used only. output_low or high*/
-		};
-	};
-
-	camera_1_ldo_cfgs: cam1@2 {
-		pins_cmd_dat {
-			pins = <MT8173_PIN_0_EINT0__FUNC_GPIO0>;/*GPIO_CAMERA_CMRST_PIN*/
-			slew-rate = <1>; /*direction 0:in, 1:out*/
-			output-low;/*direction out used only. output_low or high*/
-		};
-	};
-
-	camera_1_MCLK_cfgs: cam1@3 {
-		pins_cmd_dat {
-			pins = <MT8173_PIN_41_CMMCLK__FUNC_CMMCLK>;/*GPIO_CAMERA_CMRST_PIN*/
-			slew-rate = <1>; /*direction 0:in, 1:out*/
-			output-low;/*direction out used only. output_low or high*/
-		};
-	};
-
-	camera_2_MCLK_cfgs: cam2@2 {
-		pins_cmd_dat {
-			pins = <MT8173_PIN_39_CM2MCLK__FUNC_CM2MCLK>;/*GPIO_CAMERA_CMRST_PIN*/
-			slew-rate = <1>; /*direction 0:in, 1:out*/
-			output-low;/*direction out used only. output_low or high*/
-		};
-	};
-
-	camera_pins_default: camdefault {
-	};
-
 	CTP_pins_default: eint0default {
 	};
 
@@ -493,6 +421,15 @@
 		};
 	};
 
+	hdmi_pins_default: hdmi_pins_default {
+		pins_cmd_dat {
+			pins = <MT6397_PIN_37_HDMISD__FUNC_GPIO37>;
+			slew-rate = <1>;
+			bias-pull-up = <00>;
+			output-high;
+		};
+	};
+
 	mmc1_pins_default: mmc1default {
 		pins_cmd_dat {
 			pinmux = <MT8173_PIN_73_MSDC1_DAT0__FUNC_MSDC1_DAT0>,
@@ -514,6 +451,25 @@
 		pins_insert {
 			pinmux = <MT8173_PIN_1_EINT1__FUNC_GPIO1>;
 			bias-pull-up;
+		};
+	};
+
+	mmc3_pins_default: mmc3default {
+		pins_cmd_dat {
+			pinmux = <MT8173_PIN_22_MSDC3_DAT0__FUNC_MSDC3_DAT0>,
+			     <MT8173_PIN_23_MSDC3_DAT1__FUNC_MSDC3_DAT1>,
+			     <MT8173_PIN_24_MSDC3_DAT2__FUNC_MSDC3_DAT2>,
+			     <MT8173_PIN_25_MSDC3_DAT3__FUNC_MSDC3_DAT3>,
+			     <MT8173_PIN_27_MSDC3_CMD__FUNC_MSDC3_CMD>;
+			input-enable;
+			drive-strength = <MTK_DRIVE_4mA>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+		};
+
+		pins_clk {
+			pinmux = <MT8173_PIN_26_MSDC3_CLK__FUNC_MSDC3_CLK>;
+			bias-pull-down;
+			drive-strength = <MTK_DRIVE_4mA>;
 		};
 	};
 
@@ -564,25 +520,6 @@
 		};
 	};
 
-	mmc3_pins_default: mmc3default {
-		pins_cmd_dat {
-			pinmux = <MT8173_PIN_22_MSDC3_DAT0__FUNC_MSDC3_DAT0>,
-				<MT8173_PIN_23_MSDC3_DAT1__FUNC_MSDC3_DAT1>,
-				<MT8173_PIN_24_MSDC3_DAT2__FUNC_MSDC3_DAT2>,
-				<MT8173_PIN_25_MSDC3_DAT3__FUNC_MSDC3_DAT3>,
-				<MT8173_PIN_27_MSDC3_CMD__FUNC_MSDC3_CMD>;
-			input-enable;
-			drive-strength = <MTK_DRIVE_4mA>;
-			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
-		};
-
-		pins_clk {
-			pinmux = <MT8173_PIN_26_MSDC3_CLK__FUNC_MSDC3_CLK>;
-			bias-pull-down;
-			drive-strength = <MTK_DRIVE_4mA>;
-		};
-	};
-
 	mmc3_pins_uhs: mmc3@0 {
 		pins_cmd_dat {
 			pinmux = <MT8173_PIN_22_MSDC3_DAT0__FUNC_MSDC3_DAT0>,
@@ -603,35 +540,34 @@
 	};
 
 	/* ++++++ Connectivity GPIO configs ++++++ */
-	pcfg_combo_pmu_en_pull_dis_cfgs:cfg_gpio69_mode1_pull_dis {
+	pcfg_combo_pmu_en_pull_dis_cfgs:cfg_gpio69_mode1_pull_dis{
 		combo_pins {
 			pinmux = <MT8173_PIN_69_SPI_CK__FUNC_GPIO69>;
 			bias-disable;
 		};
 	};
-
-	pcfg_combo_pmu_en_in_pulldown_cfgs:cfg_gpio69_mode1_in_pulldown {
+	pcfg_combo_pmu_en_in_pulldown_cfgs:cfg_gpio69_mode1_in_pulldown{
 		combo_pins {
 			pinmux = <MT8173_PIN_69_SPI_CK__FUNC_GPIO69>;
 			bias-pull-down;
 		};
 	};
 
-	pcfg_combo_rst_pull_dis_cfgs:cfg_gpio38_mode1_pull_dis {
+	pcfg_combo_rst_pull_dis_cfgs:cfg_gpio38_mode1_pull_dis{
 		combo_pins {
 			pinmux = <MT8173_PIN_38_CONN_RST__FUNC_GPIO38>;
 			bias-disable;
 		};
 	};
 
-	pcfg_combo_wifi_eint_in_pull_dis_cfgs:cfg_gpio2_mode1_in_pull_dis {
+	pcfg_combo_wifi_eint_in_pull_dis_cfgs:cfg_gpio2_mode1_in_pull_dis{
 		combo_pins {
 			pinmux = <MT8173_PIN_2_EINT2__FUNC_GPIO2>;
 			input-enable;
 			bias-disable;
 		};
 	};
-	pcfg_combo_wifi_eint_in_pullup_cfgs:cfg_gpio2_mode1_in_pullup {
+	pcfg_combo_wifi_eint_in_pullup_cfgs:cfg_gpio2_mode1_in_pullup{
 		combo_pins {
 			pinmux = <MT8173_PIN_2_EINT2__FUNC_GPIO2>;
 			input-enable;
@@ -639,20 +575,20 @@
 		};
 	};
 
-	pcfg_combo_urxd_uart_pull_dis_cfgs:cfg_gpio117_mode2_pull_dis {
+	pcfg_combo_urxd_uart_pull_dis_cfgs:cfg_gpio117_mode2_pull_dis{
 		combo_pins {
 			pinmux = <MT8173_PIN_117_URXD3__FUNC_URXD3>;
 			bias-disable;
 		};
 	};
-	pcfg_combo_urxd_gpio_in_pullup_cfgs:cfg_gpio117_mode1_in_pullup {
+	pcfg_combo_urxd_gpio_in_pullup_cfgs:cfg_gpio117_mode1_in_pullup{
 		combo_pins {
 			pinmux = <MT8173_PIN_117_URXD3__FUNC_GPIO117>;
 			input-enable;
 			bias-pull-up;
 		};
 	};
-	pcfg_combo_urxd_gpio_in_pull_dis_cfgs:cfg_gpio117_mode1_in_pull_dis {
+	pcfg_combo_urxd_gpio_in_pull_dis_cfgs:cfg_gpio117_mode1_in_pull_dis{
 		combo_pins {
 			pinmux = <MT8173_PIN_117_URXD3__FUNC_GPIO117>;
 			input-enable;
@@ -660,35 +596,35 @@
 		};
 	};
 
-	pcfg_combo_utxd_uart_pull_dis_cfgs:cfg_gpio118_mode2_pull_dis {
+	pcfg_combo_utxd_uart_pull_dis_cfgs:cfg_gpio118_mode2_pull_dis{
 		combo_pins {
 			pinmux = <MT8173_PIN_118_UTXD3__FUNC_UTXD3>;
 			bias-disable;
 		};
 	};
 
-	pcfg_combo_pcm_daiclk_pull_dis_cfgs:cfg_gpio33_mode3_pull_dis {
+	pcfg_combo_pcm_daiclk_pull_dis_cfgs:cfg_gpio33_mode3_pull_dis{
 		combo_pins {
 			pinmux = <MT8173_PIN_33_DAICLK__FUNC_PCM0_CLK>;
 			bias-disable;
 		};
 	};
 
-	pcfg_combo_pcm_daipcmin_pull_dis_cfgs:cfg_gpio34_mode3_pull_dis {
+	pcfg_combo_pcm_daipcmin_pull_dis_cfgs:cfg_gpio34_mode3_pull_dis{
 		combo_pins {
 			pinmux = <MT8173_PIN_34_DAIPCMIN__FUNC_PCM0_DI>;
 			bias-disable;
 		};
 	};
 
-	pcfg_combo_pcm_daipcmout_pull_dis_cfgs:cfg_gpio35_mode3_pull_dis {
+	pcfg_combo_pcm_daipcmout_pull_dis_cfgs:cfg_gpio35_mode3_pull_dis{
 		combo_pins {
 			pinmux = <MT8173_PIN_35_DAIPCMOUT__FUNC_PCM0_DO>;
 			bias-disable;
 		};
 	};
 
-	pcfg_combo_pcm_daisync_pull_dis_cfgs:cfg_gpio36_mode3_pull_dis {
+	pcfg_combo_pcm_daisync_pull_dis_cfgs:cfg_gpio36_mode3_pull_dis{
 		combo_pins {
 			pinmux = <MT8173_PIN_36_DAISYNC__FUNC_PCM0_SYNC>;
 			bias-disable;
@@ -704,9 +640,9 @@
 
 		combo_pcm_pins {
 			pinmux = <MT8173_PIN_33_DAICLK__FUNC_MRG_CLK>,
-				   <MT8173_PIN_34_DAIPCMIN__FUNC_MRG_DI>,
-				   <MT8173_PIN_35_DAIPCMOUT__FUNC_MRG_DO>,
-				   <MT8173_PIN_36_DAISYNC__FUNC_MRG_SYNC>;
+				     <MT8173_PIN_34_DAIPCMIN__FUNC_MRG_DI>,
+					 <MT8173_PIN_35_DAIPCMOUT__FUNC_MRG_DO>,
+					 <MT8173_PIN_36_DAISYNC__FUNC_MRG_SYNC>;
 			bias-disable;
 		};
 		/* ----- Connectivity GPIO configs ----- */
@@ -730,22 +666,6 @@
 			gpio-controller;
 			#gpio-cells = <2>;
 
-			camera_1_pdn_cfgs: cam1@1 {
-				pins_cmd_dat {
-					pins = <MT6397_PIN_25_ROW5__FUNC_GPIO25>;/*GPIO_CAMERA_CMRST_PIN*/
-					slew-rate = <1>; /*direction 0:in, 1:out*/
-					output-low;/*direction out used only. output_low or high*/
-				};
-			};
-
-			camera_2_pdn_cfgs: cam2@1 {
-				pins_cmd_dat {
-					pins = <MT6397_PIN_20_ROW0__FUNC_GPIO20>;/*GPIO_CAMERA_CMRST_PIN*/
-					slew-rate = <1>; /*direction 0:in, 1:out*/
-					output-low;/*direction out used only. output_low or high*/
-				};
-			};
-
 			CTP_pins_rst_output0: rstoutput0 {
 				pins_cmd_dat {
 					pins = <MT6397_PIN_12_COL0__FUNC_GPIO12>;
@@ -763,7 +683,8 @@
 			};
 
 			/* ++++++ Connectivity GPIOEXT configs ++++++ */
-			pcfg_combo_gps_lna_pull_dis_cfgs:cfg_gpio17_mode1_pull_dis {
+
+			pcfg_combo_gps_lna_pull_dis_cfgs:cfg_gpio17_mode1_pull_dis{
 				combo_pins {
 					pinmux = <MT6397_PIN_17_COL5__FUNC_GPIO17>;
 					bias-disable;
