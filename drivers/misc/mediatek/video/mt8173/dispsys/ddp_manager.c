@@ -1617,7 +1617,7 @@ const char *dpmgr_module_name_spy(DISP_MODULE_ENUM module)
 	case DISP_MODULE_SMI_LARB0:
 		return "mediatek,mt8173-smi_larb0";
 	case DISP_MODULE_SMI_COMMON:
-		return "mediatek,mt8173-smi-common";
+		return "mediatek,mt8173-smi";
 	case DISP_MODULE_CMDQ:
 		return "mediatek,mt8173-gce";
 	case DISP_MODULE_MIPITX0:

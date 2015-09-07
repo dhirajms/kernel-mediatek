@@ -1152,6 +1152,26 @@
 			interrupts = <GIC_SPI 194 IRQ_TYPE_LEVEL_LOW>;
 		};
 
+		larb0: larb@14021000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x14021000 0 0x1000>;
+			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <0>;
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
+			clocks = <&mmsys CLK_MM_SMI_LARB0>,
+				 <&mmsys CLK_MM_SMI_LARB0>;
+			clock-names = "apb", "smi";
+		};
+
+		smi_common: smi@14022000 {
+			compatible = "mediatek,mt8173-smi";
+			reg = <0 0x14022000 0 0x1000>;
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
+			clocks = <&mmsys CLK_MM_SMI_COMMON>,
+				 <&mmsys CLK_MM_SMI_COMMON>;
+			clock-names = "apb", "smi";
+		};
+
 		DPI1@14024000 {
 			compatible = "mediatek,mt8173-disp_dpi1";
 			reg = <0 0x14024000 0 0x1000>;
@@ -1219,6 +1239,17 @@
 			compatible = "mediatek,mt8173-disp_mutex";
 			reg = <0 0x14020000 0 0x1000>;
 			interrupts = <GIC_SPI 169 IRQ_TYPE_LEVEL_LOW>;
+		};
+
+		larb4: larb@14027000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x14027000 0 0x1000>;
+			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <4>;
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
+			clocks = <&mmsys CLK_MM_SMI_LARB4>,
+				 <&mmsys CLK_MM_SMI_LARB4>;
+			clock-names = "apb", "smi";
 		};
 
 		DISP_IO_DRIVING@100020f0 {
@@ -1385,44 +1416,21 @@
 						"MMSYS_CLK_MUX_LVDSPLL_D8";
 		};
 
-		SMI_LARB0@14021000 {
-			compatible = "mediatek,mt8173-smi_larb0";
-			reg = <0 0x14021000 0 0x1000>;
-			interrupts = <0 197 0x8>;
-		};
-
-		smi: smi_common@0x14022000 {
-			compatible = "mediatek,mt8173-smi-common";
-			reg = <0 0x14022000 0 0x1000>,  /* SMI_COMMON_EXT */
-				<0 0x14021000 0 0x1000>,  /* LARB 0 */
-				<0 0x16010000 0 0x1000>,  /* LARB 1 */
-				<0 0x15001000 0 0x1000>,  /* LARB 2 */
-				<0 0x18001000 0 0x1000>,  /* LARB 3 */
-				<0 0x14027000 0 0x1000>,  /* LARB 4 */
-				<0 0x19001000 0 0x1000>;  /* LARB 5 */
-			clocks = <&mmsys CLK_MM_SMI_COMMON>,
-				 <&mmsys CLK_MM_SMI_LARB0>, /*larb0 */
-				 <&vdecsys CLK_VDEC_CKEN>, /*larb1*/
-				 <&vdecsys CLK_VDEC_LARB_CKEN>, /*larb1*/
-				 <&imgsys CLK_IMG_LARB2_SMI>, /*larb2*/
-				 <&vencsys CLK_VENC_CKE0>, /*larb3*/
-				 <&vencsys CLK_VENC_CKE1>, /*larb3*/
-				 <&mmsys CLK_MM_SMI_LARB4>, /*larb4*/
-				 <&vencltsys CLK_VENCLT_CKE0>,
-				 <&vencltsys CLK_VENCLT_CKE1>;
-			clock-names = "smi_common",
-				"larb0_disp",
-				"larb1_vdec_cken", "larb1_vdec_larb_cken",
-				"larb2_img",
-				"larb3_venc_cken1", "larb3_venc_cken2",
-				"larb4_disp",
-				"larb5_venclt_cken1","larb5_venclt_cken2";
-		};
-
 		imgsys: imgsys@15000000 {
 			compatible = "mediatek,mt8173-imgsys", "syscon";
 			reg = <0 0x15000000 0 0x1000>;
 			#clock-cells = <1>;
+		};
+
+		larb2: larb@15001000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x15001000 0 0x1000>;
+			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <2>;
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_ISP>;
+			clocks = <&imgsys CLK_IMG_LARB2_SMI>,
+				 <&imgsys CLK_IMG_LARB2_SMI>;
+			clock-names = "apb", "smi";
 		};
 
 		/* We need add another node to contrl DISP power in ISP driver */
@@ -1510,6 +1518,17 @@
 			#clock-cells = <1>;
 		};
 
+		larb1: larb@16010000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x16010000 0 0x1000>;
+			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <1>;
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_VDEC>;
+			clocks = <&vdecsys CLK_VDEC_CKEN>,
+				 <&vdecsys CLK_VDEC_LARB_CKEN>;
+			clock-names = "apb", "smi";
+		};
+
 		vdec_gcon@16000000 {
 			compatible = "mediatek,mt8173-vdec_gcon";
 			reg = <0 0x16000000 0 0x10000>;
@@ -1546,6 +1565,17 @@
 			compatible = "mediatek,mt8173-vencsys", "syscon";
 			reg = <0 0x18000000 0 0x1000>;
 			#clock-cells = <1>;
+		};
+
+		larb3: larb@18001000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x18001000 0 0x1000>;
+			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <3>;
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC>;
+			clocks = <&vencsys CLK_VENC_CKE1>,
+				 <&vencsys CLK_VENC_CKE0>;
+			clock-names = "apb", "smi";
 		};
 
 		venc@18002000 {
@@ -1591,6 +1621,17 @@
 			compatible = "mediatek,mt8173-vencltsys", "syscon";
 			reg = <0 0x19000000 0 0x1000>;
 			#clock-cells = <1>;
+		};
+
+		larb5: larb@19001000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x19001000 0 0x1000>;
+			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <5>;
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC_LT>;
+			clocks = <&vencltsys CLK_VENCLT_CKE1>,
+				 <&vencltsys CLK_VENCLT_CKE0>;
+			clock-names = "apb", "smi";
 		};
 
 		venclt@19002000 {

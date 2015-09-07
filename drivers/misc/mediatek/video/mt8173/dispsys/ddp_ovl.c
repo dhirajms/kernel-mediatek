@@ -599,12 +599,12 @@ static void ovl_store_regs(DISP_MODULE_ENUM module)
 {
 	int i = 0;
 	int idx = ovl_index(module);
-	static unsigned long regs[3];
+	unsigned long regs[2];
 
 	regs[0] = DISP_REG_OVL_ROI_SIZE;
 	regs[1] = DISP_REG_OVL_ROI_BGCLR;
 	/*Enable SMI_LARB0 MMU, After use CCF, M4U can not set this register when resume */
-	regs[2] = DISPSYS_SMI_LARB0_BASE + 0xF00;
+	/* regs[2] = DISPSYS_SMI_LARB0_BASE + 0xF00; */
 
 	reg_back_cnt[idx] = sizeof(regs) / sizeof(unsigned long);
 	ASSERT(reg_back_cnt[idx] <= OVL_REG_BACK_MAX);

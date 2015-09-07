@@ -19,27 +19,8 @@
 static m4u_domain_t gM4uDomain;
 
 static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
-static unsigned long gLarbBaseAddr[SMI_LARB_NR];
 static unsigned long gPericfgBaseAddr;
 static unsigned int gM4UTagCount[] = { 64, 32 };
-
-/*static const char *gM4U_SMILARB[] = {
-	"mediatek,SMI_LARB0", "mediatek,SMI_LARB1", "mediatek,SMI_LARB2",
-	"mediatek,SMI_LARB3", "mediatek,SMI_LARB4", "mediatek,SMI_LARB5"
-};*/
-
-/*pls same with dtsi*/
-const char *smi_clk_name[] = {
-	"smi_common",
-	"larb0_disp",
-	"larb1_vdec_cken", "larb1_vdec_larb_cken",
-	"larb2_img",
-	"larb3_venc_cken1", "larb3_venc_cken2",
-	"larb4_disp",
-	"larb5_venclt_cken1", "larb5_venclt_cken2",
-	"larb0_mtcmos", "larb1_mtcmos", "larb2_mtcmos",
-	"larb3_mtcmos", "larb5_mtcmos"
-};
 
 static DEFINE_MUTEX(gM4u_seq_mutex);
 
@@ -493,7 +474,7 @@ int __mau_dump_status(int m4u_id, int m4u_slave_id, int mau)
 	return 0;
 }
 
-int mau_dump_status(int m4u_id, int m4u_slave_id)
+int _mau_dump_status(int m4u_id, int m4u_slave_id)
 {
 	int i;
 
@@ -934,79 +915,13 @@ static int m4u_clock_off(void)
 }
 */
 
-/* from smi */
-int larb_clock_on(unsigned int larb)
-{
-	switch (larb) {
-	case 0:
-		clk_enable(gM4uDev->smiclk[SMI_CLK_LARB0_DISP]);
-		break;
-	case 1:
-		clk_enable(gM4uDev->smiclk[SMI_CLK_LARB1_VDEC_CKEN]);
-		clk_enable(gM4uDev->smiclk[SMI_CLK_LARB1_VDEC_LARB_CKEN]);
-		break;
-	case 2:
-		clk_enable(gM4uDev->smiclk[SMI_CLK_LARB2_IMG]);
-		break;
-	case 3:
-		clk_enable(gM4uDev->smiclk[SMI_CLK_LARB3_VENC_CKEN1]);
-		clk_enable(gM4uDev->smiclk[SMI_CLK_LARB3_VENC_CKEN2]);
-		break;
-	case 4:
-		clk_enable(gM4uDev->smiclk[SMI_CLK_LARB4_DISP]);
-		break;
-	case 5:
-		clk_enable(gM4uDev->smiclk[SMI_CLK_LARB5_VENCLT_CKEN1]);
-		clk_enable(gM4uDev->smiclk[SMI_CLK_LARB5_VENCLT_CKEN2]);
-		break;
-
-	default:
-		M4UERR("error: unknown larb id  %d, %s\n", larb, __func__);
-		break;
-	}
-	return 0;
-}
-
-int larb_clock_off(unsigned int larb)
-{
-	switch (larb) {
-	case 0:
-		clk_disable(gM4uDev->smiclk[SMI_CLK_LARB0_DISP]);
-		break;
-	case 1:
-		clk_disable(gM4uDev->smiclk[SMI_CLK_LARB1_VDEC_CKEN]);
-		clk_disable(gM4uDev->smiclk[SMI_CLK_LARB1_VDEC_LARB_CKEN]);
-		break;
-	case 2:
-		clk_disable(gM4uDev->smiclk[SMI_CLK_LARB2_IMG]);
-		break;
-	case 3:
-		clk_disable(gM4uDev->smiclk[SMI_CLK_LARB3_VENC_CKEN1]);
-		clk_disable(gM4uDev->smiclk[SMI_CLK_LARB3_VENC_CKEN2]);
-		break;
-	case 4:
-		clk_disable(gM4uDev->smiclk[SMI_CLK_LARB4_DISP]);
-		break;
-	case 5:
-		clk_disable(gM4uDev->smiclk[SMI_CLK_LARB5_VENCLT_CKEN1]);
-		clk_disable(gM4uDev->smiclk[SMI_CLK_LARB5_VENCLT_CKEN2]);
-		break;
-
-	default:
-		M4UERR("error: unknown larb id  %d, %s\n", larb, __func__);
-		break;
-	}
-	return 0;
-}
-/* end from smi */
-
 #ifndef M4U_TEE_SERVICE_ENABLE
 static int larb_clock_all_on(void)
 {
 	int i;
 
 	for (i = 0; i < SMI_LARB_NR; i++)
-		larb_clock_on(i);
+		mtk_smi_larb_clock_on(i, false);
 	return 0;
 }
 static int larb_clock_all_off(void)
@@ -1014,7 +929,7 @@ static int larb_clock_all_off(void)
 	int i;
 
 	for (i = 0; i < SMI_LARB_NR; i++)
-		larb_clock_off(i);
+		mtk_smi_larb_clock_off(i, false);
 
 	return 0;
 }
@@ -1022,12 +937,12 @@ static int larb_clock_all_off(void)
 
 static void smi_common_clock_on(void)
 {
-	clk_enable(gM4uDev->smiclk[SMI_CLK_COMMON]);
+
 }
 
 static void smi_common_clock_off(void)
 {
-	clk_disable(gM4uDev->smiclk[SMI_CLK_COMMON]);
+
 }
 
 #ifndef M4U_TEE_SERVICE_ENABLE
@@ -1036,7 +951,7 @@ int m4u_larb_backup_sec(unsigned int larb_idx)
 {
 	if (larb_idx == 0 || larb_idx == 4) {
 		larb_mmu_backup[larb_idx] = M4U_ReadReg32(
-					gLarbBaseAddr[larb_idx],
+					mtk_smi_larb_get_base(larb_idx),
 					SMI_LARB_MMU_EN);
 	}
 	return 0;
@@ -1045,7 +960,7 @@ int m4u_larb_backup_sec(unsigned int larb_idx)
 int m4u_larb_restore_sec(unsigned int larb_idx)
 {
 	if (larb_idx == 0 || larb_idx == 4) {
-		M4U_WriteReg32(gLarbBaseAddr[larb_idx],
+		M4U_WriteReg32(mtk_smi_larb_get_base(larb_idx),
 			SMI_LARB_MMU_EN, larb_mmu_backup[larb_idx]);
 	}
 	return 0;
@@ -1059,8 +974,6 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 	unsigned long larb_base;
 	unsigned int larb, larb_port;
 	int ret = 0;
-
-	M4ULOG_HIGH("config_port:%s,v%d,s%d\n", m4u_get_port_name(port), virt, sec);
 
 	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMProfileFlagStart, port, virt); */
 
@@ -1077,7 +990,7 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 
 		larb = m4u_port_2_larb_id(port);
 		larb_port = m4u_port_2_larb_port(port);
-		larb_base = gLarbBaseAddr[larb];
+		larb_base = mtk_smi_larb_get_base(larb);
 
 		m4uHw_set_field_by_mask(larb_base, SMI_LARB_MMU_EN,
 					F_SMI_MMU_EN(larb_port, 1),
@@ -1133,9 +1046,9 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 		start = sched_clock();
 		if (on) {
 			smi_common_clock_on();
-			larb_clock_on(larb);
+			mtk_smi_larb_clock_on(larb, false);
 		} else {
-			larb_clock_off(larb);
+			mtk_smi_larb_clock_off(larb, false);
 			smi_common_clock_off();
 		}
 		end = sched_clock();
@@ -1153,21 +1066,18 @@ int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 	int m4u_index = m4u_port_2_m4u_id(PortID);
 	int larb = m4u_port_2_larb_id(PortID);
 	int ret;
-#ifdef M4U_TEE_SERVICE_ENABLE
-	unsigned int mmu_en = 0, sec_en = 0;
-#endif
 
 	if (PortID >= M4U_PORT_NR) {
 		M4UMSG("config port id error %d>%d\n", PortID, M4U_PORT_NR);
 		return -EFAULT;
 	}
 
+	M4ULOG_MID("config_port:%s,v%d,s%d tee %d\n", m4u_get_port_name(PortID),
+		   pM4uPort->Virtuality, pM4uPort->Security, m4u_tee_en);
+
 	_m4u_port_clock_toggle(m4u_index, larb, 1);
 
 #ifdef M4U_TEE_SERVICE_ENABLE
-	M4ULOG_LOW("m4u_config_port: %s, m4u_tee_en:%d, mmu_en: %d -> %d, sec_en:%d -> %d\n",
-		m4u_get_port_name(PortID), m4u_tee_en,
-		mmu_en, pM4uPort->Virtuality, sec_en, pM4uPort->Security);
 	if (m4u_tee_en && m4u_index == 0)
 		m4u_config_port_tee(PortID, pM4uPort->Virtuality,
 				pM4uPort->Security,
@@ -1481,7 +1391,7 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 		if (m4u_index == 0) {
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
-			larb_base = gLarbBaseAddr[larb];
+			larb_base = mtk_smi_larb_get_base(larb);/*gLarbBaseAddr[larb];*/
 
 			mmu_en =
 			    m4uHw_get_field_by_mask(larb_base, SMI_LARB_MMU_EN,
@@ -1833,43 +1743,6 @@ int m4u_get_domain_nr(void)
 	return 1;
 }
 
-int m4u_parse_smi_dt(struct m4u_device *m4u_dev)
-{
-	struct platform_device *smipdev;
-	struct device_node *node = NULL;
-	unsigned int i;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-smi-common");
-	if (NULL == node) {
-		M4UINFO("smi common fail\n");
-		return -EINVAL;
-	}
-
-	smipdev = of_find_device_by_node(node);
-	of_node_put(node);
-	if (WARN_ON(!smipdev))
-		return -EINVAL;
-
-	/* Map registers */
-	for (i = 1/*0 is smicommon*/; i <= SMI_LARB_NR; i++) {
-		gLarbBaseAddr[i-1] = (unsigned long)of_iomap(node, i);
-
-		if (!gLarbBaseAddr[i-1]) {
-			M4UERR("Unable to ioremap registers, of_iomap fail, i=%d\n", i);
-			return -EINVAL;
-		}
-	}
-	/* get clk */
-	for (i = SMI_CLK_COMMON; i < SMI_CLK_LARB0_MTCMOS; i++) {
-		m4u_dev->smiclk[i] = devm_clk_get(&smipdev->dev, smi_clk_name[i]);
-		if (IS_ERR(m4u_dev->smiclk[i])) {
-			M4UERR("smi clk err %d\n", i);
-			return -EINVAL;
-		}
-	}
-	return 0;
-}
-
 int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 {
 	unsigned int regval;
@@ -1914,8 +1787,6 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 			gLarbBaseAddr[i] = (unsigned long)of_iomap(node, 0);
 			M4UINFO("init larb %d, 0x%lx\n", i, gLarbBaseAddr[i]);
 		}*/
-		if (m4u_parse_smi_dt(gM4uDev))
-			return -EINVAL;
 	}
 
 /* ========================================= */

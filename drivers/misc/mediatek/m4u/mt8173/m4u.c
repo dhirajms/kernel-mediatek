@@ -2033,22 +2033,9 @@ static int __init MTK_M4U_Init(void)
 
 static int __init MTK_M4U_lateinit(void)
 {
-	int ret;
 	M4U_PORT_STRUCT port;
 
 	M4UMSG("MTK_M4U_lateinit\n");
-
-	/* clk prepare firstly, then clk_enable/disable will in atmoic test */
-	ret = clk_prepare(gM4uDev->smiclk[SMI_CLK_COMMON]);
-	ret |= clk_prepare(gM4uDev->smiclk[SMI_CLK_LARB0_DISP]);
-	ret |= clk_prepare(gM4uDev->smiclk[SMI_CLK_LARB1_VDEC_CKEN]);
-	ret |= clk_prepare(gM4uDev->smiclk[SMI_CLK_LARB1_VDEC_LARB_CKEN]);
-	ret |= clk_prepare(gM4uDev->smiclk[SMI_CLK_LARB2_IMG]);
-	ret |= clk_prepare(gM4uDev->smiclk[SMI_CLK_LARB3_VENC_CKEN1]);
-	ret |= clk_prepare(gM4uDev->smiclk[SMI_CLK_LARB3_VENC_CKEN2]);
-	ret |= clk_prepare(gM4uDev->smiclk[SMI_CLK_LARB4_DISP]);
-	ret |= clk_prepare(gM4uDev->smiclk[SMI_CLK_LARB5_VENCLT_CKEN1]);
-	ret |= clk_prepare(gM4uDev->smiclk[SMI_CLK_LARB5_VENCLT_CKEN2]);
 
 	/* config MDP related port default use M4U
 	 * don't affect smi_common of disp when probe while ccf

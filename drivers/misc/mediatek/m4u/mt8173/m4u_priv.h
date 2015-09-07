@@ -10,6 +10,7 @@
 #include "m4u.h"
 #include "m4u_reg.h"
 #include "m4u_pgtable.h"
+#include "mt_smi.h"
 
 #if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
 /*&& defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)*/
@@ -65,26 +66,6 @@ extern void smp_inner_dcache_flush_all(void);
 
 extern void show_pte(struct mm_struct *mm, unsigned long addr);
 
-/* for 8173 clk */
-enum {
-	SMI_CLK_COMMON,
-	SMI_CLK_LARB0_DISP,
-	SMI_CLK_LARB1_VDEC_CKEN,
-	SMI_CLK_LARB1_VDEC_LARB_CKEN,
-	SMI_CLK_LARB2_IMG,
-	SMI_CLK_LARB3_VENC_CKEN1,
-	SMI_CLK_LARB3_VENC_CKEN2,
-	SMI_CLK_LARB4_DISP,
-	SMI_CLK_LARB5_VENCLT_CKEN1,
-	SMI_CLK_LARB5_VENCLT_CKEN2,
-	SMI_CLK_LARB0_MTCMOS,
-	SMI_CLK_LARB1_MTCMOS,
-	SMI_CLK_LARB2_MTCMOS,
-	SMI_CLK_LARB3_MTCMOS,
-	/*SMI_CLK_LARB4_MTCMOS, */
-	SMI_CLK_LARB5_MTCMOS,
-	SMI_CLK_LARB_MAX,
-};
 
 struct m4u_device {
 	struct miscdevice dev;
@@ -95,7 +76,6 @@ struct m4u_device {
 	unsigned int irq_num[TOTAL_M4U_NUM];
 	struct clk *infram4u;
 	struct clk *infrasmi;
-	struct clk *smiclk[SMI_CLK_LARB_MAX];
 };
 
 extern struct m4u_device *gM4uDev;
