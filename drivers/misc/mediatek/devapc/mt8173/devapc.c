@@ -227,7 +227,7 @@ int mt_devapc_emi_initial(void)
 	mt_reg_sync_writel(ABORT_EMI, DEVAPC0_D0_VIO_STA_4);
 	mt_reg_sync_writel(readl(IOMEM(DEVAPC0_D0_VIO_MASK_4)) & (0xFFFFFFFF ^ (ABORT_EMI)),
 			   DEVAPC0_D0_VIO_MASK_4);
-	pr_info("EMI_DAPC Init done\n");
+	pr_debug("EMI_DAPC Init done\n");
 	return 0;
 }
 
@@ -587,10 +587,10 @@ static int devapc_suspend(struct platform_device *dev, pm_message_t state)
 static int devapc_resume(struct platform_device *dev)
 {
 #ifndef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
-	pr_info("[DEVAPC] Disable TEE...module resume.\n");
+	pr_debug("[DEVAPC] Disable TEE...module resume.\n");
 	start_devapc();
 #else
-	pr_info("[DEVAPC] Enable TEE...module resume.\n");
+	pr_debug("[DEVAPC] Enable TEE...module resume.\n");
 #endif
 	return 0;
 }
@@ -650,7 +650,7 @@ static int __init devapc_init(void)
  */
 static void __exit devapc_exit(void)
 {
-	pr_info("[DEVAPC] DEVAPC module exit\n");
+	pr_debug("[DEVAPC] DEVAPC module exit\n");
 #ifdef CONFIG_MTK_HIBERNATION
 	unregister_swsusp_restore_noirq_func(ID_M_DEVAPC);
 #endif
