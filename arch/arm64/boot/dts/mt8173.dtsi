@@ -1604,6 +1604,12 @@
 			clock-names = "kpd-clk";
 		};
 
+		ice: ice_debug {
+			compatible = "mediatek,mt8173-ice_debug";
+			clocks = <&infracfg CLK_INFRA_DBGCLK>;
+			clock-names = "ice_dbg";
+		};
+
 		accdet: accdet@ {
 			compatible = "mediatek,mt8173-accdet";
 		};
@@ -1790,7 +1796,7 @@
 			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
-			<&infracfg CLK_INFRA_DBGCLK>,
+			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
 			<&clk_null>,
