@@ -1,0 +1,2 @@
+source "drivers/staging/imgtec/rogue/Kconfig"
+source "drivers/staging/imgtec/mt8173/Kconfig"

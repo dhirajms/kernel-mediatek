@@ -1,0 +1,5 @@
+config POWERVR_MT8173
+	bool "PowerVR MT8173 support"
+	default y
+	depends on POWERVR_ROGUE
+	depends on ARCH_MT8173
