@@ -392,6 +392,8 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0,
 		     ultra_low_level | (pre_ultra_low_ofs << 8) | (ultra_high_ofs << 16) |
 		     (pre_ultra_high_ofs << 24));
+	DISP_REG_SET_FIELD(handle, FIFO_CON_FLD_OUTPUT_VALID_FIFO_THRESHOLD,
+			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_FIFO_CON, (ultra_low_level+pre_ultra_low_ofs));
 
 	DDPDBG("ultra_low_level      = 0x%03x = %d\n", ultra_low_level, ultra_low_level);
 	DDPDBG("pre_ultra_low_level  = 0x%03x = %d\n", pre_ultra_low_level, pre_ultra_low_level);
@@ -569,9 +571,7 @@ int rdma_config(DISP_MODULE_ENUM module, enum RDMA_MODE mode, unsigned long addr
 
 	/* avoid ovl1 hang up sometimes */
 	DISP_REG_SET_FIELD(handle, FIFO_CON_FLD_FIFO_UNDERFLOW_EN,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_FIFO_CON, 0);
-	DISP_REG_SET_FIELD(handle, FIFO_CON_FLD_OUTPUT_VALID_FIFO_THRESHOLD,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_FIFO_CON, 32);
+			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_FIFO_CON, 1);
 
 	return 0;
 }
