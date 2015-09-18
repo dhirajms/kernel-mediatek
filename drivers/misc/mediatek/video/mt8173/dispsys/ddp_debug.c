@@ -40,6 +40,8 @@
 #include "display_recorder.h"
 #include "disp_session.h"
 #include "primary_display.h"
+#include "disp_drv_platform.h"
+
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 #include "extd_ddp.h"
 #endif
@@ -82,12 +84,6 @@ unsigned int gDumpClockStatus = 1;
 unsigned int gDebugSvp = 0;
 unsigned int gDebugSvpOption = 0;
 #endif
-
-#if defined(MTK_ALPS_BOX_SUPPORT)
-#else
-#define DISP_ENABLE_SODI
-#endif
-
 
 #ifdef DISP_ENABLE_SODI
 unsigned int gEnableSODIControl = 1;

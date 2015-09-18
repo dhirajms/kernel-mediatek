@@ -48,7 +48,7 @@
 /* for sodi reg addr define */
 #ifdef DISP_ENABLE_SODI
 #include "mt_spm.h"
-#include <mach/mt_spm_idle.h>
+#include "mt_spm_idle.h"
 #endif
 #include "ddp_irq.h"
 /*#include "mach/eint.h" */

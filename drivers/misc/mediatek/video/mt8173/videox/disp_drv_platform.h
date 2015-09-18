@@ -123,4 +123,9 @@ extern bool boot_up_with_facotry_mode(void);
 #define BOX_FIX_RES 0x19
 #endif
 
+#if defined(MTK_ALPS_BOX_SUPPORT)
+#else
+#define DISP_ENABLE_SODI
+#endif
+
 #endif				/* __DISP_DRV_PLATFORM_H__ */
