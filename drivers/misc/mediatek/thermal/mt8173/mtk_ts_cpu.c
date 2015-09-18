@@ -13,6 +13,7 @@
 #include <linux/slab.h>
 #include <linux/clk.h>
 #include <linux/reboot.h>
+#include "mtk_thermal_typedefs.h"
 /* #include <mach/mt_ptp.h> */
 #include "../../base/power/mt8173/mt_spm.h"
 #include <mt-plat/sync_write.h>

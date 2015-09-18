@@ -11,7 +11,7 @@
 #include <linux/uaccess.h>
 
 #include "mt-plat/sync_write.h"
-#include "mt-plat/mt_typedefs.h"
+#include <linux/types.h>
 #include "mach/mt_gpufreq.h"
 
 #if 1
