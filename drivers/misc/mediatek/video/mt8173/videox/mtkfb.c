@@ -1836,8 +1836,9 @@ static int init_framebuffer(struct fb_info *info)
 {
 	void *buffer = info->screen_base + info->var.yoffset * info->fix.line_length;
 
-	/* clean whole frame buffer as black */
-	memset(buffer, 0, info->screen_size);
+	/* clean the current frame buffer as black */
+	/* the ioremap_nocache memory will not support memset/memcpy */
+	memset_io(buffer, 0, info->screen_size/MTK_FB_PAGES);
 
 	return 0;
 }
@@ -2311,7 +2312,6 @@ static int mtkfb_probe(struct platform_device *pdev)
 					      (unsigned long *)&fbdev->fb_va_base, &fb_pa);
 		fb_base_va = (unsigned long)fbdev->fb_va_base;
 		fbdev->fb_pa_base = fb_base;
-
 #else
 		struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 		/* ASSERT(DISP_GetVRamSize() <= (res->end - res->start + 1)); */
