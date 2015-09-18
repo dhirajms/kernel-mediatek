@@ -373,6 +373,9 @@
 };
 
 &pio {
+	pinctrl-names = "default";
+	pinctrl-0 = <&state_default>;
+
 	alsps_intpin_cfg: alspspincfg {
 		pins_cmd_dat {
 			pins = <MT8173_PIN_6_EINT6__FUNC_GPIO6>;
@@ -687,6 +690,23 @@
 			pinmux = <MT8173_PIN_36_DAISYNC__FUNC_PCM0_SYNC>;
 			bias-disable;
 		};
+	};
+
+	state_default:pinctrl {
+		/* ++++++ Connectivity GPIO configs ++++++ */
+		combo_wifi_eint_pins {
+			pinmux = <MT8173_PIN_2_EINT2__FUNC_GPIO2>;
+			bias-pull-up;
+		};
+
+		combo_pcm_pins {
+			pinmux = <MT8173_PIN_33_DAICLK__FUNC_MRG_CLK>,
+				   <MT8173_PIN_34_DAIPCMIN__FUNC_MRG_DI>,
+				   <MT8173_PIN_35_DAIPCMOUT__FUNC_MRG_DO>,
+				   <MT8173_PIN_36_DAISYNC__FUNC_MRG_SYNC>;
+			bias-disable;
+		};
+		/* ----- Connectivity GPIO configs ----- */
 	};
 	/* ------ Connectivity GPIO configs ------ */
 
