@@ -928,7 +928,7 @@ typedef enum _eLOG_OP {
 #define	NORMAL_STR_LEN (512)
 #define	ERR_PAGE 2
 #define	DBG_PAGE 2
-#define	INF_PAGE 4
+#define	INF_PAGE 6 /*4*/ /* increase log buf size to avoid log overflow & causes KE */
 /* #define SV_LOG_STR_LEN NORMAL_STR_LEN */
 
 #define	LOG_PPNUM 2
@@ -6347,17 +6347,20 @@ static MINT32 ISP_SOF_Buf_Get(eISPIrq irqT, CQ_RTBC_FBC * pFbc, MUINT32 *pCurr_p
 		pstRTBuf->ring_buf[ch_rrzo].data[rrzo_idx].timeStampUs = usec;
 		if (IspInfo.DebugMask & ISP_DBG_INT_3) {
 			static MUINT32 m_sec = 0, m_usec;
-			MUINT32 _tmp =
-			    pstRTBuf->ring_buf[ch_imgo].data[imgo_idx].timeStampS * 1000000 +
-			    pstRTBuf->ring_buf[ch_imgo].data[imgo_idx].timeStampUs;
-
 			if (g1stSof[irqT]) {
 				m_sec = 0;
 				m_usec = 0;
-			} else {
+			}
+			/* reduce useless log to avoid log overflow & causes KE */
+			/*
+			else {
+				MUINT32 _tmp =
+			    pstRTBuf->ring_buf[ch_imgo].data[imgo_idx].timeStampS * 1000000 +
+			    pstRTBuf->ring_buf[ch_imgo].data[imgo_idx].timeStampUs;
 				IRQ_LOG_KEEPER(irqT, m_CurrentPPB, _LOG_INF, " timestamp:%d\n",
 					       (_tmp - (1000000 * m_sec + m_usec)));
 			}
+			*/
 			m_sec = pstRTBuf->ring_buf[ch_imgo].data[imgo_idx].timeStampS;
 			m_usec = pstRTBuf->ring_buf[ch_imgo].data[imgo_idx].timeStampUs;
 		}
@@ -8339,13 +8342,13 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT * WaitIrq)
 			/*      */
 			/* v : kernel receive mark request */
 			/* o : kernel receive wait request */
-			/* ¡ô: return to user */
+			/* Â¡Ã´: return to user */
 			/*      */
 			/* case: freeze is true, and passby     signal count = 0 */
 			/*      */
 			/* |                                                                            |     */
 			/* |                                                              (wait)        | */
-			/* |       v-------------o++++++ |¡ô */
+			/* |       v-------------o++++++ |Â¡Ã´ */
 			/* |                                                                            |     */
 			/* Sig                                                                            Sig */
 			/*      */
@@ -8353,7 +8356,7 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT * WaitIrq)
 			/*      */
 			/* |                                                                             |     */
 			/* |                                                                             |     */
-			/* |       v---------------------- |-o  ¡ô(return) */
+			/* |       v---------------------- |-o  Â¡Ã´(return) */
 			/* |                                                                             |     */
 			/* Sig                                                                             Sig */
 			/*      */
@@ -9258,11 +9261,16 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 		gEismetaInSOF = 0;
 		ISP_DONE_Buf_Time(_IRQ, p1_fbc, 0, 0);
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
+			/* reduce logs to avoid log overflow & causes KE */
+			/*
 			IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF, "P1_DON_%d(0x%x,0x%x)\n",
 				       (sof_count[_PASS1]) ? (sof_count[_PASS1] -
 							      1) : (sof_count[_PASS1]),
 				       (unsigned int)(p1_fbc[0].Reg_val),
 				       (unsigned int)(p1_fbc[1].Reg_val));
+			*/
+			IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF, "P1_DON_%d\n",
+				       (sof_count[_PASS1]) ? (sof_count[_PASS1] - 1) : (sof_count[_PASS1]));
 		}
 		lost_pass1_done_cnt = 0;
 #else
@@ -9380,9 +9388,12 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 				ISP_WR32(ISP_REG_ADDR_IMGO_FBC, p1_fbc[0].Reg_val);
 				p1_fbc[1].Bits.RCNT_INC = 1;
 				ISP_WR32(ISP_REG_ADDR_RRZO_FBC, p1_fbc[1].Reg_val);
+				/* remove useless logs to avoid log str overflow & causes KE */
+				/*
 				if (IspInfo.DebugMask & ISP_DBG_INT)
 					IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
 						       " p1:RCNT_INC:	");
+				*/
 			} else {
 				/* LOG_INF("RTBC_DBG:%d %d %d %d %d     %d %d %d %d     %d",
 				   mFwRcnt.INC[_IRQ][0],mFwRcnt.INC[_IRQ][1],mFwRcnt.INC[_IRQ][2],mFwRcnt.INC[_IRQ][3],mFwRcnt.INC[_IRQ][4],\ */
@@ -9397,6 +9408,8 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 
 			_fbc_chk[0].Reg_val = ISP_RD32(ISP_REG_ADDR_IMGO_FBC);	/* in     order to log newest     fbc     condition */
 			_fbc_chk[1].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_FBC);
+			/* reduce logs to aovid log overflow & causes KE */
+			/*
 			IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
 				       "P1_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)\n",
 				       sof_count[_PASS1], cur_v_cnt,
@@ -9407,6 +9420,9 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 				       ISP_RD32(ISP_INNER_REG_ADDR_IMGO_YSIZE),
 				       ISP_RD32(ISP_INNER_REG_ADDR_RRZO_YSIZE),
 				       ISP_RD32(ISP_REG_ADDR_TG_MAGIC_0));
+			*/
+			IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
+				       "P1_SOF_%d_%d\n", sof_count[_PASS1], cur_v_cnt);
 			/* 1 port is enough     */
 			if (pstRTBuf->ring_buf[_imgo_].active) {
 				if (_fbc_chk[0].Bits.WCNT != p1_fbc[0].Bits.WCNT)
