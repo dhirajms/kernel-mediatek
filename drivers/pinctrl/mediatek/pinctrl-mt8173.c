@@ -320,6 +320,24 @@ static const struct mtk_pin_drv_grp mt8173_pin_drv[] = {
 	MTK_PIN_DRV_GRP(132, DRV_BASE+0x40, 0, 1)
 };
 
+static int mt8173_spec_ies_get(struct regmap *regmap, unsigned int pin)
+{
+	return mtk_spec_get_ies_smt_range(regmap, mt8173_ies_set,
+		ARRAY_SIZE(mt8173_ies_set), pin);
+}
+
+static int mt8173_spec_smt_get(struct regmap *regmap, unsigned int pin)
+{
+	return mtk_spec_get_ies_smt_range(regmap, mt8173_smt_set,
+		ARRAY_SIZE(mt8173_smt_set), pin);
+}
+
+static int mt8173_spec_pull_get(struct regmap *regmap, unsigned int pin)
+{
+	return mtk_spec_pull_get_samereg(regmap, mt8173_spec_pupd,
+		ARRAY_SIZE(mt8173_spec_pupd), pin);
+}
+
 static const struct mtk_pinctrl_devdata mt8173_pinctrl_data = {
 	.pins = mtk_pins_mt8173,
 	.npins = ARRAY_SIZE(mtk_pins_mt8173),
@@ -329,6 +347,9 @@ static const struct mtk_pinctrl_devdata mt8173_pinctrl_data = {
 	.n_pin_drv_grps = ARRAY_SIZE(mt8173_pin_drv),
 	.spec_pull_set = mt8173_spec_pull_set,
 	.spec_ies_smt_set = mt8173_ies_smt_set,
+	.spec_pull_get = mt8173_spec_pull_get,
+	.spec_ies_get = mt8173_spec_ies_get,
+	.spec_smt_get = mt8173_spec_smt_get,
 	.dir_offset = 0x0000,
 	.pullen_offset = 0x0100,
 	.pullsel_offset = 0x0200,
