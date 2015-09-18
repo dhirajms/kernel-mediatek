@@ -689,6 +689,14 @@
 		};
 	};
 	/* ------ Connectivity GPIO configs ------ */
+
+	usb_iddig: usb_iddig {
+		pins_cmd_dat {
+			pinmux = <MT8173_PIN_16_IDDIG__FUNC_IDDIG>;
+			input-enable;
+			bias-pull-up;
+		};
+	};
 };
 
 &ptp_od {
@@ -990,6 +998,8 @@
 };
 
 &usb {
+	pinctrl-names = "default";
+	pinctrl-0 = <&usb_iddig>;
 	reg-vusb33-supply = <&mt6397_vusb_reg>;
 	port-num = <1>; /* is the max(u2-ports, u3-ports) */
 	drv-mode = <3>; /* 1: host, 2: device, 3 dual-mode */
