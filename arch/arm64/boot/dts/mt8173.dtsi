@@ -1595,7 +1595,6 @@
 			compatible = "mediatek,mt8173-venc";
 			reg = <0 0x18002000 0 0x1000>;
 			interrupts = <GIC_SPI 198 IRQ_TYPE_LEVEL_LOW>;
-			power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC>;
 		};
 
 		jpgenc@18003000 {
@@ -1603,15 +1602,9 @@
 			reg = <0 0x18003000 0 0x1000>;
 			interrupts = <GIC_SPI 200 IRQ_TYPE_LEVEL_LOW>;
 			clocks =
-				<&mmsys CLK_MM_SMI_COMMON>,
-				<&vencsys CLK_VENC_CKE0>,  /* smi_larb3 */
-				<&vencsys CLK_VENC_CKE2>;  /* jpeg enc */
-
+				<&vencsys CLK_VENC_CKE2>; /* jpeg enc */
 			clock-names =
-				"disp-smi",
-				"venc-larb",
 				"venc-jpgenc";
-			power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
 		};
 
 		jpgdec@18004000 {
@@ -1619,15 +1612,9 @@
 			reg = <0 0x18004000 0 0x1000>;
 			interrupts = <GIC_SPI 203 IRQ_TYPE_LEVEL_LOW>;
 			clocks =
-				<&mmsys CLK_MM_SMI_COMMON>,
-				<&vencsys CLK_VENC_CKE0>,
 				<&vencsys CLK_VENC_CKE3>; /* jpeg dec */
-
 			clock-names =
-				"disp-smi-jpgdec",
-				"venc-larb-jpgdec",
 				"venc-jpgdec";
-			power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC>;
 		};
 
 		vencltsys: vencltsys@19000000 {
@@ -1651,7 +1638,6 @@
 			compatible = "mediatek,mt8173-venclt";
 			reg = <0 0x19002000 0 0x1000>;
 			interrupts = <GIC_SPI 202 IRQ_TYPE_LEVEL_LOW>;
-			power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC_LT>;
 		};
 
 		keypad: keypad@10010000 {
