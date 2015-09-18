@@ -372,6 +372,7 @@
 	sd-uhs-sdr12;
 	sd-uhs-sdr25;
 	sd-uhs-sdr50;
+	non-removable;
 };
 
 &pio {

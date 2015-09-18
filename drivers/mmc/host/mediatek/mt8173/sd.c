@@ -3380,6 +3380,12 @@ static void msdc_pm(pm_message_t state, void *data)
 	} else {
 		msdc_gate_clock(host, 1);
 	}
+
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
+	}
+
 	if (host->hw->host_function == MSDC_EMMC)
 		emmc_do_sleep_awake = 0;
 }
@@ -4877,6 +4883,8 @@ static void msdc_restore_info(struct msdc_host *host)
 	sdr_set_field(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 		host->saved_para.inten_sdio_irq);	/* get INTEN status for SDIO */
 	sdr_write32(MSDC_IOCON, host->saved_para.iocon);
+	if (host->hw->host_function == MSDC_SDIO)
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
 }
 
 static void msdc_update_cahce_status(struct msdc_host *host,
@@ -9361,6 +9369,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #endif
 #if defined(CFG_DEV_MSDC3)
 	if (strcmp(pdev->dev.of_node->name, "sdio") == 0) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->pm_caps |= MMC_PM_KEEP_POWER;
+		mmc->caps |= MMC_CAP_NONREMOVABLE;
 		pdev->id = 3;
 		pr_err("platform_data hw:0x%p, is msdc3_hw\n", host->hw);
 	}
@@ -9775,9 +9786,13 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 					host->error = 0;
 				}
 			}
-			ERR_MSG("msdc suspend cur_cfg=%x, save_cfg=%x, cur_hz=%d,save_hz=%d"
+
+			if (host->hw->host_function == MSDC_SDIO)
+				host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+
+			ERR_MSG("msdc suspend cur_cfg=%x, save_cfg=%x, cur_hz=%d,save_hz=%d, pm_flags=0x%x"
 				, sdr_read32(MSDC_CFG), host->saved_para.msdc_cfg,
-				host->mclk, host->saved_para.hz);
+				host->mclk, host->saved_para.hz, host->mmc->pm_flags);
 		}
 	}
 	return ret;
@@ -9793,12 +9808,11 @@ static int msdc_drv_resume(struct platform_device *pdev)
 	if (host->hw->flags & MSDC_SDIO_IRQ)
 		pr_debug("msdc msdc_drv_resume\n");
 	state.event = PM_EVENT_RESUME;
-	if (mmc && (host->hw->flags & MSDC_SYS_SUSPEND)) {	/* will set for card */
+	if (mmc && (host->hw->flags & MSDC_SYS_SUSPEND))
 		msdc_pm(state, (void *)host);
-	}
-
 	/* This mean WIFI not controller by PM */
-
+	if (host->hw->host_function == MSDC_SDIO)
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
 	return ret;
 }
 #endif
