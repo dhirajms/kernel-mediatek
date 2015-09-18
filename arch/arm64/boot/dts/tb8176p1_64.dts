@@ -365,11 +365,13 @@
 	pinctrl-1 = <&mmc3_pins_uhs>;
 	status = "okay";
 	bus-width = <4>;
-	max-frequency = <50000000>;
+	max-frequency = <200000000>;
 	cap-sd-highspeed;
 	sd-uhs-sdr12;
 	sd-uhs-sdr25;
 	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+	sd-uhs-ddr50;
 	non-removable;
 };
 
