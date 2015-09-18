@@ -113,6 +113,8 @@ struct clk *clk_pllca57;
 
 #endif
 
+int _mt_cpufreq_pdrv_probed = 0;
+
 #if 1	/* L318_Need_Related_File Dummy code */
 
 /* mt_spm_idle.h */
@@ -4417,6 +4419,9 @@ bool mt_cpufreq_earlysuspend_status_get(void)
 	unsigned int isenabled = 0;
 	unsigned int rdata;
 
+	if (!_mt_cpufreq_pdrv_probed)
+		return 0;
+
 	isenabled = regulator_is_enabled(reg_vpca53);
 	if (isenabled)
 		rdata = regulator_get_voltage(reg_vpca53) / 1000;
@@ -4717,6 +4722,8 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	ret = cpufreq_register_driver(&_mt_cpufreq_driver);
 	register_hotcpu_notifier(&turbo_mode_cpu_notifier);	/* <-XXX */
 	register_hotcpu_notifier(&extbuck_cpu_notifier);
+
+	_mt_cpufreq_pdrv_probed = 1;
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 
