@@ -208,6 +208,11 @@
 			#reset-cells = <1>;
 		};
 
+		dramco: dramco@10004000 {
+			compatible = "mediatek,mt8173-dramco";
+			reg = <0 0x10004000 0 0x1000>;
+		};
+
 		syscfg_pctl_a: syscfg_pctl_a@10005000 {
 			compatible = "mediatek,mt8173-pctl-a-syscfg", "syscon";
 			reg = <0 0x10005000 0 0x1000>;
@@ -441,6 +446,11 @@
 			clock-names = "spi", "wrap";
 		};
 
+		ddrphy: ddrphy@1000f000 {
+			compatible = "mediatek,mt8173-ddrphy";
+			reg = <0 0x1000f000 0 0x1000>;
+		};
+
 		sysirq: intpol-controller@10200620 {
 			compatible = "mediatek,mt8173-sysirq",
 				     "mediatek,mt6577-sysirq";
@@ -463,6 +473,12 @@
 				<GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>,
 				<GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>,
 				<GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		emi: emi@10203000 {
+			compatible = "mediatek,mt8173-emi", "mediatek,emi";
+			reg = <0 0x10203000 0 0x1000>;
+			interrupts = <GIC_SPI 126 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		sys_cirq: sys_cirq@10204000 {
@@ -493,6 +509,11 @@
 		fhctl: fhctl@10209e00 {
 			compatible = "mediatek,mt8173-fhctl";
 			reg = <0 0x10209e00 0 0x100>;
+		};
+
+		dramc_nao: dramc_nao@1020e000 {
+			compatible = "mediatek,mt8173-dramc_nao", "mediatek,dramc0_nao";
+			reg = <0 0x1020e000 0 0x1000>;
 		};
 
 		gce: gce@10212000 {
