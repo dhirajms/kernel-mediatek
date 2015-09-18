@@ -542,8 +542,7 @@ static irqreturn_t homekey_int_handler(int irq, void *dev_id)
 
 static irqreturn_t rtc_int_handler(int irq, void *dev_id)
 {
-	/* TODO: mark rtc_irq_handler before rtc driver is ready */
-/*	rtc_irq_handler(); */
+	rtc_irq_handler();
 	msleep(100);
 
 	return IRQ_HANDLED;
