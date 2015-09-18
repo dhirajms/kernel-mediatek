@@ -38,6 +38,7 @@
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
 #include "cmdq_core.h"
+#include "mt_smi.h"
 
 #include "ddp_manager.h"
 #include "mtkfb_fence.h"
@@ -5330,52 +5331,13 @@ int primary_display_enable_path_cg(int enable)
 
 		clk_disable(ddp_clk_map[MM_CLK_MUTEX_32K]);
 		clk_unprepare(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		clk_disable(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		clk_unprepare(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		clk_disable(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		clk_unprepare(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		/* clk_disable(ddp_clk_map[MM_CLK_MTCMOS]);
-		clk_unprepare(ddp_clk_map[MM_CLK_MTCMOS]); */
-		#ifdef CONFIG_PM_RUNTIME
-			ddp_path_mtcmos_enable(false);
-		#endif
-
-		clk_disable(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		clk_unprepare(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		clk_disable(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		clk_unprepare(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		clk_disable(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		clk_unprepare(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		/* clk_disable(ddp_clk_map[MM_CLK_MTCMOS]);
-		clk_unprepare(ddp_clk_map[MM_CLK_MTCMOS]); */
-		#ifdef CONFIG_PM_RUNTIME
-			ddp_path_mtcmos_enable(false);
-		#endif
-
+		mtk_smi_larb_clock_off(4, false);
+		mtk_smi_larb_clock_off(0, true);
 	} else {
 		ret += clk_prepare(ddp_clk_map[MM_CLK_MUTEX_32K]);
 		ret += clk_enable(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		ret += clk_prepare(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		ret += clk_prepare(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		/* ret += clk_prepare(ddp_clk_map[MM_CLK_MTCMOS]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_MTCMOS]); */
-		#ifdef CONFIG_PM_RUNTIME
-			ddp_path_mtcmos_enable(true);
-		#endif
-
-		ret += clk_prepare(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		ret += clk_prepare(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		ret += clk_prepare(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		/* ret += clk_prepare(ddp_clk_map[MM_CLK_MTCMOS]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_MTCMOS]); */
-		#ifdef CONFIG_PM_RUNTIME
-			ddp_path_mtcmos_enable(true);
-		#endif
+		mtk_smi_larb_clock_on(0, true);
+		mtk_smi_larb_clock_on(4, false);
 
 		ret += clk_prepare(ddp_clk_map[MM_CLK_DSI0_ENGINE]);
 		ret += clk_enable(ddp_clk_map[MM_CLK_DSI0_ENGINE]);

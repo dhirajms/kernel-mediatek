@@ -94,9 +94,6 @@ typedef enum {
 
 /* MM_SYS_CLK */
 typedef enum {
-	MM_CLK_MTCMOS,
-	MM_CLK_SMI_COMMON,
-	MM_CLK_SMI_LARB0,
 	MM_CLK_CAM_MDP,
 	MM_CLK_MDP_RDMA0,
 	MM_CLK_MDP_RDMA1,	/*5 */
@@ -144,7 +141,6 @@ typedef enum {
 	/*MM_CLK_HDMI_SPDIF, */
 	MM_CLK_LVDS_PIXEL,
 	MM_CLK_LVDS_CTS,
-	MM_CLK_SMI_LARB4,	/*50 */
 	MM_CLK_MUX_DPI0_SEL,
 	/* MM_CLK_HDMI_HDCP, */
 	/* MM_CLK_HDMI_HDCP_24M, */
