@@ -444,6 +444,7 @@ bool is_in_cpufreq = 0;
 
 #define CPU_LV_TO_OPP_IDX(lv)   ((lv)-1)	/* cpu_level to opp_idx */
 
+static int system_boost;
 
 static unsigned int read_efuse_speed(enum mt_cpu_dvfs_id id)
 {				/* TODO: remove it latter */
@@ -3985,6 +3986,16 @@ static int _thermal_limited_verify(struct mt_cpu_dvfs *p, int new_opp_idx)
 	return (i > new_opp_idx) ? i : new_opp_idx;
 }
 
+void interactive_boost_cpu(int boost)
+{
+	system_boost = boost;
+
+	if (system_boost) {
+		_mt_cpufreq_set(MT_CPU_DVFS_LITTLE, 0);
+		_mt_cpufreq_set(MT_CPU_DVFS_BIG, 0);
+	}
+}
+
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 {
 	int idx;
@@ -4015,6 +4026,10 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 			new_opp_idx = idx;
 			cpufreq_dbg("%s(): hevc limited freq, idx = %d\n", __func__, new_opp_idx);
 		}
+	}
+
+	if (system_boost) {
+		new_opp_idx = 0;
 	}
 #if defined(CONFIG_CPU_DVFS_DOWNGRADE_FREQ)
 
