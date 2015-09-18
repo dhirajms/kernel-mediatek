@@ -1752,14 +1752,14 @@
 		led0:led@0 {
 			compatible = "mediatek,red";
 			led_mode = <3>;
-			data = <6>;
+			data = <7>;
 			pwm_config = <0 0 0 0 0>;
 		};
 
 		led1:led@1 {
 			compatible = "mediatek,green";
 			led_mode = <3>;
-			data = <7>;
+			data = <6>;
 			pwm_config = <0 0 0 0 0>;
 		};
 
