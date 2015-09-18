@@ -1967,10 +1967,10 @@ static void dump_opp_table(struct mt_cpu_dvfs *p)
 {
 	int i;
 
-	cpufreq_ver("[%s/%d]\n" "cpufreq_oppidx = %d\n", p->name, p->cpu_id, p->idx_opp_tbl);
+	cpufreq_err("[%s/%d]\n" "cpufreq_oppidx = %d\n", p->name, p->cpu_id, p->idx_opp_tbl);
 
 	for (i = 0; i < p->nr_opp_tbl; i++) {
-		cpufreq_ver("\tOP(%d, %d),\n",
+		cpufreq_err("\tOP(%d, %d),\n",
 			    cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i)
 		    );
 	}
@@ -2127,6 +2127,13 @@ static int set_cur_volt_big(struct mt_cpu_dvfs *p, unsigned int mv)
 			mt_cpufreq_apply_pmic_cmd(IDX_NM_VSRAM_CA15L);
 #endif
 			udelay(PMIC_SETTLE_TIME(cur_vproc_mv + MAX_DIFF_VSRAM_VPROC, cur_vproc_mv));
+
+			/* VSRAM -VProc should between 100~200mV.
+				When VSRAM reach lower limit 930mV,
+				(it should be lower if there is no limit)
+				(VSRAM -VProc) will be > 200mV on next round. */
+			if (cur_vsram_mv == CA57_VSRAM_LOWER_LIMIT)
+				break;
 		} while (cur_vproc_mv > mv);
 	}
 
