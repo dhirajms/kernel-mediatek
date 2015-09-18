@@ -4410,14 +4410,20 @@ static unsigned int _mt_cpufreq_get(unsigned int cpu)
 	return cpu_dvfs_get_cur_freq(p);
 }
 
-/*
- * Early suspend
- */
-static bool _allow_dpidle_ctrl_vproc;
-
+/* return _allow_dpidle_ctrl_vproc; */
+#define VPROC_THRESHOLD_TO_DEEPIDLE	990
 bool mt_cpufreq_earlysuspend_status_get(void)
 {
-	return _allow_dpidle_ctrl_vproc;
+	unsigned int isenabled = 0;
+	unsigned int rdata;
+
+	isenabled = regulator_is_enabled(reg_vpca53);
+	if (isenabled)
+		rdata = regulator_get_voltage(reg_vpca53) / 1000;
+	else
+		rdata = VPROC_THRESHOLD_TO_DEEPIDLE;
+
+	return (rdata < VPROC_THRESHOLD_TO_DEEPIDLE);
 }
 EXPORT_SYMBOL(mt_cpufreq_earlysuspend_status_get);
 
@@ -4452,8 +4458,6 @@ static void _mt_cpufreq_early_suspend(struct early_suspend *h)
 		}
 	}
 
-	_allow_dpidle_ctrl_vproc = true;
-
 	FUNC_EXIT(FUNC_LV_MODULE);
 }
 
@@ -4464,8 +4468,6 @@ static void _mt_cpufreq_late_resume(struct early_suspend *h)
 	int i;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-
-	_allow_dpidle_ctrl_vproc = false;
 
 	for_each_cpu_dvfs(i, p) {
 		if (!cpu_dvfs_is_available(p))
