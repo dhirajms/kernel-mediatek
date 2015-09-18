@@ -757,14 +757,18 @@ static void mt6397_irq_chip_resume(struct mt6397_chip_priv *chip)
 {
 	struct mt_wake_event *we = spm_get_wakeup_event();
 	u32 events = mt6397_get_events(chip);
-	int event = __ffs(events);
+	int event = 0;
+
+	if (events)
+		event = __ffs(events);
 
 	mt6397_set_event_mask(chip, chip->saved_mask);
 
-	if (events && we && we->domain && !strcmp(we->domain, "EINT") && we->code == chip->irq_hw_id) {
+	if (events && we && we->domain && !strcmp(we->domain, "EINT") && we->code == chip->irq_hw_id)
 		spm_report_wakeup_event(&mt6397_event, event);
+
+	if (events)
 		chip->wakeup_event = events;
-	}
 }
 
 static int mt6397_irq_set_wake_locked(struct irq_data *d, unsigned int on)
