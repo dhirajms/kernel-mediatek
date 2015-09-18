@@ -119,7 +119,7 @@ static VAL_UINT32_T gu4VencPWRCounter;	/* mutex : VencPWRLock */
 static VAL_UINT32_T gLockTimeOutCount;
 
 static VAL_UINT32_T gu4VdecLockThreadId;
-#define MT8173_VCODEC_DEBUG
+/*#define MT8173_VCODEC_DEBUG*/
 #ifdef MT8173_VCODEC_DEBUG
 #undef VCODEC_DEBUG
 #define VCODEC_DEBUG printk
@@ -2459,8 +2459,8 @@ static int venc_probe(struct platform_device *pdev)
 	}
 	pvenc_dev = pdev;
 	pm_runtime_enable(&pdev->dev);
-	ret = pm_runtime_get_sync(&pvenc_dev->dev);
-	MODULE_MFV_LOGD("venc_probe venc pm return %d\n", ret);
+	/*ret = pm_runtime_get_sync(&pvenc_dev->dev);*/
+	/*MODULE_MFV_LOGD("venc_probe venc pm return %d\n", ret);*/
 
 	ret = alloc_chrdev_region(&venc_devno, 0, 1, VENC_DEVNAME);
 	if (ret)
@@ -2491,14 +2491,14 @@ static int venclt_probe(struct platform_device *pdev)
 	MODULE_MFV_LOGD("+venclt_probe\n");
 
 	pvenclt_dev = pdev;
-
-	pm_runtime_enable(&pvenclt_dev->dev);
-	ret = pm_runtime_get_sync(&pvenclt_dev->dev);
-	MODULE_MFV_LOGD("venclt_probe venclt pm return %d\n", ret);
 	if (!pdev->dev.pm_domain) {
 		MODULE_MFV_LOGD("+vcodec_probe ERROR EPROBE_DEFER\n");
 		return -EPROBE_DEFER;
 	}
+	pm_runtime_enable(&pvenclt_dev->dev);
+	/*ret = pm_runtime_get_sync(&pvenclt_dev->dev);*/
+	/*MODULE_MFV_LOGD("venclt_probe venclt pm return %d\n", ret);*/
+
 	ret = alloc_chrdev_region(&venclt_devno, 0, 1, VENCLT_DEVNAME);
 	if (ret)
 		MODULE_MFV_LOGE("Error: Can't Get Major number for VENCLT_DEVNAME Device\n");
