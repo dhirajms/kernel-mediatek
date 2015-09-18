@@ -445,6 +445,11 @@
 	};
 
 	CTP_pins_default: eint0default {
+		pins_cmd_dat {
+			pins = <MT8173_PIN_14_EINT14__FUNC_GPIO14>;
+			slew-rate = <0>;
+			bias-disable;
+		};
 	};
 
 	CTP_pins_eint_as_int: eint@0 {
