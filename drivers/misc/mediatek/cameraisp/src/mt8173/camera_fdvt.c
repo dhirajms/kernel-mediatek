@@ -138,10 +138,14 @@ static unsigned long gFDVT_Reg[FDVT_BASEADDR_NUM];
 #define FDVT_ADDR                        FDVT_BASE
 #endif
 
-#ifdef MTKCAM_USING_CCF		/* Common Clock Framework (CCF) */
+/* Common Clock Framework (CCF) */
 struct clk *g_fdvtclk_fd;
+
+#ifndef CONFIG_MTK_SMI_VARIANT
 struct clk *g_fdvtclk_smi_common;
 struct device *g_fdvt_pmdev_isp;
+#else
+#include "mt_smi.h"
 #endif
 
 
@@ -369,26 +373,32 @@ static inline void Get_ccf_clock(struct platform_device *pDev)
 		return;
 	}
 
+#ifndef CONFIG_MTK_SMI_VARIANT
 	/* save device for later power domain usage */
 	g_fdvt_pmdev_isp = &pDev->dev;
+	g_fdvtclk_smi_common = devm_clk_get(&pDev->dev, "MM_SMI_COMMON");
+	BUG_ON(IS_ERR(g_fdvtclk_smi_common));
+#endif
 
 	g_fdvtclk_fd = devm_clk_get(&pDev->dev, "IMG_FD");
 	BUG_ON(IS_ERR(g_fdvtclk_fd));
-	g_fdvtclk_smi_common = devm_clk_get(&pDev->dev, "MM_SMI_COMMON");
-	BUG_ON(IS_ERR(g_fdvtclk_smi_common));
 	return;
 }
 
 static inline void PrepareEnable_ccf_clock(void)
 {
+#ifndef CONFIG_MTK_SMI_VARIANT
 	BUG_ON(IS_ERR(g_fdvt_pmdev_isp));
 	pm_runtime_get_sync(g_fdvt_pmdev_isp);
+	BUG_ON(IS_ERR(g_fdvtclk_smi_common));
+	clk_prepare_enable(g_fdvtclk_smi_common);
+#else
+	mtk_smi_larb_clock_on(2, true);
+#endif
 
 	BUG_ON(IS_ERR(g_fdvtclk_fd));
 	clk_prepare_enable(g_fdvtclk_fd);
 
-	BUG_ON(IS_ERR(g_fdvtclk_smi_common));
-	clk_prepare_enable(g_fdvtclk_smi_common);
 	return;
 }
 
@@ -397,11 +407,15 @@ static inline void DisableUnprepare_ccf_clock(void)
 	BUG_ON(IS_ERR(g_fdvtclk_fd));
 	clk_disable_unprepare(g_fdvtclk_fd);
 
+#ifndef CONFIG_MTK_SMI_VARIANT
 	BUG_ON(IS_ERR(g_fdvtclk_smi_common));
 	clk_disable_unprepare(g_fdvtclk_smi_common);
 
 	BUG_ON(IS_ERR(g_fdvt_pmdev_isp));
 	pm_runtime_put_sync(g_fdvt_pmdev_isp);
+#else
+	mtk_smi_larb_clock_off(2, true);
+#endif
 
 	return;
 }
@@ -1076,7 +1090,7 @@ static int FDVT_probe(struct platform_device *dev)
 	class_dev = (struct class_device *)device_create(FDVT_class,
 							 NULL, FDVT_devno, NULL, FDVT_DEVNAME);
 
-#ifdef MTKCAM_USING_CCF		/* Common Clock Framework (CCF) */
+#ifndef CONFIG_MTK_SMI_VARIANT	/* Common Clock Framework (CCF) */
 	Get_ccf_clock(dev);
 	pm_runtime_enable(g_fdvt_pmdev_isp);
 #endif
@@ -1103,7 +1117,7 @@ static int FDVT_remove(struct platform_device *dev)
 	g_u4MT6573FDVTIRQ = ioread32((void *)FDVT_INT);	/* BinChang 20120517 Read Clear IRQ */
 	mt_fdvt_clk_ctrl(0);	/* ISP help disable */
 
-#ifdef MTKCAM_USING_CCF
+#ifndef CONFIG_MTK_SMI_VARIANT
 	pm_runtime_disable(g_fdvt_pmdev_isp);
 #endif
 

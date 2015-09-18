@@ -1446,12 +1446,6 @@
 			clock-names = "apb", "smi";
 		};
 
-		/* We need add another node to contrl DISP power in ISP driver */
-		isp_display: isp_display {
-			compatible = "mediatek,mt8173-isp_display";
-			power-domains = <&scpsys MT8173_POWER_DOMAIN_DISP>;
-		};
-
 		ispsys: ispsys@15000000 {
 			compatible = "mediatek,mt8173-ispsys";
 			reg = <0 0x15004000 0 0x9000>,	/* ISP_ADDR */
@@ -1467,26 +1461,19 @@
 						 <GIC_SPI 214 IRQ_TYPE_LEVEL_LOW>, /* CAMSV0 */
 						 <GIC_SPI 215 IRQ_TYPE_LEVEL_LOW>; /* CAMSV1 */
 
-			clocks = <&imgsys CLK_IMG_LARB2_SMI>,
-					 <&imgsys CLK_IMG_CAM_SMI>,
-					 <&imgsys CLK_IMG_CAM_CAM>,
-					 <&imgsys CLK_IMG_SEN_TG>,
-					 <&imgsys CLK_IMG_SEN_CAM>,
-					 <&imgsys CLK_IMG_CAM_SV>,
-					 <&imgsys CLK_IMG_FD>,
-					 <&mmsys CLK_MM_SMI_COMMON>;
+			clocks = <&imgsys CLK_IMG_CAM_SMI>,
+				 <&imgsys CLK_IMG_CAM_CAM>,
+				 <&imgsys CLK_IMG_SEN_TG>,
+				 <&imgsys CLK_IMG_SEN_CAM>,
+				 <&imgsys CLK_IMG_CAM_SV>,
+				 <&imgsys CLK_IMG_FD>;
 
-			clock-names = "IMG_LARB2_SMI",
-						  "IMG_CAM_SMI",
-						  "IMG_CAM_CAM",
-						  "IMG_SEN_TG",
-						  "IMG_SEN_CAM",
-						  "IMG_CAM_SV",
-						  "IMG_FD",
-						  "MM_SMI_COMMON";
-
-			/* Power domains */
-			power-domains = <&scpsys MT8173_POWER_DOMAIN_ISP>;
+			clock-names = "IMG_CAM_SMI",
+				      "IMG_CAM_CAM",
+				      "IMG_SEN_TG",
+				      "IMG_SEN_CAM",
+				      "IMG_CAM_SV",
+				      "IMG_FD";
 		};
 
 		/* Main Cam */
@@ -1515,14 +1502,8 @@
 			reg = <0 0x1500b000 0 0x1000>;
 			interrupts = <GIC_SPI 216 IRQ_TYPE_LEVEL_LOW>;
 
-			clocks = <&imgsys CLK_IMG_FD>,
-						<&mmsys CLK_MM_SMI_COMMON>;
-
-			clock-names = "IMG_FD",
-										"MM_SMI_COMMON";
-
-			/* Power domains */
-			power-domains = <&scpsys MT8173_POWER_DOMAIN_ISP>;
+			clocks = <&imgsys CLK_IMG_FD>;
+			clock-names = "IMG_FD";
 		};
 
 		vdecsys: vdecsys@16000000 {

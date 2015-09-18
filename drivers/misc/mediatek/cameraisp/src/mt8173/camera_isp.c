@@ -172,24 +172,34 @@ typedef enum {
 } ISP_CAM_BASEADDR_ENUM;
 
 #ifndef CONFIG_MTK_CLKMGR /*CCF*/
+
 #include <linux/clk.h>
 typedef struct {
-	/*struct clk *CG_SCP_SYS_DIS;*/		/* move to power domain control */
-	/*struct clk *CG_SCP_SYS_ISP;*/		/* move to power domain control */
-	struct clk *CG_DISP0_SMI_COMMON;
 	struct clk *CG_IMAGE_CAM_SMI;
 	struct clk *CG_IMAGE_CAM_CAM;
 	struct clk *CG_IMAGE_SEN_TG;
 	struct clk *CG_IMAGE_SEN_CAM;
 	struct clk *CG_IMAGE_CAM_SV;
+
+#ifndef CONFIG_MTK_SMI_VARIANT
+	struct clk *CG_DISP0_SMI_COMMON;
 	struct clk *CG_IMAGE_LARB2_SMI;
+#endif
 } ISP_CLK_STRUCT;
 ISP_CLK_STRUCT isp_clk;
 
-#ifdef CONFIG_PM_RUNTIME /* Power Domain */
+#ifndef CONFIG_MTK_SMI_VARIANT /* Power Domain */
+
 #include <linux/pm_runtime.h>
 struct device *g_pmdev_isp;
 struct device *g_pmdev_disp;
+
+#else
+/*
+	Move MM scpsys power/clock controls to SMI driver,
+	in order to make sure suspend/resume works correctly.
+*/
+#include "mt_smi.h"
 #endif
 
 #endif
@@ -3019,9 +3029,11 @@ static inline void Prepare_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_ISP -> ISP clk */
+#ifndef CONFIG_MTK_SMI_VARIANT
 	ret = clk_prepare(isp_clk.CG_DISP0_SMI_COMMON);
 	if (ret)
 		LOG_ERR("cannot prepare CG_DISP0_SMI_COMMON clock\n");
+#endif
 
 	ret = clk_prepare(isp_clk.CG_IMAGE_CAM_SMI);
 	if (ret)
@@ -3043,15 +3055,18 @@ static inline void Prepare_ccf_clock(void)
 	if (ret)
 		LOG_ERR("cannot prepare CG_IMAGE_CAM_SV clock\n");
 
+#ifndef CONFIG_MTK_SMI_VARIANT
 	ret = clk_prepare(isp_clk.CG_IMAGE_LARB2_SMI);
 	if (ret)
 		LOG_ERR("cannot prepare CG_IMAGE_LARB2_SMI clock\n");
+#endif
 }
 
 static inline void Prepare_Enable_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_ISP -> ISP clk */
+#ifndef CONFIG_MTK_SMI_VARIANT
 	/*
 		pm_runtime_get_sync return val:
 		> 0 : already power on
@@ -3069,6 +3084,15 @@ static inline void Prepare_Enable_ccf_clock(void)
 	ret = pm_runtime_get_sync(g_pmdev_isp);
 	if (ret < 0)
 		LOG_ERR("cannot pm_runtime_get_sync(ISP)\n");
+
+#else /* SMI controls power & clock */
+	/* Through this API, it opens power & clock of Larb#2 & its parents */
+	/* Return : 0 is successful, Others is failed.*/
+	LOG_DBG("ISP power/clock on by SMI ==>");
+	ret = mtk_smi_larb_clock_on(2, true);
+	if (ret != 0)
+		LOG_ERR("mtk_smi_larb_clock_on(Larb2, true) fail, ret = %d\n", ret);
+#endif
 
 	ret = clk_prepare_enable(isp_clk.CG_IMAGE_CAM_SMI);
 	if (ret)
@@ -3090,20 +3114,22 @@ static inline void Prepare_Enable_ccf_clock(void)
 	if (ret)
 		LOG_ERR("cannot get CG_IMAGE_CAM_SV clock\n");
 
+#ifndef CONFIG_MTK_SMI_VARIANT
 	ret = clk_prepare_enable(isp_clk.CG_IMAGE_LARB2_SMI);
 	if (ret)
 		LOG_ERR("cannot get CG_IMAGE_LARB2_SMI clock\n");
+#endif
 }
 
 static inline void Enable_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_ISP -> ISP clk */
-
+#ifndef CONFIG_MTK_SMI_VARIANT
 	ret = clk_enable(isp_clk.CG_DISP0_SMI_COMMON);
 	if (ret)
 		LOG_ERR("cannot get CG_DISP0_SMI_COMMON clock\n");
-
+#endif
 	ret = clk_enable(isp_clk.CG_IMAGE_CAM_SMI);
 	if (ret)
 		LOG_ERR("cannot get CG_IMAGE_CAM_SMI clock\n");
@@ -3123,10 +3149,11 @@ static inline void Enable_ccf_clock(void)
 	ret = clk_enable(isp_clk.CG_IMAGE_CAM_SV);
 	if (ret)
 		LOG_ERR("cannot get CG_IMAGE_CAM_SV clock\n");
-
+#ifndef CONFIG_MTK_SMI_VARIANT
 	ret = clk_enable(isp_clk.CG_IMAGE_LARB2_SMI);
 	if (ret)
 		LOG_ERR("cannot get CG_IMAGE_LARB2_SMI clock\n");
+#endif
 }
 
 static inline void Disable_ccf_clock(void)
@@ -3137,8 +3164,10 @@ static inline void Disable_ccf_clock(void)
 	clk_disable(isp_clk.CG_IMAGE_SEN_TG);
 	clk_disable(isp_clk.CG_IMAGE_SEN_CAM);
 	clk_disable(isp_clk.CG_IMAGE_CAM_SV);
+#ifndef CONFIG_MTK_SMI_VARIANT
 	clk_disable(isp_clk.CG_IMAGE_LARB2_SMI);
 	clk_disable(isp_clk.CG_DISP0_SMI_COMMON);
+#endif
 }
 
 static inline void Unprepare_ccf_clock(void)
@@ -3149,8 +3178,10 @@ static inline void Unprepare_ccf_clock(void)
 	clk_unprepare(isp_clk.CG_IMAGE_SEN_TG);
 	clk_unprepare(isp_clk.CG_IMAGE_SEN_CAM);
 	clk_unprepare(isp_clk.CG_IMAGE_CAM_SV);
+#ifndef CONFIG_MTK_SMI_VARIANT
 	clk_unprepare(isp_clk.CG_IMAGE_LARB2_SMI);
 	clk_unprepare(isp_clk.CG_DISP0_SMI_COMMON);
+#endif
 }
 
 static inline void Disable_Unprepare_ccf_clock(void)
@@ -3161,10 +3192,16 @@ static inline void Disable_Unprepare_ccf_clock(void)
 	clk_disable_unprepare(isp_clk.CG_IMAGE_SEN_TG);
 	clk_disable_unprepare(isp_clk.CG_IMAGE_SEN_CAM);
 	clk_disable_unprepare(isp_clk.CG_IMAGE_CAM_SV);
+#ifndef CONFIG_MTK_SMI_VARIANT
 	clk_disable_unprepare(isp_clk.CG_IMAGE_LARB2_SMI);
 	pm_runtime_put_sync(g_pmdev_isp);
 	clk_disable_unprepare(isp_clk.CG_DISP0_SMI_COMMON);
 	pm_runtime_put_sync(g_pmdev_disp);
+
+#else
+	LOG_DBG("ISP power/clock off by SMI <==");
+	mtk_smi_larb_clock_off(2, true);
+#endif
 
 }
 
@@ -11507,10 +11544,8 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 #ifdef CONFIG_MTK_CLKMGR
 #else
 	/*CCF: Grab clock pointer (struct clk*) */
-/*	isp_clk.CG_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "CG_SCP_SYS_DIS");*/
+#ifndef CONFIG_MTK_SMI_VARIANT
 	isp_clk.CG_DISP0_SMI_COMMON = devm_clk_get(&pDev->dev, "MM_SMI_COMMON");
-/*	isp_clk.CG_SCP_SYS_ISP = devm_clk_get(&pDev->dev, "CG_SCP_SYS_ISP");*/
-
 /* [Houston] Need to power on ISP firstly to avoid ISP reg UN-accessed +++ */
 	LOG_INF("[Houston] pm_runtime_enable(ISP)");
 	/* Save isp power domain handle */
@@ -11518,18 +11553,22 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 	BUG_ON(IS_ERR(g_pmdev_isp)); pm_runtime_enable(g_pmdev_isp);
 	pm_runtime_get_sync(g_pmdev_isp);	LOG_INF("[Houston] pm_runtime_get_sync(ISP)");
 /* [Houston] --- */
+#endif
 
 	isp_clk.CG_IMAGE_CAM_SMI = devm_clk_get(&pDev->dev, "IMG_CAM_SMI");
 	isp_clk.CG_IMAGE_CAM_CAM = devm_clk_get(&pDev->dev, "IMG_CAM_CAM");
 	isp_clk.CG_IMAGE_SEN_TG = devm_clk_get(&pDev->dev, "IMG_SEN_TG");
 	isp_clk.CG_IMAGE_SEN_CAM = devm_clk_get(&pDev->dev, "IMG_SEN_CAM");
 	isp_clk.CG_IMAGE_CAM_SV = devm_clk_get(&pDev->dev, "IMG_CAM_SV");
+
+#ifndef CONFIG_MTK_SMI_VARIANT
 	isp_clk.CG_IMAGE_LARB2_SMI = devm_clk_get(&pDev->dev, "IMG_LARB2_SMI");
 
 	if (IS_ERR(isp_clk.CG_DISP0_SMI_COMMON)) {
 		LOG_ERR("cannot get CG_DISP0_SMI_COMMON clock\n");
 		return PTR_ERR(isp_clk.CG_DISP0_SMI_COMMON);
 	}
+#endif
 
 	if (IS_ERR(isp_clk.CG_IMAGE_CAM_SMI)) {
 		LOG_ERR("cannot get CG_IMAGE_CAM_SMI clock\n");
@@ -11551,10 +11590,15 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 		LOG_ERR("cannot get CG_IMAGE_CAM_SV clock\n");
 		return PTR_ERR(isp_clk.CG_IMAGE_CAM_SV);
 	}
+
+#ifndef CONFIG_MTK_SMI_VARIANT
+
 	if (IS_ERR(isp_clk.CG_IMAGE_LARB2_SMI)) {
 		LOG_ERR("cannot get CG_IMAGE_LARB2_SMI clock\n");
 		return PTR_ERR(isp_clk.CG_IMAGE_LARB2_SMI);
 	}
+#endif
+
 #endif
 
 	/* Create class register */
@@ -11684,8 +11728,7 @@ static MINT32 ISP_remove(struct platform_device *pDev)
 	/*      */
 	LOG_DBG("- E.");
 
-#ifdef CONFIG_MTK_CLKMGR
-#elif CONFIG_PM_RUNTIME
+#ifndef CONFIG_MTK_SMI_VARIANT
 	LOG_INF("[Houston] pm_runtime_disable(ISP)");
 	BUG_ON(IS_ERR(g_pmdev_isp)); pm_runtime_disable(g_pmdev_isp);
 #endif
@@ -13350,7 +13393,7 @@ static void __exit ISP_Exit(void)
 
 /* One more driver for DISP power domain */
 
-#ifdef CONFIG_PM_RUNTIME
+#ifndef CONFIG_MTK_SMI_VARIANT
 
 /* Attach another pm_domain driver */
 static int disp_pm_probe(struct platform_device *pdev)
