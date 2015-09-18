@@ -378,8 +378,6 @@ unsigned int func_lv_mask = 0;	/* (FUNC_LV_MODULE | FUNC_LV_CPUFREQ | FUNC_LV_AP
 #define cpufreq_write_mask(addr, mask, val) \
 cpufreq_write(addr, (cpufreq_read(addr) & ~(_BITMASK_(mask))) | _BITS_(mask, val))
 
-#define CPUDVFS_WORKAROUND_FOR_GIT	1	/* TODO: remove this! */
-
 /*=============================================================*/
 /* Local type definition                                       */
 /*=============================================================*/
@@ -1811,10 +1809,8 @@ BUG_ON(dds & _BITMASK_(26:24));
 		freqhopping_dvt_dvfs_enable(cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE) ? ARMCA7PLL_ID :
 					    ARMCA15PLL_ID, target_khz);
 #else				/* __KERNEL__ */
-#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 		mt_dfs_armpll(cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE) ? FH_ARMCA7_PLLID :
 			      FH_ARMCA15_PLLID, dds);
-#endif
 #endif				/* ! __KERNEL__ */
 	}
 
