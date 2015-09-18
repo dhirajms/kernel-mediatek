@@ -35,7 +35,6 @@
 #define MTK_FB_DFO_DISABLE
 #define DFO_USE_NEW_API
 #define MTKFB_FPGA_ONLY
-#define DISP_KERNEL_318_BRINGUP
 #define DISP_SUPPORT_CMDQ
 /* new macro definition for display driver platform dependency options */
 
