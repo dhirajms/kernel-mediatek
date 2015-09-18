@@ -33,6 +33,7 @@
 #include <linux/sched.h>
 #include <linux/sched/rt.h>
 #include <linux/kthread.h>
+#include <linux/types.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -42,7 +43,6 @@
 
 #include <asm/uaccess.h>
 
-#include "mt-plat/mt_typedefs.h"
 #include "mt_cpufreq.h"
 #include "mach/mt_gpufreq.h"
 #include "mt-plat/sync_write.h"
