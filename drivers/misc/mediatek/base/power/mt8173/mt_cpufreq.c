@@ -110,6 +110,8 @@ struct regulator *reg_vcore_backup;	/* 0x027A */
 struct regulator *reg_vgpu;	/* 0x??? */
 struct clk *clk_pllca57;
 
+int _mt_cpufreq_pdrv_probed = 0;
+
 
 #endif
 
@@ -3996,7 +3998,7 @@ void interactive_boost_cpu(int boost)
 {
 	system_boost = boost;
 
-	if (system_boost) {
+	if (system_boost && _mt_cpufreq_pdrv_probed) {
 		_mt_cpufreq_set(MT_CPU_DVFS_LITTLE, 0);
 		_mt_cpufreq_set(MT_CPU_DVFS_BIG, 0);
 	}
@@ -4716,6 +4718,8 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	ret = cpufreq_register_driver(&_mt_cpufreq_driver);
 	register_hotcpu_notifier(&turbo_mode_cpu_notifier);	/* <-XXX */
 	register_hotcpu_notifier(&extbuck_cpu_notifier);
+
+	_mt_cpufreq_pdrv_probed = 1;
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 
