@@ -1053,7 +1053,7 @@ static const struct mtk_clk_usb apmixed_usb[] __initconst = {
 			_pd_reg, _pd_shift, _tuner_reg, _pcw_reg, _pcw_shift, \
 			NULL)
 
-const unsigned long mmpll_div_rate[] = {
+static const unsigned long mmpll_div_rate[] = {
 	MT8173_PLL_FMAX,
 	1000000000,
 	702000000,
