@@ -215,7 +215,7 @@ void cmdq_core_enable_common_clock_locked_impl(bool enable)
 		/* m4u_larb0_enable("CMDQ_MDP"); */
 
 		mtk_smi_larb_clock_on(0, true);
-		mtk_smi_larb_clock_on(4, false);
+		mtk_smi_larb_clock_on(4, true);
 
 		CMDQ_LOG("[CLOCK] enable MT_CG_DISP0_MUTEX_32K\n");
 /* enable_clock(MT_CG_DISP0_MUTEX_32K, "CMDQ_MDP"); */
@@ -236,7 +236,7 @@ void cmdq_core_enable_common_clock_locked_impl(bool enable)
 
 		/* cmdq_core_enable_mtcmos_clock(enable); */
 
-		mtk_smi_larb_clock_off(4, false);
+		mtk_smi_larb_clock_off(4, true);
 		mtk_smi_larb_clock_off(0, true);
 
 		CMDQ_LOG("[CLOCK] Disable CMDQ(GCE) Clock\n");
