@@ -102,6 +102,7 @@ typedef struct {
 static DBG_OPTIONS dbg_opt = { 0 };
 
 static bool enable_ovl1_to_mem = true;
+unsigned int gEnableFenceLog = 0;
 
 
 static char STR_HELP[] =
@@ -731,6 +732,14 @@ static void process_dbg_opt(const char *opt)
 			gCaptureWdmaLayerEnable = 0;
 			gCapturePriLayerNum = OVL_LAYER_NUM;
 			DISPMSG("dump_layer En %d\n", gCapturePriLayerEnable);
+		}
+	} else if (0 == strncmp(opt, "fence_log_en:", 13)) {
+		if (0 == strncmp(opt + 13, "on", 2)) {
+			gEnableFenceLog = 1;
+			DISPMSG("fence log enable\n");
+		} else if (0 == strncmp(opt + 13, "off", 3)) {
+			gEnableFenceLog = 0;
+			DISPMSG("fence log disable\n");
 		}
 	} else {
 		DISPDBG("parse command error!\n\n%s", STR_HELP);

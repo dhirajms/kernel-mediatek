@@ -17,6 +17,7 @@ extern unsigned int dprec_error_log_len;
 extern unsigned int dprec_error_log_id;
 extern unsigned int dprec_error_log_buflen;
 extern char dprec_error_log_buffer[];
+extern unsigned int gEnableFenceLog;
 
 #define DEBUG
 
@@ -34,7 +35,8 @@ extern char dprec_error_log_buffer[];
 #define DISPPR_FENCE(string, args...) \
 	do { \
 		dprec_logger_pr(DPREC_LOGGER_FENCE, string, ##args); \
-		pr_debug("[DISP][%s #%d]"string, __func__, __LINE__, ##args); \
+		if (1 == gEnableFenceLog) \
+			pr_debug("[DISP][%s #%d]"string, __func__, __LINE__, ##args); \
 	} while (0)
 
 #define DISPMSG(string, args...) pr_warn("[DISP]"string, ##args)
