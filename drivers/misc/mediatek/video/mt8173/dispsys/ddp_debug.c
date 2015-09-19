@@ -138,19 +138,16 @@ unsigned int ddp_dbg_level = (0
 /* | DDP_FENCE2_LOG */
 );
 
-void set_ddp_log_level(unsigned int level, unsigned on)
+void set_ddp_log_level(unsigned int level)
 {
-	DDPMSG("set ddp_dbg_level level %d  on %d\n", level, on);
-	if (on) {
-		ddp_dbg_level |= (1 << level);
-		DDPMSG("set ddp_dbg_level  0x%x\n", ddp_dbg_level);
-
-	} else {
+	DDPMSG("set ddp_dbg_level level %d\n", level);
+	if (ddp_dbg_level & (1 << level)) {
 		ddp_dbg_level &= ~(1 << level);
 		DDPMSG("set ddp_dbg_level  0x%x\n", ddp_dbg_level);
+	} else {
+		ddp_dbg_level |= (1 << level);
+		DDPMSG("set ddp_dbg_level  0x%x\n", ddp_dbg_level);
 	}
-
-	DDPMSG("set ddp_dbg_level  0x%x\n", ddp_dbg_level);
 }
 
 static char STR_HELP[] =
@@ -458,6 +455,8 @@ static void dbg_opt_ext(const char *opt, char *buf)
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF);
 		cmdqCoreSetEvent(CMDQ_EVENT_DISP_RDMA0_EOF);
 		sprintf(buf, "enable=%d\n", enable);
+	} else if (enable == 40) {
+		/*sprintf(buf, "version: %d, %s\n", 7, __TIME__); */ /*kernel 3.18*/
 	} else if (enable == 41) {
 		if (gResetOVLInAALTrigger == 0)
 			gResetOVLInAALTrigger = 1;
@@ -488,8 +487,8 @@ static void dbg_opt_ext(const char *opt, char *buf)
 	} else if (enable == 44) {
 		disp_dump_emi_status();
 		sprintf(buf, "dump emi status!\n");
-	} else if (enable == 40) {
-		/*sprintf(buf, "version: %d, %s\n", 7, __TIME__); */ /*kernel 3.18*/
+	} else if (enable == 50) {
+		set_ddp_log_level(8);
 	}
 Error:
 	return;

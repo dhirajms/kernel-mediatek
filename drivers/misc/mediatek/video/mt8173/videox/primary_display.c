@@ -2833,7 +2833,7 @@ static int _present_fence_release_worker_thread(void *data)
 					       fence_increment);
 			}
 			_primary_path_unlock(__func__);
-			DISPPR_FENCE("RPF/%d/%d\n", gPresentFenceIndex,
+			DISP_PRINTF(DDP_FENCE1_LOG, "RPF/%d/%d\n", gPresentFenceIndex,
 				     gPresentFenceIndex - layer_info->timeline->value);
 		}
 	}
@@ -3707,6 +3707,8 @@ done:
 void primary_display_update_present_fence(unsigned int fence_idx)
 {
 	gPresentFenceIndex = fence_idx;
+	DISP_PRINTF(DDP_FENCE1_LOG, "primary_display_update_present_fence %d\n",
+				gPresentFenceIndex);
 }
 
 static int _ovl_fence_release_callback(uint32_t userdata)
