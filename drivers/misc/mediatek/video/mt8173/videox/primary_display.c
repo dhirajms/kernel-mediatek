@@ -2461,7 +2461,7 @@ unsigned int cmdqDdpClockOff(uint64_t engineFlag)
 
 unsigned int cmdqDdpDumpInfo(uint64_t engineFlag, char *pOutBuf, unsigned int bufSize)
 {
-	DISPERR("cmdq timeout:%llu\n", engineFlag);
+	DDPDUMP("cmdq timeout:%llu\n", engineFlag);
 	primary_display_diagnose();
 	/* DISP_LOG_I("cmdqDdpDumpInfo\n"); */
 	if (primary_display_is_decouple_mode()) {
