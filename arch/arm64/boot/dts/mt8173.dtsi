@@ -551,6 +551,11 @@
 				      "MT_CG_DISP0_MDP_WDMA";
 		};
 
+		dramc1_nao: dramc1_nao@10213000 {
+			compatible = "mediatek,mt8173-dram1_nao", "mediatek,dramc1_nao";
+			reg = <0 0x10213000 0 0x1000>;
+		};
+
 		perisysiommu: perisys@10214000 {
 			cell-index = <1>;
 			compatible = "mediatek,mt8173-perisys-iommu";
@@ -569,6 +574,11 @@
 			      <0 0x10226000 0 0x2000>;
 			interrupts = <GIC_PPI 9
 				     (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
+		};
+
+		cci400: cci400@10390000 {
+			compatible = "mediatek,mt8173-cci400", "mediatek,cci400";
+			reg = <0 0x10390000 0 0x10000>;
 		};
 
 		auxadc: auxadc@11001000 {
