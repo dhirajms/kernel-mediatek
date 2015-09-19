@@ -2321,8 +2321,6 @@ static int vcodec_probe(struct platform_device *pdev)
 		return -EPROBE_DEFER;
 	}
 	pm_runtime_enable(&pdev->dev);
-	pm_runtime_get_sync(&pdev->dev);
-	pm_runtime_put_sync(&pdev->dev);
 #if 0
 	clk_vdecpwr = devm_clk_get(&pdev->dev, "MT_VDEC_POWER");
 	BUG_ON(IS_ERR(clk_vdecpwr));
