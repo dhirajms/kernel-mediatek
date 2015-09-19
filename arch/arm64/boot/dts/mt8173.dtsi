@@ -1555,27 +1555,6 @@
 		vdec_gcon@16000000 {
 			compatible = "mediatek,mt8173-vdec_gcon";
 			reg = <0 0x16000000 0 0x10000>;
-			power-domains=<&scpsys MT8173_POWER_DOMAIN_VDEC>;
-			clocks = <&mmsys CLK_MM_SMI_COMMON>,
-					<&vdecsys CLK_VDEC_CKEN>,
-					<&vdecsys CLK_VDEC_LARB_CKEN>,
-					<&vencsys CLK_VENC_CKE0>,  /* smi_larb3 */
-					<&vencsys CLK_VENC_CKE1>,  /* venc      */
-					<&vencltsys CLK_VENCLT_CKE0>,
-					<&vencltsys CLK_VENCLT_CKE1>;
-
-			clock-names = "MMSYS_CLK_SMI_COMMON",
-					"MT_CG_VDEC0_VDEC",
-					"MT_CG_VDEC1_LARB",
-					"MT_CG_VENC_SMI_LARB3",
-					"MT_CG_VENC_CKE1",
-					"MT_CG_VENCLT_LARB",
-					"MT_CG_VENCLT_CKE";
-		};
-
-		vdec_disp@16000000 {
-			compatible = "mediatek,mt8173-vdec_display";
-			power-domains=<&scpsys MT8173_POWER_DOMAIN_DISP>;
 		};
 
 		vdec@16020000 {

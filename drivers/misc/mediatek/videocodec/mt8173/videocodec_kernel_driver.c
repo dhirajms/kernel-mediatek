@@ -218,12 +218,10 @@ KVA_VENCSYS_CG_SET_ADDR;
 #endif
 
 #ifdef CONFIG_OF
-static struct clk *clk_smi, *clk_vdec, *clk_vdec_larb/*, *clk_venc_clk*/;
 /*static struct clk *clk_venc_lt_clk;*/
 /* static struct clk *clk_venc_pwr, *clk_venc_pwr2; */
 
 struct platform_device *vdec_pdev = NULL;
-struct platform_device *vdecdisp_pdev = NULL;
 struct platform_device *pvenc_dev = NULL;
 struct platform_device *pvenclt_dev = NULL;
 
@@ -239,17 +237,9 @@ void vdec_power_on(void)
 	/* Central power on */
 
 #ifdef CONFIG_OF
-	/* clk_prepare(clk_vdecpwr); */
-	/* clk_enable(clk_vdecpwr); */
-	pm_runtime_get_sync(&vdec_pdev->dev);
-	pm_runtime_get_sync(&vdecdisp_pdev->dev);
-
-	clk_prepare(clk_smi);
-	clk_enable(clk_smi);
-	clk_prepare(clk_vdec);
-	clk_enable(clk_vdec);
-	clk_prepare(clk_vdec_larb);
-	clk_enable(clk_vdec_larb);
+	MODULE_MFV_LOGD("vdec_power_on D+\n");
+	mtk_smi_larb_clock_on(1, true);
+	MODULE_MFV_LOGD("vdec_power_on D -\n");
 #else
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "VDEC");
 	enable_clock(MT_CG_VDEC0_VDEC, "VDEC");
@@ -267,16 +257,9 @@ void vdec_power_off(void)
 		gu4VdecPWRCounter--;
 		/* Central power off */
 #ifdef CONFIG_OF
-		clk_disable(clk_vdec_larb);
-		clk_unprepare(clk_vdec_larb);
-		clk_disable(clk_vdec);
-		clk_unprepare(clk_vdec);
-		clk_disable(clk_smi);
-		clk_unprepare(clk_smi);
-		/* clk_disable(clk_vdecpwr); */
-		/* clk_unprepare(clk_vdecpwr); */
-		pm_runtime_put_sync(&vdecdisp_pdev->dev);
-		pm_runtime_put_sync(&vdec_pdev->dev);
+	MODULE_MFV_LOGD("vdec_power_off D+\n");
+	mtk_smi_larb_clock_on(1, true);
+	MODULE_MFV_LOGD("vdec_power_off D -\n");
 #else
 		disable_clock(MT_CG_VDEC0_VDEC, "VDEC");
 		disable_clock(MT_CG_VDEC1_LARB, "VDEC");
@@ -2299,13 +2282,6 @@ static int vcodec_probe(struct platform_device *pdev)
 	mutex_unlock(&L2CLock);
 
 #ifdef CONFIG_OF
-	clk_smi = devm_clk_get(&pdev->dev, "MMSYS_CLK_SMI_COMMON");
-	BUG_ON(IS_ERR(clk_smi));
-	clk_vdec = devm_clk_get(&pdev->dev, "MT_CG_VDEC0_VDEC");
-	BUG_ON(IS_ERR(clk_vdec));
-	clk_vdec_larb = devm_clk_get(&pdev->dev, "MT_CG_VDEC1_LARB");
-	BUG_ON(IS_ERR(clk_vdec_larb));
-
 	/*clk_venc_larb = devm_clk_get(&pdev->dev, "MT_CG_VENC_SMI_LARB3");
 	BUG_ON(IS_ERR(clk_venc_larb));
 	clk_venc_clk = devm_clk_get(&pdev->dev, "MT_CG_VENC_CKE1");
@@ -2327,10 +2303,6 @@ static int vcodec_probe(struct platform_device *pdev)
 	clk_venc_pwr  = devm_clk_get(&pdev->dev, "MT_VENC_POWER");
 	clk_venc_pwr2  = devm_clk_get(&pdev->dev, "MT_VENC_POWER2");
 
-	clk_prepare(clk_vdec);
-	clk_enable(clk_vdec);
-	clk_disable(clk_vdec);
-	clk_unprepare(clk_vdec);
 	/*disable all venc clock */
 	clk_prepare(clk_venc_clk);
 	clk_enable(clk_venc_clk);
@@ -2404,25 +2376,6 @@ static int vcodec_probe(struct platform_device *pdev)
 	disable_irq(VENC_LT_IRQ_ID);
 #endif
 	MODULE_MFV_LOGD("[VCODEC_DEBUG] vcodec_probe Done\n");
-
-	return 0;
-}
-
-static int vdecdisp_probe(struct platform_device *pdev)
-{
-
-#ifdef CONFIG_OF
-
-	MODULE_MFV_LOGD("+vdecdisp_probe\n");
-	vdecdisp_pdev = pdev;
-	if (!pdev->dev.pm_domain) {
-		MODULE_MFV_LOGD("+vdecdisp_probe ERROR EPROBE_DEFER\n");
-		return -EPROBE_DEFER;
-	}
-	pm_runtime_enable(&pdev->dev);
-
-	MODULE_MFV_LOGD("-vdecdisp_probe\n");
-#endif
 
 	return 0;
 }
@@ -2525,7 +2478,6 @@ static int venc_enableIRQ(VAL_HW_LOCK_T *prHWLock)
 static int vcodec_remove(struct platform_device *pDev)
 {
 	pm_runtime_disable(&pDev->dev);
-	pm_runtime_disable(&vdecdisp_pdev->dev);
 	/*pm_runtime_disable(&pvenc_dev->dev);
 	pm_runtime_disable(&pvenclt_dev->dev);*/
 	MODULE_MFV_LOGD("vcodec_remove\n");
@@ -2548,21 +2500,7 @@ static struct platform_driver VCodecDriver = {
 		   .of_match_table = vcodec_of_ids,
 		   }
 };
-/* VDEC Display device */
-static const struct of_device_id vdec_display_of_ids[] = {
-	{.compatible = "mediatek,mt8173-vdec_display",},
-	{}
-};
 
-static struct platform_driver VDecDispDriver = {
-	.probe = vdecdisp_probe,
-	/* .remove = vdecdisp_remove, */
-	.driver = {
-		   .name = VDECDISP_DEVNAME,
-		   .owner = THIS_MODULE,
-		   .of_match_table = vdec_display_of_ids,
-		   }
-};
 
 /* Venc main device */
 /*static const struct of_device_id venc_of_ids[] = {
@@ -2698,7 +2636,6 @@ static int __init vcodec_driver_init(void)
 		bIsOpened = VAL_TRUE;
 #ifdef CONFIG_OF
 		platform_driver_register(&VCodecDriver);
-		platform_driver_register(&VDecDispDriver);
 		/*platform_driver_register(&VencDriver);
 		platform_driver_register(&VencltDriver);*/
 #else
@@ -2783,7 +2720,6 @@ static void __exit vcodec_driver_exit(void)
 		MODULE_MFV_LOGD("+vcodec_driver_exit remove device !!\n");
 #ifdef CONFIG_OF
 		platform_driver_unregister(&VCodecDriver);
-		platform_driver_unregister(&VDecDispDriver);
 
 		/*cdev_del(venc_cdev);
 		unregister_chrdev_region(venc_devno, 1);
