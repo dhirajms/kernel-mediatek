@@ -113,7 +113,7 @@ struct clk *clk_pllca57;
 
 #endif
 
-int _mt_cpufreq_pdrv_probed = 0;
+int	regulator_vpca53_voltage = 0;
 
 #if 1	/* L318_Need_Related_File Dummy code */
 
@@ -1948,6 +1948,7 @@ static int set_cur_volt_little(struct mt_cpu_dvfs *p, unsigned int mv)
 	}
 #ifdef CONFIG_OF
 	regulator_set_voltage(reg_vpca53, mv * 1000, mv * 1000 + 6250 - 1);
+	regulator_vpca53_voltage = mv;
 #else
 	mt_cpufreq_set_pmic_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VPROC_CA7, VOLT_TO_PMIC_VAL(mv));
 	mt_cpufreq_apply_pmic_cmd(IDX_NM_VPROC_CA7);
@@ -4416,19 +4417,12 @@ static unsigned int _mt_cpufreq_get(unsigned int cpu)
 #define VPROC_THRESHOLD_TO_DEEPIDLE	990
 bool mt_cpufreq_earlysuspend_status_get(void)
 {
-	unsigned int isenabled = 0;
-	unsigned int rdata;
+	int	ret = 0;
 
-	if (!_mt_cpufreq_pdrv_probed)
-		return 0;
+	if (regulator_vpca53_voltage && (regulator_vpca53_voltage < VPROC_THRESHOLD_TO_DEEPIDLE))
+		ret = 1;
 
-	isenabled = regulator_is_enabled(reg_vpca53);
-	if (isenabled)
-		rdata = regulator_get_voltage(reg_vpca53) / 1000;
-	else
-		rdata = VPROC_THRESHOLD_TO_DEEPIDLE;
-
-	return (rdata < VPROC_THRESHOLD_TO_DEEPIDLE);
+	return ret;
 }
 EXPORT_SYMBOL(mt_cpufreq_earlysuspend_status_get);
 
@@ -4722,8 +4716,6 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	ret = cpufreq_register_driver(&_mt_cpufreq_driver);
 	register_hotcpu_notifier(&turbo_mode_cpu_notifier);	/* <-XXX */
 	register_hotcpu_notifier(&extbuck_cpu_notifier);
-
-	_mt_cpufreq_pdrv_probed = 1;
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 

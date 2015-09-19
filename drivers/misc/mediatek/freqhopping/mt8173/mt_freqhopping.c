@@ -1500,7 +1500,7 @@ static int __init mt_freqhopping_drv_init(void)
 	return 0;
 }
 
-subsys_initcall(mt_freqhopping_drv_init);
 
+subsys_initcall(mt_freqhopping_drv_init);
 
 /* TODO: module_exit(cpufreq_exit); */
