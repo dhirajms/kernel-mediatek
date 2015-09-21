@@ -428,6 +428,7 @@ _PopulateContextFromBlueprint(struct _DEVMEM_CONTEXT_ *psCtx,
                                   uiLog2DataPageSize,
                                   uiLog2ImportAlignment,
                                   aszHeapName,
+                                  uiHeapBlueprintID,
                                   &ppsHeapArray[uiHeapIndex]);
         if (eError != PVRSRV_OK)
         {
@@ -770,6 +771,7 @@ DevmemCreateHeap(DEVMEM_CONTEXT *psCtx,
                  IMG_UINT32 ui32Log2Quantum,
                  IMG_UINT32 ui32Log2ImportAlignment,
                  const IMG_CHAR *pszName,
+                 DEVMEM_HEAPCFGID uiHeapBlueprintID,
                  DEVMEM_HEAP **ppsHeapPtr)
 {
     PVRSRV_ERROR eError = PVRSRV_OK;
@@ -778,6 +780,7 @@ DevmemCreateHeap(DEVMEM_CONTEXT *psCtx,
     /* handle to the server-side counterpart of the device memory
        heap (specifically, for handling mapping to device MMU */
     IMG_HANDLE hDevMemServerHeap;
+    IMG_BOOL bRANoSplit = IMG_FALSE;
 
     IMG_CHAR aszBuf[100];
     IMG_CHAR *pszStr;
@@ -821,13 +824,37 @@ DevmemCreateHeap(DEVMEM_CONTEXT *psCtx,
     OSStringCopy(pszStr, aszBuf);
     psHeap->pszSubAllocRAName = pszStr;
 
+#if defined(PDUMP) && defined(ANDROID)
+    /* the META heap is shared globally so a single
+     * physical memory import may be used to satisfy
+     * allocations of different processes.
+     * This is problematic when PDumping because the
+     * physical memory import used to satisfy a new allocation
+     * may actually have been imported (and thus the PDump MALLOC
+     * generated) before the PDump client was started, leading to the
+     * MALLOC being missing.
+     * This is solved by disabling splitting of imports for the META physmem
+     * RA, meaning that every firmware allocation gets its own import, thus
+     * ensuring the MALLOC is present for every allocation made within the
+     * pdump capture range
+     */
+    if(uiHeapBlueprintID == DEVMEM_HEAPCFG_META)
+    {
+    	bRANoSplit = IMG_TRUE;
+    }
+#else
+    PVR_UNREFERENCED_PARAMETER(uiHeapBlueprintID);
+#endif
+
+
     psHeap->psSubAllocRA = RA_Create(psHeap->pszSubAllocRAName,
                        /* Subsequent imports: */
                        ui32Log2Quantum,
 					   RA_LOCKCLASS_2,
                        _SubAllocImportAlloc,
                        _SubAllocImportFree,
-                       (RA_PERARENA_HANDLE) psHeap);
+                       (RA_PERARENA_HANDLE) psHeap,
+                       bRANoSplit);
     if (psHeap->psSubAllocRA == NULL)
     {
         eError = PVRSRV_ERROR_DEVICEMEM_UNABLE_TO_CREATE_ARENA;
@@ -852,7 +879,8 @@ DevmemCreateHeap(DEVMEM_CONTEXT *psCtx,
     psHeap->psQuantizedVMRA = RA_Create(psHeap->pszQuantizedVMRAName,
                        /* Subsequent import: */
                                        0, RA_LOCKCLASS_1, NULL, NULL,
-                       (RA_PERARENA_HANDLE) psHeap);
+                       (RA_PERARENA_HANDLE) psHeap,
+                       IMG_FALSE);
 
     if (psHeap->psQuantizedVMRA == NULL)
     {

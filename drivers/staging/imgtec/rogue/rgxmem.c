@@ -470,6 +470,11 @@ PVRSRV_ERROR RGXRegisterMemoryContext(PVRSRV_DEVICE_NODE	*psDeviceNode,
 			psServerMMUContext->szProcessName[RGXMEM_SERVER_MMU_CONTEXT_MAX_NAME-1] = '\0';
 		}
 
+		PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "New memory context: Process Name: %s PID: %u (0x%08X)",
+										psServerMMUContext->szProcessName,
+										psServerMMUContext->uiPID,
+										psServerMMUContext->uiPID);
+
 		OSWRLockAcquireWrite(psDevInfo->hMemoryCtxListLock);
 		dllist_add_to_tail(&psDevInfo->sMemoryContextList, &psServerMMUContext->sNode);
 		OSWRLockReleaseWrite(psDevInfo->hMemoryCtxListLock);

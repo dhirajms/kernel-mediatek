@@ -117,6 +117,15 @@ typedef struct
 	RGXFWIF_DM              eDM;
 } RGX_DEFERRED_KCCB_CMD;
 
+#if defined(PDUMP)
+/* ensure PIDs are 32-bit because a 32-bit PDump load is generated for the
+ * PID filter example entries
+ */
+static_assert(sizeof(IMG_PID) == sizeof(IMG_UINT32),
+		"FW PID filtering assumes the IMG_PID type is 32-bits wide as it "
+		"generates WRW commands for loading the PID values");
+#endif
+
 #if defined(RGX_FEATURE_SLC_VIVT)
 static PVRSRV_ERROR _AllocateSLC3Fence(PVRSRV_RGXDEV_INFO* psDevInfo, RGXFWIF_INIT* psRGXFWInit)
 {
@@ -2203,6 +2212,43 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 							offsetof(RGXFWIF_INIT, ui32ConfigFlags),
 							psRGXFWInit->ui32ConfigFlags,
 							PDUMP_FLAGS_CONTINUOUS);
+
+	/* default: no filter */
+	psRGXFWInit->sPIDFilter.eMode = RGXFW_PID_FILTER_INCLUDE_ALL_EXCEPT;
+	psRGXFWInit->sPIDFilter.asItems[0].uiPID = 0;
+
+	PDUMPCOMMENT("( PID filter type: %X=INCLUDE_ALL_EXCEPT, %X=EXCLUDE_ALL_EXCEPT)",
+							RGXFW_PID_FILTER_INCLUDE_ALL_EXCEPT,
+							RGXFW_PID_FILTER_EXCLUDE_ALL_EXCEPT);
+
+	DevmemPDumpLoadMemValue32(psDevInfo->psRGXFWIfInitMemDesc,
+							offsetof(RGXFWIF_INIT, sPIDFilter.eMode),
+							psRGXFWInit->sPIDFilter.eMode,
+							PDUMP_FLAGS_CONTINUOUS);
+
+	PDUMPCOMMENT("( PID filter PID/OSID list (Up to %u entries. Terminate with a zero PID))",
+									RGXFWIF_PID_FILTER_MAX_NUM_PIDS);
+	{
+		IMG_UINT32 i;
+
+		/* generate a few WRWs in the pdump stream as an example */
+		for(i = 0; i < MIN(RGXFWIF_PID_FILTER_MAX_NUM_PIDS, 8); i++)
+		{
+			PDUMPCOMMENT("(PID and OSID pair %u)", i);
+
+			PDUMPCOMMENT("(PID)");
+			DevmemPDumpLoadMemValue32(psDevInfo->psRGXFWIfInitMemDesc,
+						offsetof(RGXFWIF_INIT, sPIDFilter.asItems[i].uiPID),
+						0,
+						PDUMP_FLAGS_CONTINUOUS);
+
+			PDUMPCOMMENT("(OSID)");
+			DevmemPDumpLoadMemValue32(psDevInfo->psRGXFWIfInitMemDesc,
+						offsetof(RGXFWIF_INIT, sPIDFilter.asItems[i].ui32OSID),
+						0,
+						PDUMP_FLAGS_CONTINUOUS);
+		}
+	}
 
 	/* 
 	 * Dump the log config so it can be edited.

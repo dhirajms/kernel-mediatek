@@ -1372,7 +1372,8 @@ static PVRSRV_ERROR CreateLMASubArenas(PVRSRV_DEVICE_NODE *psDeviceNode)
 					  RA_LOCKCLASS_0,			/* This arena doesn't use any other arenas. */
 					  NULL,					/* No Import */
 					  NULL,					/* No free import */
-					  NULL);				/* No import handle */
+					  NULL,					/* No import handle */
+					  IMG_FALSE);
 
 		if (psDeviceNode->psOSidSubArena[uiCounter] == NULL)
 		{
@@ -1557,7 +1558,8 @@ static PVRSRV_ERROR IMG_CALLCONV PVRSRVRegisterDevice(PVRSRV_DEVICE_CONFIG *psDe
 						RA_LOCKCLASS_0,     /* This arena doesn't use any other arenas. */
 						NULL,			/* No Import */
 						NULL,			/* No free import */
-						NULL);			/* No import handle */
+						NULL,			/* No import handle */
+						IMG_FALSE);
 
 		if (psDeviceNode->psLocalDevMemArena == NULL)
 		{

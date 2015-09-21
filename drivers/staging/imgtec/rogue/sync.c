@@ -651,7 +651,8 @@ SyncPrimContextCreate(SHARED_DEV_CONNECTION hDevConnection,
 										RA_LOCKCLASS_2,
 										SyncPrimBlockImport,
 										SyncPrimBlockUnimport,
-										psContext);
+										psContext,
+										IMG_FALSE);
 	if (psContext->psSubAllocRA == NULL)
 	{
 		eError = PVRSRV_ERROR_OUT_OF_MEMORY;
@@ -674,7 +675,8 @@ SyncPrimContextCreate(SHARED_DEV_CONNECTION hDevConnection,
 									RA_LOCKCLASS_1,
 									NULL,
 									NULL,
-									NULL);
+									NULL,
+									IMG_FALSE);
 	if (psContext->psSpanRA == NULL)
 	{
 		eError = PVRSRV_ERROR_OUT_OF_MEMORY;

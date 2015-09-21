@@ -279,6 +279,7 @@ DevmemCreateHeap(DEVMEM_CONTEXT *psCtxPtr,
                  /* N.B.  Okay to exist on caller's stack - this
                     func takes a copy if it needs it. */
                  const IMG_CHAR *pszName,
+                 DEVMEM_HEAPCFGID uiHeapBlueprintID,
                  DEVMEM_HEAP **ppsHeapPtr);
 /*
  * DevmemDestroyHeap()
