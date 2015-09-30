@@ -1849,11 +1849,18 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVFinaliseSystem(IMG_BOOL bInitSuccessful, IMG_UIN
 			{
 				psRGXDeviceNode = psDeviceNode; 
 			}
+#if defined(SUPPORT_KERNEL_SRVINIT)
+			/* take the PMR lock, because there isn't a bridge call to take it */
+			PMRLock();
+#endif
 			eError = SyncPrimContextCreate(psDeviceNode,
 								  &psDeviceNode->hSyncPrimContext);
 			if (eError != PVRSRV_OK)
 			{
 				PVR_DPF((PVR_DBG_ERROR,"PVRSRVFinaliseSystem: Failed to create SyncPrimContext (%u)", eError));
+#if defined(SUPPORT_KERNEL_SRVINIT)
+				PMRUnlock();
+#endif
 				return eError;
 			}
 
@@ -1862,8 +1869,14 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVFinaliseSystem(IMG_BOOL bInitSuccessful, IMG_UIN
 			if (eError != PVRSRV_OK)
 			{
 				PVR_DPF((PVR_DBG_ERROR,"PVRSRVFinaliseSystem: Failed to allocate sync primitive with error (%u)", eError));
+#if defined(SUPPORT_KERNEL_SRVINIT)
+				PMRUnlock();
+#endif
 				return eError;
 			}
+#if defined(SUPPORT_KERNEL_SRVINIT)
+			PMRUnlock();
+#endif
 		}
 
 		eError = PVRSRVPowerLock();

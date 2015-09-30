@@ -85,6 +85,7 @@ static struct dev_pm_ops powervr_dev_pm_ops = {
 
 static const struct of_device_id mt_powervr_of_match[] = {
 	{ .compatible = "mediatek,mt8173-gpu", },
+	{ .compatible = "mediatek,mt8173-han", },
 	{ .compatible = "mediatek,HAN", },
 	{},
 };

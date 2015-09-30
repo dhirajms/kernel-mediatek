@@ -114,3 +114,8 @@ void OSInvalidateCPUCacheRangeKM(void *pvVirtStart,
 {
 	dma_ops->sync_single_for_cpu(NULL, sCPUPhysStart.uiAddr, sCPUPhysEnd.uiAddr - sCPUPhysStart.uiAddr, DMA_FROM_DEVICE);
 }
+
+void OSUserModeAccessToPerfCountersEn(void)
+{
+	/* FIXME: implement similarly to __arm__ */
+}

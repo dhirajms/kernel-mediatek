@@ -81,6 +81,7 @@ PVRSRVBridgePhysmemImportDmaBuf(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
+	PMRLock();
 
 
 	psPhysmemImportDmaBufOUT->eError =
@@ -93,8 +94,10 @@ PVRSRVBridgePhysmemImportDmaBuf(IMG_UINT32 ui32DispatchTableEntry,
 	/* Exit early if bridged call fails */
 	if(psPhysmemImportDmaBufOUT->eError != PVRSRV_OK)
 	{
+		PMRUnlock();
 		goto PhysmemImportDmaBuf_exit;
 	}
+	PMRUnlock();
 
 
 	psPhysmemImportDmaBufOUT->eError = PVRSRVAllocHandle(psConnection->psHandleBase,

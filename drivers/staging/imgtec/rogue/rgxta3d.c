@@ -679,9 +679,11 @@ void RGXProcessRequestGrow(PVRSRV_RGXDEV_INFO *psDevInfo,
 	if (psFreeList)
 	{
 		/* Try to grow the freelist */
+		PMRLock();
 		eError = RGXGrowFreeList(psFreeList,
 								psFreeList->ui32GrowFLPages,
 								&psFreeList->sMemoryBlockHead);
+		PMRUnlock();
 		if (eError == PVRSRV_OK)
 		{
 			/* Grow successful, return size of grow size */
@@ -717,11 +719,23 @@ void RGXProcessRequestGrow(PVRSRV_RGXDEV_INFO *psDevInfo,
 
 		LOOP_UNTIL_TIMEOUT(MAX_HW_TIME_US)
 		{
+#if defined(PDUMP)
+			/* RGXScheduleCommand leads to PMRPDumpLoadMem.
+			 * This call originates from the MISR so the PMR lock can't be taken at
+			 * the bridge level, and the PMR lock can't be taken inside RGXScheduleCommand
+			 * because this would lead to bridge calls which acquire the PMR lock in the bridge
+			 * trying to acquire the lock twice
+			 */
+			PMRLock();
+#endif
 			eError = RGXScheduleCommand(psDevInfo,
 												RGXFWIF_DM_3D,
 												&s3DCCBCmd,
 												sizeof(s3DCCBCmd),
 												IMG_FALSE);
+#if defined(PDUMP)
+			PMRUnlock();
+#endif
 			if (eError != PVRSRV_ERROR_RETRY)
 			{
 				break;
@@ -761,6 +775,8 @@ static void _RGXCheckFreeListReconstruction(PDLLIST_NODE psNode)
 	ui32StartPage = (psFreeList->ui32MaxFLPages - psFreeList->ui32CurrentFLPages - psPMRNode->ui32NumPages);
 	uiOffset = psFreeList->uiFreeListPMROffset + (ui32StartPage * sizeof(IMG_UINT32));
 
+	PMRLock();
+
 	PMRUnwritePMPageList(psPMRNode->psPageList);
 	psPMRNode->psPageList = NULL;
 	eError = PMRWritePMPageList(
@@ -791,6 +807,8 @@ static void _RGXCheckFreeListReconstruction(PDLLIST_NODE psNode)
 			PVR_ASSERT(0);
 		}
 	}
+
+	PMRUnlock();
 
 	psFreeList->ui32CurrentFLPages += psPMRNode->ui32NumPages;
 }
@@ -890,11 +908,23 @@ void RGXProcessRequestFreelistsReconstruction(PVRSRV_RGXDEV_INFO *psDevInfo,
 
 	LOOP_UNTIL_TIMEOUT(MAX_HW_TIME_US)
 	{
+#if defined(PDUMP)
+			/* RGXScheduleCommand leads to PMRPDumpLoadMem.
+			 * This call originates from the MISR so the PMR lock can't be taken at
+			 * the bridge level, and the PMR lock can't be taken inside RGXScheduleCommand
+			 * because this would lead to bridge calls which acquire the PMR lock in the bridge
+			 * trying to acquire the lock twice
+			 */
+		PMRLock();
+#endif
 		eError = RGXScheduleCommand(psDevInfo,
 		                            RGXFWIF_DM_TA,
 		                            &sTACCBCmd,
 		                            sizeof(sTACCBCmd),
 		                            IMG_FALSE);
+#if defined(PDUMP)
+		PMRUnlock();
+#endif
 		if (eError != PVRSRV_ERROR_RETRY)
 		{
 			break;
@@ -1162,6 +1192,7 @@ FWRTDataCpuMapError:
 FWRTDataAllocateError:
 	SyncPrimFree(psTmpCleanup->psCleanupSync);
 SyncAlloc:
+	*ppsCleanupData = NULL;
 	OSFreeMem(psTmpCleanup);
 
 AllocError:
@@ -2098,7 +2129,9 @@ void RGXProcessRequestZSBufferBacking(PVRSRV_RGXDEV_INFO *psDevInfo,
 		IMG_BOOL bBackingDone = IMG_TRUE;
 
 		/* Populate ZLS */
+		PMRLock();
 		eError = RGXBackingZSBuffer(psZSBuffer);
+		PMRUnlock();
 		if (eError != PVRSRV_OK)
 		{
 			PVR_DPF((PVR_DBG_ERROR,"Populating ZS-Buffer failed failed with error %u (ID = 0x%08x)", eError, ui32ZSBufferID));
@@ -2155,7 +2188,9 @@ void RGXProcessRequestZSBufferUnbacking(PVRSRV_RGXDEV_INFO *psDevInfo,
 	if (psZSBuffer)
 	{
 		/* Unpopulate ZLS */
+		PMRLock();
 		eError = RGXUnbackingZSBuffer(psZSBuffer);
+		PMRUnlock();
 		if (eError != PVRSRV_OK)
 		{
 			PVR_DPF((PVR_DBG_ERROR,"UnPopulating ZS-Buffer failed failed with error %u (ID = 0x%08x)", eError, ui32ZSBufferID));

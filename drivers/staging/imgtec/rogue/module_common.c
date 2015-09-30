@@ -143,6 +143,8 @@ static IMG_BOOL bDriverIsShutdown;
 LDM_DEV *gpsPVRLDMDev;
 #endif
 
+DEFINE_MUTEX(gGlobalLookupPMRLock);
+
 /*!
 ******************************************************************************
 

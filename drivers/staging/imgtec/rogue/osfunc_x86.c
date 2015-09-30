@@ -139,3 +139,8 @@ void OSInvalidateCPUCacheRangeKM(void *pvVirtStart,
 	/* No invalidate-only support */
 	x86_flush_cache_range(pvVirtStart, pvVirtEnd);
 }
+
+void OSUserModeAccessToPerfCountersEn(void)
+{
+	/* Not applicable to x86 architecture. */
+}

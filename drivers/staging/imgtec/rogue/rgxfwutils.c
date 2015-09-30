@@ -1290,6 +1290,8 @@ PVRSRV_ERROR RGXTraceBufferInitOnDemandResources(PVRSRV_RGXDEV_INFO *psDevInfo)
 				PVRSRV_MEMALLOCFLAG_UNCACHED |
 				PVRSRV_MEMALLOCFLAG_ZERO_ON_ALLOC;
 
+	PMRLock();
+
 	for (ui32FwThreadNum = 0; ui32FwThreadNum < RGXFW_THREAD_NUM; ui32FwThreadNum++)
 	{
 		/* Ensure allocation API is only called when not already allocated */
@@ -1331,6 +1333,7 @@ PVRSRV_ERROR RGXTraceBufferInitOnDemandResources(PVRSRV_RGXDEV_INFO *psDevInfo)
 
 /* Just return error in-case of failures, clean-up would be handled by DeInit function */
 fail:
+	PMRUnlock();
 	return eError;
 }
 
@@ -1426,6 +1429,9 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 
 
 	PDUMPCOMMENT("Allocate RGXFWIF_INIT structure");
+
+	PMRLock();
+
 	eError = DevmemFwAllocate(psDevInfo,
 							sizeof(RGXFWIF_INIT),
 							uiMemAllocFlags,
@@ -1499,6 +1505,8 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 		goto fail;
 	}
 
+	PMRUnlock();
+
 	/* Set initial firmware log type/group(s) */
 	if (ui32LogType & ~RGXFWIF_LOG_TYPE_MASK)
 	{
@@ -1533,6 +1541,8 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 						PVRSRV_MEMALLOCFLAG_KERNEL_CPU_MAPPABLE | 
 						PVRSRV_MEMALLOCFLAG_UNCACHED |
 						PVRSRV_MEMALLOCFLAG_ZERO_ON_ALLOC;
+
+	PMRLock();
 
 #if defined(RGX_META_COREMEM)
 	PDUMPCOMMENT("Allocate buffer to store FW data");
@@ -1674,6 +1684,8 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 		goto fail;
 	}
 
+	PMRUnlock();
+
 	/* HWPerf initialization */
 
 	/* Determine the size of the HWPerf FW buffer */
@@ -1738,6 +1750,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 #endif
 	PVR_LOGG_IF_ERROR(eError, "RGXHWPerfInitOnDemandResources", fail);
 
+	PMRLock();
 
 #if defined(SUPPORT_USER_REGISTER_CONFIGURATION)
 	PDUMPCOMMENT("Allocate rgxfw register configuration structure");
@@ -1942,6 +1955,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 		goto fail;
 	}
 #endif
+	PMRUnlock();
 
 #if defined(PVRSRV_GPUVIRT_GUESTDRV)
 	/*
@@ -1990,6 +2004,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 	}
 #endif
 
+	PMRLock();
 #if defined(RGX_FEATURE_META)
 	if ((ui32ConfigFlags & RGXFWIF_INICFG_METAT1_ENABLED) != 0)
 	{
@@ -2343,6 +2358,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 
 	psDevInfo->bFirmwareInitialised = IMG_TRUE;
 
+	PMRUnlock();
 	return PVRSRV_OK;
 
 fail:
@@ -2357,6 +2373,7 @@ fail:
 	RGXFreeFirmware(psDevInfo);
 
 	PVR_ASSERT(eError != PVRSRV_OK);
+	PMRUnlock();
 	return eError;
 }
 
@@ -3975,11 +3992,21 @@ PVRSRV_ERROR RGXUpdateHealthStatus(PVRSRV_DEVICE_NODE* psDevNode,
 
 				sCmpKCCBCmd.eCmdType = RGXFWIF_KCCB_CMD_HEALTH_CHECK;
 
+#if defined(PDUMP)
+				/* Protect the PDumpLoadMem. RGXScheduleCommand() cannot take the
+				 * PMR lock itself, because some bridge functions will take the PMR lock
+				 * before calling RGXScheduleCommand
+				 */
+				PMRLock();
+#endif
 				eError = RGXScheduleCommand(psDevNode->pvDevice,
 											RGXFWIF_DM_GP,
 											&sCmpKCCBCmd,
 											sizeof(sCmpKCCBCmd),
 											IMG_TRUE);
+#if defined(PDUMP)
+				PMRUnlock();
+#endif
 				if (eError != PVRSRV_OK)
 				{
 					PVR_DPF((PVR_DBG_WARNING, "RGXGetDeviceHealthStatus: Cannot schedule Health Check command! (0x%x)", eError));

@@ -442,6 +442,17 @@ void OSDumpStack(void);
 
 void OSAcquireBridgeLock(void);
 void OSReleaseBridgeLock(void);
+#if defined(LINUX)
+void PMRLock(void);
+void PMRUnlock(void);
+IMG_BOOL PMRIsLocked(void);
+IMG_BOOL PMRIsLockedByMe(void);
+#else
+#define PMRLock()
+#define PMRUnlock()
+#define PMRIsLocked() IMG_FALSE
+#define PMRIsLockedByMe() IMG_FALSE
+#endif
 
 
 /*
@@ -465,6 +476,7 @@ void OSRemoveStatisticEntry(void *pvEntry);
 void *OSCreateStatisticFolder(IMG_CHAR *pszName, void *pvFolder);
 void OSRemoveStatisticFolder(void *pvFolder);
 
+void OSUserModeAccessToPerfCountersEn(void);
 
 #endif /* __OSFUNC_H__ */
 

@@ -171,3 +171,18 @@ void OSInvalidateCPUCacheRangeKM(void *pvVirtStart,
 #endif
 #endif	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)) */
 }
+
+/* User Enable Register */
+#define PMUSERENR_EN      0x00000001 /* enable user access to the counters */
+
+static void per_cpu_perf_counter_user_access_en(void *data)
+{
+	PVR_UNREFERENCED_PARAMETER(data);
+	/* Enable user-mode access to counters. */
+	asm volatile("mcr p15, 0, %0, c9, c14, 0" :: "r"(PMUSERENR_EN));
+}
+
+void OSUserModeAccessToPerfCountersEn(void)
+{
+	ON_EACH_CPU(per_cpu_perf_counter_user_access_en, NULL, 1);
+}

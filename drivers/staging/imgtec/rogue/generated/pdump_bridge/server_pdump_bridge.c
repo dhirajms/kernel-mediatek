@@ -203,11 +203,17 @@ PVRSRVBridgePVRSRVPDumpSetFrame(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
+#if defined(PDUMP)
+	PMRLock();
+#endif
 
 
 	psPVRSRVPDumpSetFrameOUT->eError =
 		PDumpSetFrameKM(psConnection, OSGetDevData(psConnection),
 					psPVRSRVPDumpSetFrameIN->ui32Frame);
+#if defined(PDUMP)
+	PMRUnlock();
+#endif
 
 
 

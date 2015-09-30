@@ -1259,6 +1259,10 @@ PVRSRV_ERROR RGXInit(SHARED_DEV_CONNECTION hServices)
 		goto cleanup;
 	}
 
+#if defined(SUPPORT_KERNEL_SRVINIT)
+	PMRLock();
+#endif
+
 #if	defined(PVRSRV_GPUVIRT_GUESTDRV)
 	/* These functionality is n/a to guest drivers */
 #else
@@ -1325,6 +1329,9 @@ PVRSRV_ERROR RGXInit(SHARED_DEV_CONNECTION hServices)
 	pvFWCorememHostAddr = NULL;
 #endif
 
+#if defined(SUPPORT_KERNEL_SRVINIT)
+	PMRUnlock();
+#endif
 
 	/*
 	 * Process the FW image and setup code and data segments.
@@ -1368,6 +1375,9 @@ PVRSRV_ERROR RGXInit(SHARED_DEV_CONNECTION hServices)
 		goto cleanup;
 	}
 
+#if defined(SUPPORT_KERNEL_SRVINIT)
+	PMRLock();
+#endif
 
 #if !defined(SUPPORT_TRUSTED_DEVICE)
 	/* dump the fw code */
@@ -1409,6 +1419,10 @@ PVRSRV_ERROR RGXInit(SHARED_DEV_CONNECTION hServices)
 	DevmemFree(psFWCodeHostMemDesc);
 	DevmemUnmakeLocalImportHandle(hServices,
 	                              hFWCodeImportHandle);
+#endif
+
+#if defined(SUPPORT_KERNEL_SRVINIT)
+	PMRUnlock();
 #endif
 
 	/*
@@ -1460,6 +1474,9 @@ PVRSRV_ERROR RGXInit(SHARED_DEV_CONNECTION hServices)
 		PVR_DPF((PVR_DBG_ERROR, "RGXInit: Run out of mem for the terminating deinit script"));
 	}
 #if defined(PDUMP)
+#if defined(SUPPORT_KERNEL_SRVINIT)
+	PMRLock();
+#endif
 	/* Acquire HWPerf data mem handle to be able to fill it later */
 	DevmemMakeLocalImportHandle(hServices,
 	                            hHWPerfDataPMR,
@@ -1482,6 +1499,9 @@ PVRSRV_ERROR RGXInit(SHARED_DEV_CONNECTION hServices)
 	InitialiseHWPerfCounters(hServices, psHWPerfDataMemDesc, psHWPerfInitData);
 	InitialiseCustomCounters(hServices, psHWPerfDataMemDesc);
 
+#if defined(SUPPORT_KERNEL_SRVINIT)
+	PMRUnlock();
+#endif
 #endif
 #endif /* defined(PVRSRV_GPUVIRT_GUESTDRV) */
 
@@ -1583,11 +1603,17 @@ PVRSRV_ERROR RGXInit(SHARED_DEV_CONNECTION hServices)
 
 	eError = PVRSRV_OK;
 #if defined(PDUMP)
+#if defined(SUPPORT_KERNEL_SRVINIT)
+	PMRLock();
+#endif
 
 	DevmemReleaseCpuVirtAddr(psHWPerfDataMemDesc);
 	DevmemFree(psHWPerfDataMemDesc);
 	DevmemUnmakeLocalImportHandle(hServices,
 	                              hHWPerfDataImportHandle);
+#if defined(SUPPORT_KERNEL_SRVINIT)
+	PMRUnlock();
+#endif
 failHWPerfCountersMemDescAqCpuVirt:
 #endif
 cleanup:
@@ -1601,7 +1627,6 @@ cleanup:
 		RGXUnloadFirmware(psRGXFW);
 	}
 #endif
-
 	return eError;
 }
 

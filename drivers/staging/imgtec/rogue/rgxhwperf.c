@@ -543,6 +543,8 @@ PVRSRV_ERROR RGXHWPerfInitOnDemandResources(void)
 				| PVRSRV_MEMALLOCFLAG_ZERO_ON_ALLOC
 				#endif
 				;
+
+	PMRLock();
 	/* Allocate HWPerf FW L1 buffer */
 	eError = DevmemFwAllocate(gpsRgxDevInfo,
 							  gpsRgxDevInfo->ui32RGXFWIfHWPerfBufSize+RGXFW_HWPERF_L1_PADDING_DEFAULT,
@@ -610,6 +612,8 @@ PVRSRV_ERROR RGXHWPerfInitOnDemandResources(void)
 	PVR_UNREFERENCED_PARAMETER(RGXHWPerfTLCB);
 #endif 
 
+	PMRUnlock();
+
 	PVR_DPF_RETURN_OK;
 
 #if !defined(NO_HARDWARE)
@@ -619,6 +623,7 @@ e1: /* L2 buffer initialisation failures */
 e0: /* L1 buffer initialisation failures */
 	RGXHWPerfL1BufferDeinit();
 	
+	PMRUnlock();
 	PVR_DPF_RETURN_RC(eError);
 }
 
@@ -664,22 +669,25 @@ static PVRSRV_ERROR RGXHWPerfCtrlFwBuffer(PVRSRV_DEVICE_NODE *psDeviceNode,
 	PVRSRV_RGXDEV_INFO* psDevice = psDeviceNode->pvDevice;
 	RGXFWIF_KCCB_CMD sKccbCmd;
 
+	OSLockAcquire(psDevice->hLockHWPerfModule);
+	PMRLock();
 	/* If this method is being used whether to enable or disable
 	 * then the hwperf buffers (host and FW) are likely to be needed
 	 * eventually so create them, also helps unit testing. Buffers
 	 * allocated on demand to reduce RAM foot print on systems not
 	 * needing HWPerf resources. */
-	OSLockAcquire(psDevice->hLockHWPerfModule);
 	if (RGXHWPerfIsInitRequired())
 	{
 		eError = RGXHWPerfInitOnDemandResources();
 		if (eError != PVRSRV_OK)
 		{
 			PVR_DPF((PVR_DBG_ERROR, "%s: Initialization of on-demand HWPerf resources failed", __FUNCTION__));
+			PMRUnlock();
 			OSLockRelease(psDevice->hLockHWPerfModule);
 			return eError;
 		}
 	}
+	PMRUnlock();
 	OSLockRelease(psDevice->hLockHWPerfModule);
 
 	/* Prepare command parameters ... */
@@ -731,7 +739,7 @@ static PVRSRV_ERROR RGXHWPerfCtrlFwBuffer(PVRSRV_DEVICE_NODE *psDeviceNode,
 		PVR_DPF((PVR_DBG_WARNING, "HWPerf mask has been SET to (%llx)", ui64Mask));
 	}
 #endif
-	
+
 	return PVRSRV_OK;
 }
 

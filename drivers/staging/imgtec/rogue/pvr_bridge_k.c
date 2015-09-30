@@ -928,20 +928,14 @@ PVRSRV_MMap(struct file *pFile, struct vm_area_struct *ps_vma)
 		goto e0;
 	}
 
-	/*
-	 * Take a reference so that we can drop the PMRLock early. We must then
-	 * drop the reference later as PMRMMapPMR will also take a reference.
-	 */
-	PMRRefPMR(psPMR);
-	PMRUnlock();
-
+	/* Note: PMRMMapPMR will take a reference on the PMR */
 	eError = PMRMMapPMR(psPMR, ps_vma);
 	if (eError != PVRSRV_OK)
 	{
 		goto e1;
 	}
 
-	PMRUnrefPMR(psPMR);
+	PMRUnlock();
 	mutex_unlock(&g_sMMapMutex);
 
 	return 0;

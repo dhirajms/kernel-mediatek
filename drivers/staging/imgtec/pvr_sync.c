@@ -476,8 +476,10 @@ sync_pool_get(struct pvr_sync_native_sync_prim **_sync,
 			goto err_unlock;
 		}
 
+		PMRLock();
 		error = SyncPrimAlloc(pvr_sync_data.sync_prim_context,
 				      &sync->client_sync, class_name);
+		PMRUnlock();
 		if (error != PVRSRV_OK) {
 			pr_err("pvr_sync: %s: Failed to allocate sync prim (%s)\n",
 			       __func__, PVRSRVGetErrorStringKM(error));

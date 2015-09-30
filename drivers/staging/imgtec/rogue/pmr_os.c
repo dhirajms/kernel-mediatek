@@ -116,6 +116,8 @@ static void MMapPMRClose(struct vm_area_struct *ps_vma)
 {
 	PMR *psPMR = ps_vma->vm_private_data;
 
+	PMRLock();
+
 #if defined(PVRSRV_ENABLE_PROCESS_STATS)
 #if	defined(PVRSRV_ENABLE_MEMORY_STATS)
 	uintptr_t vAddr = ps_vma->vm_start;
@@ -133,6 +135,8 @@ static void MMapPMRClose(struct vm_area_struct *ps_vma)
 
 	PMRUnlockSysPhysAddresses(psPMR);
 	PMRUnrefPMR(psPMR);
+
+	PMRUnlock();
 }
 
 /*

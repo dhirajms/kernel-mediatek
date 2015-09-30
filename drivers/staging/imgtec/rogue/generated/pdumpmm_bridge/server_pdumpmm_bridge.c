@@ -82,6 +82,7 @@ PVRSRVBridgePMRPDumpLoadMem(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
+	PMRLock();
 
 
 				{
@@ -93,6 +94,7 @@ PVRSRVBridgePMRPDumpLoadMem(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
 					if(psPMRPDumpLoadMemOUT->eError != PVRSRV_OK)
 					{
+						PMRUnlock();
 						goto PMRPDumpLoadMem_exit;
 					}
 				}
@@ -105,6 +107,7 @@ PVRSRVBridgePMRPDumpLoadMem(IMG_UINT32 ui32DispatchTableEntry,
 					psPMRPDumpLoadMemIN->uiSize,
 					psPMRPDumpLoadMemIN->ui32PDumpFlags,
 					psPMRPDumpLoadMemIN->bbZero);
+	PMRUnlock();
 
 
 
@@ -126,6 +129,7 @@ PVRSRVBridgePMRPDumpLoadMemValue32(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
+	PMRLock();
 
 
 				{
@@ -137,6 +141,7 @@ PVRSRVBridgePMRPDumpLoadMemValue32(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
 					if(psPMRPDumpLoadMemValue32OUT->eError != PVRSRV_OK)
 					{
+						PMRUnlock();
 						goto PMRPDumpLoadMemValue32_exit;
 					}
 				}
@@ -148,6 +153,7 @@ PVRSRVBridgePMRPDumpLoadMemValue32(IMG_UINT32 ui32DispatchTableEntry,
 					psPMRPDumpLoadMemValue32IN->uiOffset,
 					psPMRPDumpLoadMemValue32IN->ui32Value,
 					psPMRPDumpLoadMemValue32IN->ui32PDumpFlags);
+	PMRUnlock();
 
 
 
@@ -169,6 +175,7 @@ PVRSRVBridgePMRPDumpLoadMemValue64(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
+	PMRLock();
 
 
 				{
@@ -180,6 +187,7 @@ PVRSRVBridgePMRPDumpLoadMemValue64(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
 					if(psPMRPDumpLoadMemValue64OUT->eError != PVRSRV_OK)
 					{
+						PMRUnlock();
 						goto PMRPDumpLoadMemValue64_exit;
 					}
 				}
@@ -191,6 +199,7 @@ PVRSRVBridgePMRPDumpLoadMemValue64(IMG_UINT32 ui32DispatchTableEntry,
 					psPMRPDumpLoadMemValue64IN->uiOffset,
 					psPMRPDumpLoadMemValue64IN->ui64Value,
 					psPMRPDumpLoadMemValue64IN->ui32PDumpFlags);
+	PMRUnlock();
 
 
 
@@ -233,6 +242,7 @@ PVRSRVBridgePMRPDumpSaveToFile(IMG_UINT32 ui32DispatchTableEntry,
 				goto PMRPDumpSaveToFile_exit;
 			}
 
+	PMRLock();
 
 
 				{
@@ -244,6 +254,7 @@ PVRSRVBridgePMRPDumpSaveToFile(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
 					if(psPMRPDumpSaveToFileOUT->eError != PVRSRV_OK)
 					{
+						PMRUnlock();
 						goto PMRPDumpSaveToFile_exit;
 					}
 				}
@@ -257,6 +268,7 @@ PVRSRVBridgePMRPDumpSaveToFile(IMG_UINT32 ui32DispatchTableEntry,
 					psPMRPDumpSaveToFileIN->ui32ArraySize,
 					uiFileNameInt,
 					psPMRPDumpSaveToFileIN->ui32uiFileOffset);
+	PMRUnlock();
 
 
 
@@ -306,6 +318,7 @@ PVRSRVBridgePMRPDumpSymbolicAddr(IMG_UINT32 ui32DispatchTableEntry,
 	}
 
 
+	PMRLock();
 
 
 				{
@@ -317,6 +330,7 @@ PVRSRVBridgePMRPDumpSymbolicAddr(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
 					if(psPMRPDumpSymbolicAddrOUT->eError != PVRSRV_OK)
 					{
+						PMRUnlock();
 						goto PMRPDumpSymbolicAddr_exit;
 					}
 				}
@@ -332,6 +346,7 @@ PVRSRVBridgePMRPDumpSymbolicAddr(IMG_UINT32 ui32DispatchTableEntry,
 					puiSymbolicAddrInt,
 					&psPMRPDumpSymbolicAddrOUT->uiNewOffset,
 					&psPMRPDumpSymbolicAddrOUT->uiNextSymName);
+	PMRUnlock();
 
 
 
@@ -375,6 +390,7 @@ PVRSRVBridgePMRPDumpPol32(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
+	PMRLock();
 
 
 				{
@@ -386,6 +402,7 @@ PVRSRVBridgePMRPDumpPol32(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
 					if(psPMRPDumpPol32OUT->eError != PVRSRV_OK)
 					{
+						PMRUnlock();
 						goto PMRPDumpPol32_exit;
 					}
 				}
@@ -399,6 +416,7 @@ PVRSRVBridgePMRPDumpPol32(IMG_UINT32 ui32DispatchTableEntry,
 					psPMRPDumpPol32IN->ui32Mask,
 					psPMRPDumpPol32IN->eOperator,
 					psPMRPDumpPol32IN->ui32PDumpFlags);
+	PMRUnlock();
 
 
 
@@ -420,6 +438,7 @@ PVRSRVBridgePMRPDumpCBP(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
+	PMRLock();
 
 
 				{
@@ -431,6 +450,7 @@ PVRSRVBridgePMRPDumpCBP(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
 					if(psPMRPDumpCBPOUT->eError != PVRSRV_OK)
 					{
+						PMRUnlock();
 						goto PMRPDumpCBP_exit;
 					}
 				}
@@ -443,6 +463,7 @@ PVRSRVBridgePMRPDumpCBP(IMG_UINT32 ui32DispatchTableEntry,
 					psPMRPDumpCBPIN->uiWriteOffset,
 					psPMRPDumpCBPIN->uiPacketSize,
 					psPMRPDumpCBPIN->uiBufferSize);
+	PMRUnlock();
 
 
 

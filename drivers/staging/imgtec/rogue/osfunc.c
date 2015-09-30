@@ -2273,6 +2273,35 @@ struct task_struct *OSGetBridgeLockOwner(void)
 	return gsOwner;
 }
 
+static struct task_struct *gsPMRLockOwner;
+
+void PMRLock(void)
+{
+	OSLockAcquire(&gGlobalLookupPMRLock);
+	gsPMRLockOwner = current;
+}
+
+void PMRUnlock(void)
+{
+	gsPMRLockOwner = NULL;
+	OSLockRelease(&gGlobalLookupPMRLock);
+}
+
+static struct task_struct *OSGetPMRLockOwner(void)
+{
+	return gsPMRLockOwner;
+}
+
+IMG_BOOL PMRIsLocked(void)
+{
+	return OSLockIsLocked(&gGlobalLookupPMRLock);
+}
+
+IMG_BOOL PMRIsLockedByMe(void)
+{
+	return (OSGetPMRLockOwner() == current);
+}
+
 
 /*************************************************************************/ /*!
 @Function		OSCreateStatisticEntry

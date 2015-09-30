@@ -79,6 +79,7 @@ PVRSRVBridgeRGXCtrlHWPerf(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
+	PMRLock();
 
 
 	psRGXCtrlHWPerfOUT->eError =
@@ -86,6 +87,7 @@ PVRSRVBridgeRGXCtrlHWPerf(IMG_UINT32 ui32DispatchTableEntry,
 					psRGXCtrlHWPerfIN->ui32StreamId,
 					psRGXCtrlHWPerfIN->bToggle,
 					psRGXCtrlHWPerfIN->ui64Mask);
+	PMRUnlock();
 
 
 

@@ -102,6 +102,7 @@ PVRSRVBridgeRGXCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 				goto RGXCreateTransferContext_exit;
 			}
 
+	PMRLock();
 
 
 				{
@@ -113,6 +114,7 @@ PVRSRVBridgeRGXCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_DEV_PRIV_DATA);
 					if(psRGXCreateTransferContextOUT->eError != PVRSRV_OK)
 					{
+						PMRUnlock();
 						goto RGXCreateTransferContext_exit;
 					}
 				}
@@ -129,8 +131,10 @@ PVRSRVBridgeRGXCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 	/* Exit early if bridged call fails */
 	if(psRGXCreateTransferContextOUT->eError != PVRSRV_OK)
 	{
+		PMRUnlock();
 		goto RGXCreateTransferContext_exit;
 	}
+	PMRUnlock();
 
 
 	psRGXCreateTransferContextOUT->eError = PVRSRVAllocHandle(psConnection->psHandleBase,
@@ -173,6 +177,7 @@ PVRSRVBridgeRGXDestroyTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
+	PMRLock();
 
 
 
@@ -184,9 +189,11 @@ PVRSRVBridgeRGXDestroyTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 	if ((psRGXDestroyTransferContextOUT->eError != PVRSRV_OK) && (psRGXDestroyTransferContextOUT->eError != PVRSRV_ERROR_RETRY))
 	{
 		PVR_ASSERT(0);
+		PMRUnlock();
 		goto RGXDestroyTransferContext_exit;
 	}
 
+	PMRUnlock();
 
 
 RGXDestroyTransferContext_exit:
@@ -1138,6 +1145,9 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 				goto RGXSubmitTransfer_exit;
 			}
 
+#if defined(PDUMP)
+	PMRLock();
+#endif
 
 
 				{
@@ -1149,6 +1159,9 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_RGX_SERVER_TQ_CONTEXT);
 					if(psRGXSubmitTransferOUT->eError != PVRSRV_OK)
 					{
+#if defined(PDUMP)
+						PMRUnlock();
+#endif
 						goto RGXSubmitTransfer_exit;
 					}
 				}
@@ -1171,6 +1184,9 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SYNC_PRIMITIVE_BLOCK);
 					if(psRGXSubmitTransferOUT->eError != PVRSRV_OK)
 					{
+#if defined(PDUMP)
+						PMRUnlock();
+#endif
 						goto RGXSubmitTransfer_exit;
 					}
 				}
@@ -1196,6 +1212,9 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SYNC_PRIMITIVE_BLOCK);
 					if(psRGXSubmitTransferOUT->eError != PVRSRV_OK)
 					{
+#if defined(PDUMP)
+						PMRUnlock();
+#endif
 						goto RGXSubmitTransfer_exit;
 					}
 				}
@@ -1221,6 +1240,9 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SERVER_SYNC_PRIMITIVE);
 					if(psRGXSubmitTransferOUT->eError != PVRSRV_OK)
 					{
+#if defined(PDUMP)
+						PMRUnlock();
+#endif
 						goto RGXSubmitTransfer_exit;
 					}
 				}
@@ -1243,6 +1265,9 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
 					if(psRGXSubmitTransferOUT->eError != PVRSRV_OK)
 					{
+#if defined(PDUMP)
+						PMRUnlock();
+#endif
 						goto RGXSubmitTransfer_exit;
 					}
 				}
@@ -1277,6 +1302,9 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 					psRGXSubmitTransferIN->ui32SyncPMRCount,
 					ui32SyncPMRFlagsInt,
 					psSyncPMRsInt);
+#if defined(PDUMP)
+	PMRUnlock();
+#endif
 
 
 
@@ -1340,6 +1368,9 @@ PVRSRVBridgeRGXSetTransferContextPriority(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
+#if defined(PDUMP)
+	PMRLock();
+#endif
 
 
 				{
@@ -1351,6 +1382,9 @@ PVRSRVBridgeRGXSetTransferContextPriority(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_RGX_SERVER_TQ_CONTEXT);
 					if(psRGXSetTransferContextPriorityOUT->eError != PVRSRV_OK)
 					{
+#if defined(PDUMP)
+						PMRUnlock();
+#endif
 						goto RGXSetTransferContextPriority_exit;
 					}
 				}
@@ -1360,6 +1394,9 @@ PVRSRVBridgeRGXSetTransferContextPriority(IMG_UINT32 ui32DispatchTableEntry,
 		PVRSRVRGXSetTransferContextPriorityKM(psConnection, OSGetDevData(psConnection),
 					psTransferContextInt,
 					psRGXSetTransferContextPriorityIN->ui32Priority);
+#if defined(PDUMP)
+	PMRUnlock();
+#endif
 
 
 
@@ -1594,6 +1631,9 @@ PVRSRVBridgeRGXKickSyncTransfer(IMG_UINT32 ui32DispatchTableEntry,
 				goto RGXKickSyncTransfer_exit;
 			}
 
+#if defined(PDUMP)
+	PMRLock();
+#endif
 
 
 				{
@@ -1605,6 +1645,9 @@ PVRSRVBridgeRGXKickSyncTransfer(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_RGX_SERVER_TQ_CONTEXT);
 					if(psRGXKickSyncTransferOUT->eError != PVRSRV_OK)
 					{
+#if defined(PDUMP)
+						PMRUnlock();
+#endif
 						goto RGXKickSyncTransfer_exit;
 					}
 				}
@@ -1624,6 +1667,9 @@ PVRSRVBridgeRGXKickSyncTransfer(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SYNC_PRIMITIVE_BLOCK);
 					if(psRGXKickSyncTransferOUT->eError != PVRSRV_OK)
 					{
+#if defined(PDUMP)
+						PMRUnlock();
+#endif
 						goto RGXKickSyncTransfer_exit;
 					}
 				}
@@ -1645,6 +1691,9 @@ PVRSRVBridgeRGXKickSyncTransfer(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SYNC_PRIMITIVE_BLOCK);
 					if(psRGXKickSyncTransferOUT->eError != PVRSRV_OK)
 					{
+#if defined(PDUMP)
+						PMRUnlock();
+#endif
 						goto RGXKickSyncTransfer_exit;
 					}
 				}
@@ -1666,6 +1715,9 @@ PVRSRVBridgeRGXKickSyncTransfer(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SERVER_SYNC_PRIMITIVE);
 					if(psRGXKickSyncTransferOUT->eError != PVRSRV_OK)
 					{
+#if defined(PDUMP)
+						PMRUnlock();
+#endif
 						goto RGXKickSyncTransfer_exit;
 					}
 				}
@@ -1694,6 +1746,9 @@ PVRSRVBridgeRGXKickSyncTransfer(IMG_UINT32 ui32DispatchTableEntry,
 					psRGXKickSyncTransferIN->ui32TQPrepareFlags,
 					psRGXKickSyncTransferIN->ui32ExtJobRef,
 					psRGXKickSyncTransferIN->ui32IntJobRef);
+#if defined(PDUMP)
+	PMRUnlock();
+#endif
 
 
 
