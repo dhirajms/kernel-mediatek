@@ -537,9 +537,11 @@ static int __init emi_bwl_mod_init(void)
 	}
 
 	/* write Filter Priority Encode */
+	/*
 	ret = mtk_mem_bw_ctrl(CON_SCE_NORMAL, ENABLE_CON_SCE);
 	if (ret)
 		pr_err("EMI/BWL, fail to set EMI bandwidth limiter\n");
+	*/
 
 	/* Register BW ctrl interface */
 	ret = platform_driver_register(&mem_bw_ctrl);
