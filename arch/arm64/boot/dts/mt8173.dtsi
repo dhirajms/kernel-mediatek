@@ -501,6 +501,12 @@
 			clock-names = "infra_m4u", "infra_smi";
 		};
 
+		systracker: systracker@10208000 {
+			compatible = "mediatek,bus_dbg-v2";
+			reg = <0 0x10208000 0 0x1000>;
+			interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_LOW>;
+		};
+
 		apmixedsys: apmixedsys@10209000 {
 			compatible = "mediatek,mt8173-apmixedsys";
 			reg = <0 0x10209000 0 0x1000>;
