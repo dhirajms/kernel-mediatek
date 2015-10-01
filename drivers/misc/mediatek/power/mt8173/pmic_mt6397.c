@@ -925,6 +925,11 @@ void PMIC_INIT_SETTING_V1(void)
 	unsigned int chip_version = 0;
 	unsigned int ret = 0;
 
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+	/* [0:0]: RG_VCDT_HV_EN; Disable HV. Only compare LV threshold. */
+	ret = pmic_config_interface(0x0, 0x0, 0x1, 0);
+#endif
+
 	/* put init setting from DE/SA */
 	chip_version = upmu_get_cid();
 
