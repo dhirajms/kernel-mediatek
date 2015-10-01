@@ -4648,14 +4648,14 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 	ISP_BUFFER_CTRL_STRUCT rt_buf_ctrl;
 	MBOOL _bFlag = MTRUE;
 	/* MUINT32 buffer_exist = 0; */
-	CQ_RTBC_FBC p1_fbc[_rt_dma_max_];
+	CQ_RTBC_FBC *p1_fbc;
 	/* MUINT32 p1_fbc_reg[_rt_dma_max_]; */
-	unsigned long p1_fbc_reg[_rt_dma_max_];
+	unsigned long *p1_fbc_reg;
 	/* MUINT32 p1_dma_addr_reg[_rt_dma_max_]; */
-	unsigned long p1_dma_addr_reg[_rt_dma_max_];
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
-	ISP_RT_BUF_INFO_STRUCT rt_buf_info;
-	ISP_DEQUE_BUF_INFO_STRUCT deque_buf;
+	unsigned long *p1_dma_addr_reg;
+	unsigned long	flags;
+	ISP_RT_BUF_INFO_STRUCT *rt_buf_info;
+	ISP_DEQUE_BUF_INFO_STRUCT *deque_buf;
 	eISPIrq irqT = _IRQ_MAX;
 	eISPIrq irqT_Lock = _IRQ_MAX;
 	MBOOL CurVF_En = MFALSE;
@@ -4666,6 +4666,20 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 	}
 	/*      */
 	if (copy_from_user(&rt_buf_ctrl, (void __user *)Param, sizeof(ISP_BUFFER_CTRL_STRUCT)) == 0) {
+		p1_fbc          = kcalloc(_rt_dma_max_, sizeof(CQ_RTBC_FBC), GFP_KERNEL);
+		p1_fbc_reg      = kcalloc(_rt_dma_max_, sizeof(unsigned long), GFP_KERNEL);
+		p1_dma_addr_reg = kcalloc(_rt_dma_max_, sizeof(unsigned long), GFP_KERNEL);
+		rt_buf_info     = kzalloc(sizeof(ISP_RT_BUF_INFO_STRUCT), GFP_KERNEL);
+		deque_buf       = kzalloc(sizeof(ISP_DEQUE_BUF_INFO_STRUCT), GFP_KERNEL);
+		if ((NULL == p1_fbc) || (NULL == p1_fbc_reg) || (NULL == p1_dma_addr_reg) ||
+			(NULL == rt_buf_info) || (NULL == deque_buf)) {
+			kfree((unsigned int *)p1_fbc);
+			kfree(p1_fbc_reg);
+			kfree(p1_dma_addr_reg);
+			kfree(rt_buf_info);
+			kfree(deque_buf);
+			return -ENOMEM;
+		}
 		rt_dma = rt_buf_ctrl.buf_id;
 		/*      */
 		/* if(IspInfo.DebugMask & ISP_DBG_BUF_CTRL)     { */
@@ -4743,6 +4757,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 #endif
 			{
 				LOG_ERR("[rtbc]invalid dma channel(%d)", rt_dma);
+
+				kfree((unsigned int *)p1_fbc);
+				kfree(p1_fbc_reg);
+				kfree(p1_dma_addr_reg);
+				kfree(rt_buf_info);
+				kfree(deque_buf);
 				return -EFAULT;
 			}
 		}
@@ -4756,8 +4776,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 		case ISP_RT_BUF_CTRL_ENQUE:
 		case ISP_RT_BUF_CTRL_ENQUE_IMD:
 			/*      */
-			if (copy_from_user
-			    (&rt_buf_info, (void __user *)rt_buf_ctrl.data_ptr,
+			if (copy_from_user(rt_buf_info, (void __user *)rt_buf_ctrl.data_ptr,
 			     sizeof(ISP_RT_BUF_INFO_STRUCT)) == 0) {
 				reg_val = ISP_RD32(ISP_REG_ADDR_TG_VF_CON);
 				reg_val2 = ISP_RD32(ISP_REG_ADDR_TG2_VF_CON);
@@ -4832,129 +4851,75 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 						/*      copy_from_user()/copy_to_user() might sleep when page fault,
 						   it can't use in atomic context, e.g. spin_lock_irqsave()      */
 						/* spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqT_Lock]), flags); */
-					/**/	if (0 != rt_buf_ctrl.ex_data_ptr) {
-							/* borrow deque_buf.data memory , in order to shirnk memory     required,avoid compile err */
-					/**/		if (copy_from_user
-							    (&deque_buf.data[0],
-							     (void __user *)rt_buf_ctrl.ex_data_ptr,
-							     sizeof(ISP_RT_BUF_INFO_STRUCT)) == 0) {
-								spin_lock_irqsave(&
-										  (IspInfo.
-										   SpinLockIrq
-										   [irqT_Lock]),
-										  flags);
+					if (0 != rt_buf_ctrl.ex_data_ptr) {
+						/* borrow deque_buf->data memory,
+						in order to shirnk memory	required,avoid compile err */
+				/**/	if (copy_from_user(&deque_buf->data[0], (void __user *)rt_buf_ctrl.ex_data_ptr,
+							sizeof(ISP_RT_BUF_INFO_STRUCT)) == 0) {
+							spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqT_Lock]), flags);
 								/*      */
 								i = 0;
-					/**/			if (deque_buf.data[0].bufIdx !=
-								    0xFFFF) {
-									/* replace the specific buffer with the
-									   same bufIdx     */
+				/**/		if (deque_buf->data[0].bufIdx != 0xFFFF)	{
+								/* replace the specific	buffer with	the	same bufIdx	*/
 									/* LOG_ERR("[rtbc][replace2]Search By Idx"); */
-					/**/				for (i = 0;
-									     i < ISP_RT_BUF_SIZE;
-									     i++) {
-					/**/					if (pstRTBuf->
-										    ring_buf
-										    [rt_dma].
-										    data[i].
-										    bufIdx ==
-										    deque_buf.
-										    data[0].bufIdx)
+				/**/			for	(i = 0;	i <	ISP_RT_BUF_SIZE; i++) {
+					/**/			if (pstRTBuf->ring_buf[rt_dma].data[i].bufIdx ==
+						/**/			deque_buf->data[0].bufIdx)
 											break;
 									}
-					/**/			} else {
+							} else {
 									/*      */
 									/* LOG_ERR("[rtbc][replace2]Search By Addr+"); */
-					/**/				for (i = 0;
-									     i < ISP_RT_BUF_SIZE;
-									     i++) {
-					/**/					if (pstRTBuf->
-										    ring_buf
-										    [rt_dma].
-										    data[i].
-										    base_pAddr ==
-										    rt_buf_info.
-										    base_pAddr) {
-											/* LOG_ERR("[rtbc][replace2]
-											Search By   Addr i[%d]", i); */
+				/**/			for (i = 0; i < ISP_RT_BUF_SIZE; i++) {
+					/**/			if (pstRTBuf->ring_buf[rt_dma].data[i].base_pAddr ==
+						/**/			rt_buf_info->base_pAddr) {
+										/* LOG_ERR("[rtbc][replace2]Search By	Addr i[%d]", i);*/
 											break;
 										}
 									}
 								}
 
-				/**/	/**/			if (i == ISP_RT_BUF_SIZE) {
+							if (i == ISP_RT_BUF_SIZE) {
 									/* error: can't search the buffer... */
-									LOG_ERR
-									    ("[rtbc][replace2]error Can't get the idx-(0x%x)/Addr(0x%x) buf\n",
-									     deque_buf.data[0].
-									     bufIdx,
-									     rt_buf_info.
-									     base_pAddr);
-									spin_unlock_irqrestore(&
-											       (IspInfo.
-												SpinLockIrq
-												[irqT_Lock]),
-											       flags);
-									IRQ_LOG_PRINTER(irqT, 0,
-											_LOG_DBG);
+				/**/			LOG_ERR(
+								  "[rtbc][replace2]error Can't get the idx-(0x%x)/Addr(0x%x) buf\n",
+								  deque_buf->data[0].bufIdx,
+								  rt_buf_info->base_pAddr);
+								spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqT_Lock]), flags);
+								IRQ_LOG_PRINTER(irqT, 0, _LOG_DBG);
 
-				/**/	/**/				for (i = 0;
-									     i < ISP_RT_BUF_SIZE;
-									     i += 4) {
-										LOG_ERR
-										    ("[rtbc][replace2]error idx-(0x%x/0x%x/0x%x/0x%x)\n",
-										     pstRTBuf->
-										     ring_buf
-										     [rt_dma].
-										     data[i +
-											  0].bufIdx,
-										     pstRTBuf->
-										     ring_buf
-										     [rt_dma].
-										     data[i +
-											  1].bufIdx,
-										     pstRTBuf->
-										     ring_buf
-										     [rt_dma].
-										     data[i +
-											  2].bufIdx,
-										     pstRTBuf->
-										     ring_buf
-										     [rt_dma].
-										     data[i +
-											  3].
-										     bufIdx);
+								for	(i = 0;	i <	ISP_RT_BUF_SIZE; i += 4) {
+									LOG_ERR("[rtbc][replace2]error idx-(0x%x/0x%x/0x%x/0x%x)\n",
+									  pstRTBuf->ring_buf[rt_dma].data[i+0].bufIdx,
+									  pstRTBuf->ring_buf[rt_dma].data[i+1].bufIdx,
+									  pstRTBuf->ring_buf[rt_dma].data[i+2].bufIdx,
+									  pstRTBuf->ring_buf[rt_dma].data[i+3].bufIdx);
 									}
+
+								kfree((unsigned int *)p1_fbc);
+								kfree(p1_fbc_reg);
+								kfree(p1_dma_addr_reg);
+								kfree(rt_buf_info);
+								kfree(deque_buf);
 									return -EFAULT;
 								}
-								LOG_DBG("[rtbc]dma(%d),old(%d) PA(0x%x) VA(0x%x)",
-								   rt_dma, i, pstRTBuf->ring_buf[rt_dma].data[i].
-								   base_pAddr, pstRTBuf->ring_buf[rt_dma].data[i].
-								   base_vAddr);
-								/* IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG,
-									       "[rtbc][replace2]dma(%d),idx(%d) PA(0x%x_0x%x)\n",
+							LOG_DBG("[rtbc][replace2]dma(%d),idx(%d) PA(0x%x_0x%x)",
+							rt_dma, i, pstRTBuf->ring_buf[rt_dma].data[i].base_pAddr, pstRTBuf->ring_buf[rt_dma].data[i].base_vAddr);
+							/* IRQ_LOG_KEEPER(irqT, 0,	_LOG_DBG, "[rtbc][replace2]dma(%d),idx(%d) PA(0x%x_0x%x)\n",
 									       rt_dma, i,
-									       pstRTBuf->
-									       ring_buf[rt_dma].
-									       data[i].base_pAddr,
-									       deque_buf.data[0].
-									       base_pAddr);*/
+								pstRTBuf->ring_buf[rt_dma].data[i].base_pAddr,
+								deque_buf->data[0].base_pAddr);*/
 								/* spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqT]), flags); */
-								pstRTBuf->ring_buf[rt_dma].data[i].
-								    memID = deque_buf.data[0].memID;
-								pstRTBuf->ring_buf[rt_dma].data[i].
-								    size = deque_buf.data[0].size;
-								pstRTBuf->ring_buf[rt_dma].data[i].
-								    base_pAddr =
-								    deque_buf.data[0].base_pAddr;
-								pstRTBuf->ring_buf[rt_dma].data[i].
-								    base_vAddr =
-								    deque_buf.data[0].base_vAddr;
-								pstRTBuf->ring_buf[rt_dma].data[i].
-								    bFilled = ISP_RTBC_BUF_EMPTY;
-								pstRTBuf->ring_buf[rt_dma].data[i].
-								    image.frm_cnt =
-								    _INVALID_FRM_CNT_;
+							pstRTBuf->ring_buf[rt_dma].data[i].memID =
+								deque_buf->data[0].memID;
+							pstRTBuf->ring_buf[rt_dma].data[i].size	=
+								deque_buf->data[0].size;
+							pstRTBuf->ring_buf[rt_dma].data[i].base_pAddr =
+								deque_buf->data[0].base_pAddr;
+							pstRTBuf->ring_buf[rt_dma].data[i].base_vAddr =
+								deque_buf->data[0].base_vAddr;
+							pstRTBuf->ring_buf[rt_dma].data[i].bFilled = ISP_RTBC_BUF_EMPTY;
+							pstRTBuf->ring_buf[rt_dma].data[i].image.frm_cnt = _INVALID_FRM_CNT_;
 
 #ifdef _rtbc_buf_que_2_0_
 				/**/	/**/			if (pstRTBuf->ring_buf[rt_dma].
@@ -4977,6 +4942,11 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 									     pstRTBuf->
 									     ring_buf[rt_dma].
 									     data[i].base_pAddr);
+									kfree((unsigned int *)p1_fbc);
+									kfree(p1_fbc_reg);
+									kfree(p1_dma_addr_reg);
+									kfree(rt_buf_info);
+									kfree(deque_buf);
 									return -EFAULT;
 								}
 								/* LOG_INF("RTBC_DBG7 e_dma_%d:%d %d %d\n",
@@ -4997,6 +4967,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 								/* LOG_ERR("[rtbc][ENQUE_ext]:copy_from_user fail,
 								dst_buf(0x%lx), user_buf(0x%lx)",
 								   &deque_buf.data[0],  rt_buf_ctrl.ex_data_ptr); */
+
+								kfree((unsigned int *)p1_fbc);
+								kfree(p1_fbc_reg);
+								kfree(p1_dma_addr_reg);
+								kfree(rt_buf_info);
+								kfree(deque_buf);
 								return -EAGAIN;
 							}
 				/**/	/**/	} else {	/*     this case for camsv     & pass1 fw rtbc */
@@ -5008,7 +4984,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 								/*      */
 				/**/		/**/		if (pstRTBuf->ring_buf[rt_dma].
 								    data[i].base_pAddr ==
-								    rt_buf_info.base_pAddr) {
+								    rt_buf_info->base_pAddr) {
 									/* LOG_DBG("[rtbc]dma(%d),old(%d) PA(0x%x)
 									  VA(0x%x)",
 									   rt_dma,i,pstRTBuf->ring_buf[rt_dma].
@@ -5052,12 +5028,18 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 										     [rt_dma].
 										     data[i].
 										     base_pAddr);
+
+										kfree((unsigned int *)p1_fbc);
+										kfree(p1_fbc_reg);
+										kfree(p1_dma_addr_reg);
+										kfree(rt_buf_info);
+										kfree(deque_buf);
 										return -EFAULT;
 									}
 
 									/* double check */
 				/**/		/**/			if (1) {
-				/**/		/**/				if (rt_buf_info.
+				/**/		/**/				if (rt_buf_info->
 										    bufIdx !=
 										    pstRTBuf->
 										    ring_buf
@@ -5065,7 +5047,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 										    data[i].bufIdx)
 											LOG_ERR
 											    ("[rtbc][replace2]error:	BufIdx MisMatch. 0x%x/0x%x",
-											     rt_buf_info.
+											     rt_buf_info->
 											     bufIdx,
 											     pstRTBuf->
 											     ring_buf
@@ -5101,7 +5083,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 								LOG_ERR
 								    ("[rtbc][replace3]can't find	thespecified Addr(0x%x)\n",
-								     rt_buf_info.base_pAddr);
+								     rt_buf_info->base_pAddr);
 							}
 						}
 						/* set RCN_INC = 1; */
@@ -5589,7 +5571,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 							fps(%d/%d/%d/%d)us", */
 							LOG_DBG
 							    ("[rtbc][ENQUE]:dma(%d),PA(0x%x),O(0x%x),ZO(0x%x),O_D(0x%x),ZO_D(0x%x),camsv(0x%x/0x%x)fps(%d/%d/%d/%d)us,rtctrl_%d\n",
-							     rt_dma, rt_buf_info.base_pAddr,
+							     rt_dma, rt_buf_info->base_pAddr,
 							     ISP_RD32(ISP_REG_ADDR_IMGO_BASE_ADDR),
 							     ISP_RD32(ISP_REG_ADDR_RRZO_BASE_ADDR),
 							     ISP_RD32
@@ -5608,11 +5590,17 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 						}
 					}
 				} else {
-					ISP_RTBC_ENQUE(rt_dma, &rt_buf_info);
+					ISP_RTBC_ENQUE(rt_dma, rt_buf_info);
 				}
 
 			} else {
 				LOG_ERR("[rtbc][ENQUE]:copy_from_user fail");
+
+				kfree((unsigned int *)p1_fbc);
+				kfree(p1_fbc_reg);
+				kfree(p1_dma_addr_reg);
+				kfree(rt_buf_info);
+				kfree(deque_buf);
 				return -EFAULT;
 			}
 			break;
@@ -5645,7 +5633,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					MUINT32 out = 0;
 					MUINT32 _magic;
 
-					deque_buf.count = P1_DEQUE_CNT;
+					deque_buf->count = P1_DEQUE_CNT;
 					spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqT_Lock]), flags);
 #ifdef _rtbc_buf_que_2_0_
 					/* p1_fbc[rt_dma].Bits.WCNT - 1;       //WCNT = [1,2,..]     */
@@ -5653,9 +5641,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					pstRTBuf->ring_buf[rt_dma].read_idx =
 					    (pstRTBuf->ring_buf[rt_dma].read_idx +
 					     1) % pstRTBuf->ring_buf[rt_dma].total_count;
-					if (deque_buf.count != P1_DEQUE_CNT) {
+					if (deque_buf->count != P1_DEQUE_CNT) {
 						LOG_ERR("support only deque	1 buf at 1 time\n");
-						deque_buf.count = P1_DEQUE_CNT;
+						deque_buf->count = P1_DEQUE_CNT;
 					}
 #else
 					iBuf = p1_fbc[rt_dma].Bits.RCNT - 1;	/* RCNT = [1,2,3,...] */
@@ -5666,101 +5654,101 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].bFilled)
 						LOG_ERR("the same buffer deque twice\n");
 
-					/* for (i=0; i<deque_buf.count; i++) { */
+					/* for (i=0; i<deque_buf->count; i++) { */
 					/* MUINT32 out; */
 
-					deque_buf.data[i].memID =
+					deque_buf->data[i].memID =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].memID;
-					deque_buf.data[i].size =
+					deque_buf->data[i].size =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].size;
-					deque_buf.data[i].base_vAddr =
+					deque_buf->data[i].base_vAddr =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].base_vAddr;
-					deque_buf.data[i].base_pAddr =
+					deque_buf->data[i].base_pAddr =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].base_pAddr;
-					deque_buf.data[i].timeStampS =
+					deque_buf->data[i].timeStampS =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].timeStampS;
-					deque_buf.data[i].timeStampUs =
+					deque_buf->data[i].timeStampUs =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].timeStampUs;
-					deque_buf.data[i].image.w =
+					deque_buf->data[i].image.w =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.w;
-					deque_buf.data[i].image.h =
+					deque_buf->data[i].image.h =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.h;
-					deque_buf.data[i].image.xsize =
+					deque_buf->data[i].image.xsize =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.xsize;
-					deque_buf.data[i].image.stride =
+					deque_buf->data[i].image.stride =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.stride;
-					deque_buf.data[i].image.bus_size =
+					deque_buf->data[i].image.bus_size =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf +
 									    i].image.bus_size;
-					deque_buf.data[i].image.fmt =
+					deque_buf->data[i].image.fmt =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.fmt;
-					deque_buf.data[i].image.pxl_id =
+					deque_buf->data[i].image.pxl_id =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.pxl_id;
-					deque_buf.data[i].image.wbn =
+					deque_buf->data[i].image.wbn =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.wbn;
-					deque_buf.data[i].image.ob =
+					deque_buf->data[i].image.ob =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.ob;
-					deque_buf.data[i].image.lsc =
+					deque_buf->data[i].image.lsc =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.lsc;
-					deque_buf.data[i].image.rpg =
+					deque_buf->data[i].image.rpg =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.rpg;
-					deque_buf.data[i].image.m_num_0 =
+					deque_buf->data[i].image.m_num_0 =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.m_num_0;
-					deque_buf.data[i].image.frm_cnt =
+					deque_buf->data[i].image.frm_cnt =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].image.frm_cnt;
-					deque_buf.data[i].bProcessRaw =
+					deque_buf->data[i].bProcessRaw =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].bProcessRaw;
-					deque_buf.data[i].rrzInfo.srcX =
+					deque_buf->data[i].rrzInfo.srcX =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].rrzInfo.srcX;
-					deque_buf.data[i].rrzInfo.srcY =
+					deque_buf->data[i].rrzInfo.srcY =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].rrzInfo.srcY;
-					deque_buf.data[i].rrzInfo.srcW =
+					deque_buf->data[i].rrzInfo.srcW =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].rrzInfo.srcW;
-					deque_buf.data[i].rrzInfo.srcH =
+					deque_buf->data[i].rrzInfo.srcH =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].rrzInfo.srcH;
-					deque_buf.data[i].rrzInfo.dstW =
+					deque_buf->data[i].rrzInfo.dstW =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].rrzInfo.dstW;
-					deque_buf.data[i].rrzInfo.dstH =
+					deque_buf->data[i].rrzInfo.dstH =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].rrzInfo.dstH;
-					deque_buf.data[i].dmaoCrop.x =
+					deque_buf->data[i].dmaoCrop.x =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].dmaoCrop.x;
-					deque_buf.data[i].dmaoCrop.y =
+					deque_buf->data[i].dmaoCrop.y =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].dmaoCrop.y;
-					deque_buf.data[i].dmaoCrop.w =
+					deque_buf->data[i].dmaoCrop.w =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].dmaoCrop.w;
-					deque_buf.data[i].dmaoCrop.h =
+					deque_buf->data[i].dmaoCrop.h =
 					    pstRTBuf->ring_buf[rt_dma].data[iBuf + i].dmaoCrop.h;
 
 #ifdef _MAGIC_NUM_ERR_HANDLING_
 
 					/*LOG_ERR("[rtbc][deque][m_num]:d(%d),fc(0x%x),lfc0x%x,m0(0x%x),lm#(0x%x)\n",
 					   rt_dma,      \
-					   deque_buf.data[i].image.frm_cnt, \
+					   deque_buf->data[i].image.frm_cnt, \
 					   m_LastFrmCnt[rt_dma] \
-					   ,deque_buf.data[i].image.m_num_0, \
+					   ,deque_buf->data[i].image.m_num_0, \
 					   m_LastMNum[rt_dma]);
 					 */
 
-					_magic = deque_buf.data[i].image.m_num_0;
+					_magic = deque_buf->data[i].image.m_num_0;
 
-					if (_DUMMY_MAGIC_ & deque_buf.data[i].image.m_num_0)
+					if (_DUMMY_MAGIC_ & deque_buf->data[i].image.m_num_0)
 						_magic =
-						    (deque_buf.data[i].image.
+						    (deque_buf->data[i].image.
 						     m_num_0 & (~_DUMMY_MAGIC_));
 
 
-					if ((_INVALID_FRM_CNT_ == deque_buf.data[i].image.frm_cnt)
+					if ((_INVALID_FRM_CNT_ == deque_buf->data[i].image.frm_cnt)
 					    || (m_LastMNum[rt_dma] > _magic)) {
-					/**/	if ((_DUMMY_MAGIC_ & deque_buf.data[i].image.
+					/**/	if ((_DUMMY_MAGIC_ & deque_buf->data[i].image.
 						     m_num_0) == 0)
-							deque_buf.data[i].image.m_num_0 |=
+							deque_buf->data[i].image.m_num_0 |=
 							    _UNCERTAIN_MAGIC_NUM_FLAG_;
 						/*      */
 						IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG,
 							       "m# uncertain:dma(%d),m0(0x%x),fcnt(0x%x),Lm#(0x%x)",
 							       rt_dma,
-							       deque_buf.data[i].image.m_num_0,
-							       deque_buf.data[i].image.frm_cnt,
+							       deque_buf->data[i].image.m_num_0,
+							       deque_buf->data[i].image.frm_cnt,
 							       m_LastMNum[rt_dma]);
 #ifdef T_STAMP_2_0
 					/**/	if (m_T_STAMP.fps > SlowMotion) {
@@ -5786,79 +5774,76 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					DMA_TRANS(rt_dma, out);
 					pstRTBuf->ring_buf[rt_dma].data[iBuf + i].bFilled =
 					    ISP_RTBC_BUF_LOCKED;
-					deque_buf.sof_cnt = sof_count[out];
-					deque_buf.img_cnt = pstRTBuf->ring_buf[rt_dma].img_cnt;
+					deque_buf->sof_cnt = sof_count[out];
+					deque_buf->img_cnt = pstRTBuf->ring_buf[rt_dma].img_cnt;
 					spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqT_Lock]),
 							       flags);
 					/* LOG_INF("RTBC_DBG7 d_dma_%d:%d %d %d\n",
 					   rt_dma,pstRTBuf->ring_buf[rt_dma].data[0].bFilled,pstRTBuf->ring_buf[rt_dma].data[1].bFilled,pstRTBuf->ring_buf[rt_dma].data[2].bFilled); */
 					if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL) {
-						/*LOG_DBG(*/
-						IRQ_LOG_KEEPER(irqT,  0, _LOG_DBG,
-						    "[rtbc][DEQUE](%d):d(%d)/id(0x%x)/bs(0x%x)/va(0x%llx)/pa(0x%x)/t(%d.%d)/img(%d,%d,%d,%d,%d,%d,%d,%d,%d)/m(0x%x)/fc(%d)/rrz(%d,%d,%d,%d,%d,%d),dmao(%d,%d,%d,%d),lm#(0x%x)",
-						     iBuf + i, rt_dma, deque_buf.data[i].memID,
-						     deque_buf.data[i].size,
-						     deque_buf.data[i].base_vAddr,
-						     deque_buf.data[i].base_pAddr,
-						     deque_buf.data[i].timeStampS,
-						     deque_buf.data[i].timeStampUs,
-						     deque_buf.data[i].image.w,
-						     deque_buf.data[i].image.h,
-						     deque_buf.data[i].image.stride,
-						     deque_buf.data[i].image.bus_size,
-						     deque_buf.data[i].image.fmt,
-						     deque_buf.data[i].image.wbn,
-						     deque_buf.data[i].image.ob,
-						     deque_buf.data[i].image.lsc,
-						     deque_buf.data[i].image.rpg,
-						     deque_buf.data[i].image.m_num_0,
-						     deque_buf.data[i].image.frm_cnt,
-						     deque_buf.data[i].rrzInfo.srcX,
-						     deque_buf.data[i].rrzInfo.srcY,
-						     deque_buf.data[i].rrzInfo.srcW,
-						     deque_buf.data[i].rrzInfo.srcH,
-						     deque_buf.data[i].rrzInfo.dstW,
-						     deque_buf.data[i].rrzInfo.dstH,
-						     deque_buf.data[i].dmaoCrop.x,
-						     deque_buf.data[i].dmaoCrop.y,
-						     deque_buf.data[i].dmaoCrop.w,
-						     deque_buf.data[i].dmaoCrop.h,
+					/*LOG_DBG("[rtbc][DEQUE](%d):d(%d)/id(0x%x)/bs(0x%x)/va(0x%llx)/pa(0x%x)/t(%d.%d)/img(%d,%d,%d,%d,%d,%d,%d,%d,%d)/m(0x%x)/fc(%d)/rrz(%d,%d,%d,%d,%d,%d),dmao(%d,%d,%d,%d),lm#(0x%x)",*/
+					IRQ_LOG_KEEPER(irqT, 0,	_LOG_DBG, "[rtbc][DEQUE](%d):d(%d)/id(0x%x)/bs(0x%x)/va(0x%llx)/pa(0x%x)/t(%d.%d)/img(%d,%d,%d,%d,%d,%d,%d,%d,%d)/m(0x%x)/fc(%d)/rrz(%d,%d,%d,%d,%d,%d),dmao(%d,%d,%d,%d),lm#(0x%x)",
+						iBuf+i,
+						rt_dma,
+						deque_buf->data[i].memID,
+						     deque_buf->data[i].size,
+						     deque_buf->data[i].base_vAddr,
+						     deque_buf->data[i].base_pAddr,
+						     deque_buf->data[i].timeStampS,
+						     deque_buf->data[i].timeStampUs,
+						     deque_buf->data[i].image.w,
+						     deque_buf->data[i].image.h,
+						     deque_buf->data[i].image.stride,
+						     deque_buf->data[i].image.bus_size,
+						     deque_buf->data[i].image.fmt,
+						     deque_buf->data[i].image.wbn,
+						     deque_buf->data[i].image.ob,
+						     deque_buf->data[i].image.lsc,
+						     deque_buf->data[i].image.rpg,
+						     deque_buf->data[i].image.m_num_0,
+						     deque_buf->data[i].image.frm_cnt,
+						     deque_buf->data[i].rrzInfo.srcX,
+						     deque_buf->data[i].rrzInfo.srcY,
+						     deque_buf->data[i].rrzInfo.srcW,
+						     deque_buf->data[i].rrzInfo.srcH,
+						     deque_buf->data[i].rrzInfo.dstW,
+						     deque_buf->data[i].rrzInfo.dstH,
+						     deque_buf->data[i].dmaoCrop.x,
+						     deque_buf->data[i].dmaoCrop.y,
+						     deque_buf->data[i].dmaoCrop.w,
+						     deque_buf->data[i].dmaoCrop.h,
 						     m_LastMNum[rt_dma]);
 					}
 					IRQ_LOG_PRINTER(irqT, 0, _LOG_DBG);
 					/*      */
-					/* tstamp =     deque_buf.data[i].timeStampS*1000000+deque_buf.data[i].timeStampUs; */
+				/* tstamp =	deque_buf->data[i].timeStampS*1000000+deque_buf->data[i].timeStampUs;*/
 					/* if ( (0 != prv_tstamp) && (prv_tstamp >=     tstamp) ) {     */
 					if (0 != prv_tstamp_s[rt_dma]) {
-					/**/	if ((prv_tstamp_s[rt_dma] >
-						     deque_buf.data[i].timeStampS)
-						    ||
-						    ((prv_tstamp_s[rt_dma] ==
-						      deque_buf.data[i].timeStampS)
-						     && (prv_tstamp_us[rt_dma] >=
-							 deque_buf.data[i].timeStampUs))) {
-							LOG_ERR
-							    ("[rtbc]TS rollback,D(%d),prv\"%d.%06d\",cur\"%d.%06d\"",
-							     rt_dma, prv_tstamp_s[rt_dma],
+					if ((prv_tstamp_s[rt_dma] >	deque_buf->data[i].timeStampS) ||
+							((prv_tstamp_s[rt_dma] == deque_buf->data[i].timeStampS) &&
+							 (prv_tstamp_us[rt_dma] >= deque_buf->data[i].timeStampUs))) {
+							LOG_ERR("[rtbc]TS rollback,D(%d),prv\"%d.%06d\",cur\"%d.%06d\"",
+								rt_dma,
+								prv_tstamp_s[rt_dma],
 							     prv_tstamp_us[rt_dma],
-							     deque_buf.data[i].timeStampS,
-							     deque_buf.data[i].timeStampUs);
+								deque_buf->data[i].timeStampS,
+								deque_buf->data[i].timeStampUs);
 						}
 					}
-					prv_tstamp_s[rt_dma] = deque_buf.data[i].timeStampS;
-					prv_tstamp_us[rt_dma] = deque_buf.data[i].timeStampUs;
-					/* }  , mark for for (i=0; i<deque_buf.count; i++) { */
+					prv_tstamp_s[rt_dma] = deque_buf->data[i].timeStampS;
+					prv_tstamp_us[rt_dma] = deque_buf->data[i].timeStampUs;
+					/* }  , mark for for (i=0; i<deque_buf->count; i++) { */
 				}
 			} else {
-				ISP_RTBC_DEQUE(rt_dma, &deque_buf);
+				ISP_RTBC_DEQUE(rt_dma, deque_buf);
 			}
 
-			if (deque_buf.count) {
+			if (deque_buf->count) {
 				/*      */
 				/* if(copy_to_user((void __user*)rt_buf_ctrl.data_ptr,
 				 &deque_buf, sizeof(ISP_DEQUE_BUF_INFO_STRUCT)) != 0)     */
 				if (copy_to_user
-				    ((void __user *)rt_buf_ctrl.pExtend, &deque_buf,
+				    ((void __user *)rt_buf_ctrl.pExtend, deque_buf,
 				     sizeof(ISP_DEQUE_BUF_INFO_STRUCT)) != 0) {
 					LOG_ERR("[rtbc][DEQUE]:copy_to_user	failed");
 					Ret = -EFAULT;
@@ -6012,6 +5997,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				break;
 			default:
 				LOG_ERR("[rtbc][CLEAR]N.S.(%d)\n", rt_dma);
+
+				kfree((unsigned int *)p1_fbc);
+				kfree(p1_fbc_reg);
+				kfree(p1_dma_addr_reg);
+				kfree(rt_buf_info);
+				kfree(deque_buf);
 				return -EFAULT;
 			}
 			/* remove, cause clear will     be involked     only when current module r totally stopped */
@@ -6024,8 +6015,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			pstRTBuf->ring_buf[rt_dma].active = 0;
 
 			for (i = 0; i < ISP_RT_BUF_SIZE; i++) {
-				if (pstRTBuf->ring_buf[rt_dma].data[i].base_pAddr ==
-				    rt_buf_info.base_pAddr) {
+				if (pstRTBuf->ring_buf[rt_dma].data[i]->base_pAddr ==
+				    rt_buf_info->base_pAddr) {
 					buffer_exist = 1;
 					break;
 				}
@@ -6129,7 +6120,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					bRawDEn = MFALSE;
 					for (z = 0; z < _rt_dma_max_; z++) {
 						pstRTBuf->ring_buf[z].active = array[z];
-
+							if (0 == array[z])
+							continue;
 					/**/	if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
 							LOG_INF("[rtbc][DMA_EN]:dma_%d:%d", z,
 								array[z]);
@@ -6156,6 +6148,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			break;
 
 		}
+		/*free*/
+		kfree((unsigned int *)p1_fbc);
+		kfree(p1_fbc_reg);
+		kfree(p1_dma_addr_reg);
+		kfree(rt_buf_info);
+		kfree(deque_buf);
 		/*      */
 	} else {
 		LOG_ERR("[rtbc]copy_from_user failed");
@@ -6882,7 +6880,17 @@ static MINT32 ISP_DONE_Buf_Time(eISPIrq irqT, CQ_RTBC_FBC *pFbc, unsigned long l
 #ifdef _rtbc_buf_que_2_0_
 
 	/* dynamic dma port     ctrl */
-	if (pstRTBuf->ring_buf[ch_imgo].active) {
+	if (pstRTBuf->ring_buf[ch_imgo].active && pstRTBuf->ring_buf[ch_rrzo].active) {
+		/* if P1_DON ISR is coming at output 2 imgo frames, but 1 rrzo frame (another rrzo frame is slowly),
+		we should refer to smaller WCNT, avoid patch too many times*/
+		if (rrzo_fbc.Bits.WCNT < imgo_fbc.Bits.WCNT) {
+			_dma_cur_fbc = rrzo_fbc;
+			_working_dma = ch_rrzo;
+		} else {
+			_dma_cur_fbc = imgo_fbc;
+			_working_dma = ch_imgo;
+		}
+	} else if (pstRTBuf->ring_buf[ch_imgo].active) {
 		_dma_cur_fbc = imgo_fbc;
 		_working_dma = ch_imgo;
 	} else if (pstRTBuf->ring_buf[ch_rrzo].active) {
