@@ -57,7 +57,7 @@ struct devinfo {
 
 #include "mt_ptp.h"
 #include "mt_cpufreq.h"
-#include <mach/mt_gpufreq.h>
+#include <mt_gpufreq.h>
 #include <mach/mt_thermal.h>
 #include <mach/mt_freqhopping.h>
 #include <mt-plat/mt_pmic_wrap.h>

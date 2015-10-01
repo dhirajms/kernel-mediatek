@@ -17,7 +17,6 @@
 
 #include "servicesext.h"
 #include "rgxdevice.h"
-
 #include <linux/platform_device.h>
 
 /* control APM is enabled or not  */
@@ -37,7 +36,6 @@
 
 /* used created thread to handle DVFS switch or not */
 #define MTK_DVFS_CREATE_THREAD  0
-
 
 #define MTK_MFG_DEBUG_SYS 0
 
@@ -93,9 +91,6 @@ int MTKMFGBaseInit(struct platform_device *pdev);
 int MTKMFGBaseDeInit(struct platform_device *pdev);
 int MTKMFGSystemInit(void);
 int MTKMFGSystemDeInit(void);
-
-void MTKSysSetInitialPowerState(void);
-void MTKSysRestoreInitialPowerState(void);
 
 /* below register interface in RGX sysconfig.c */
 PVRSRV_ERROR MTKDevPrePowerState(PVRSRV_DEV_POWER_STATE eNew,

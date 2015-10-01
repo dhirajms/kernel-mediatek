@@ -50,7 +50,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /* MTK */
 #if defined(CONFIG_TRACING) && defined(CONFIG_MTK_SCHED_TRACERS) && defined(MTK_GPU_DVFS)
-#include <mach/mt_gpufreq.h>
+#include "mt_gpufreq.h"
 #include <trace/events/mtk_events.h>
 #endif
 

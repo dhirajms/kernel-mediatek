@@ -22,24 +22,29 @@
 #include <linux/regulator/consumer.h>
 #include <linux/version.h>
 #include <linux/pm_runtime.h>
+#include <linux/module.h>
+#include <linux/sched.h>
+#include <linux/kernel.h>
+#include <linux/bug.h>
+#include <linux/mtk_gpu_utility.h>
+
+#include "mt_gpufreq.h"
+#include <trace/events/mtk_events.h>
+#include <dt-bindings/clock/mt8173-clk.h>
 
 #include "mtk_mfgsys.h"
-//#include "mt8173_mfgdvfs.h"
+#include "rgxdevice.h"
+#include "osfunc.h"
+#include "pvrsrv.h"
+#include "rgxhwperf.h"
+
 
 static char *top_mfg_clk_name[] = {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(3, 11, 0))
 	"mfg_mem_in_sel",
 	"mfg_axi_in_sel",
 	"top_axi",
 	"top_mem",
 	"top_mfg",
-#else
-	"MT_CG_MFG_POWER",
-	"MT_CG_MFG_AXI",
-	"MT_CG_MFG_MEM",
-	"MT_CG_MFG_G3D",
-	"MT_CG_MFG_26M",
-#endif
 };
 
 #define MAX_TOP_MFG_CLK ARRAY_SIZE(top_mfg_clk_name)
@@ -54,21 +59,55 @@ static char *top_mfg_clk_name[] = {
 #define REG_MFG_CG_SET 0x04
 #define REG_MFG_CG_CLR 0x08
 
+
+#define MTK_DEFER_DVFS_WORK_MS          10000
+#define MTK_DVFS_SWITCH_INTERVAL_MS     50
+#define MTK_SYS_BOOST_DURATION_MS       50
+#define MTK_WAIT_FW_RESPONSE_TIMEOUT_US 5000
+#define MTK_GPIO_REG_OFFSET             0x30
+#define MTK_GPU_FREQ_ID_INVALID         0xFFFFFFFF
+#define MTK_RGX_DEVICE_INDEX_INVALID    -1
+
+static IMG_HANDLE g_hDVFSTimer;
+static POS_LOCK ghDVFSLock;
+
+static IMG_BOOL g_bExit = IMG_TRUE;
+static IMG_INT32 g_iSkipCount;
+static IMG_UINT32 g_sys_dvfs_time_ms;
+
+static IMG_UINT32 g_bottom_freq_id;
+static IMG_UINT32 gpu_bottom_freq;
+static IMG_UINT32 g_cust_boost_freq_id;
+static IMG_UINT32 gpu_cust_boost_freq;
+static IMG_UINT32 g_cust_upbound_freq_id;
+static IMG_UINT32 gpu_cust_upbound_freq;
+
+static IMG_UINT32 gpu_power;
+static IMG_UINT32 gpu_current;
+static IMG_UINT32 gpu_dvfs_enable;
+static IMG_UINT32 boost_gpu_enable;
+static IMG_UINT32 gpu_debug_enable;
+static IMG_UINT32 gpu_dvfs_force_idle;
+static IMG_UINT32 gpu_dvfs_cb_force_idle;
+
+static IMG_UINT32 gpu_pre_loading;
+static IMG_UINT32 gpu_loading;
+static IMG_UINT32 gpu_block;
+static IMG_UINT32 gpu_idle;
+static IMG_UINT32 gpu_freq;
+
+
 static struct platform_device *sPVRLDMDev;
 #define GET_MTK_MFG_BASE(x) (struct mtk_mfg_base *)(x->dev.platform_data)
 
 static void mtk_mfg_set_clock_gating(void __iomem *reg)
 {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(3, 11, 0))
 	writel(REG_MFG_ALL, reg + REG_MFG_CG_SET);
-#endif
 }
 
 static void mtk_mfg_clr_clock_gating(void __iomem *reg)
 {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(3, 11, 0))
 	writel(REG_MFG_ALL, reg + REG_MFG_CG_CLR);
-#endif
 }
 
 static int mtk_mfg_prepare_clock(struct mtk_mfg_base *mfg_base)
@@ -113,6 +152,21 @@ static int mtk_mfg_disable_clock(struct mtk_mfg_base *mfg_base)
 	pm_runtime_put_sync(&mfg_base->pdev->dev);
 
 	return PVRSRV_OK;
+}
+
+static void MTKEnableMfgClock(void)
+{
+	struct mtk_mfg_base *mfg_base = GET_MTK_MFG_BASE(sPVRLDMDev);
+
+	mtk_mfg_enable_clock(mfg_base);
+}
+
+
+static void MTKDisableMfgClock(void)
+{
+	struct mtk_mfg_base *mfg_base = GET_MTK_MFG_BASE(sPVRLDMDev);
+
+	mtk_mfg_disable_clock(mfg_base);
 }
 
 #if defined(MTK_ENABLE_HWAPM)
@@ -265,16 +319,6 @@ static int mtk_mfg_unbind_device_resource(struct platform_device *pdev,
 	return 0;
 }
 
-void MTKSysSetInitialPowerState(void)
-{
-	mtk_mfg_debug("MTKSysSetInitialPowerState ---\n");
-}
-
-void MTKSysRestoreInitialPowerState(void)
-{
-	mtk_mfg_debug("MTKSysRestoreInitialPowerState ---\n");
-}
-
 PVRSRV_ERROR MTKDevPrePowerState(PVRSRV_DEV_POWER_STATE eNewPowerState,
 				    PVRSRV_DEV_POWER_STATE eCurrentPowerState,
 				    IMG_BOOL bForced)
@@ -288,12 +332,18 @@ PVRSRV_ERROR MTKDevPrePowerState(PVRSRV_DEV_POWER_STATE eNewPowerState,
 
 	if ((PVRSRV_DEV_POWER_STATE_OFF == eNewPowerState) &&
 	    (PVRSRV_DEV_POWER_STATE_ON == eCurrentPowerState)) {
+
+		if (g_hDVFSTimer && PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_SUCCESSFUL))
+			g_bExit = IMG_TRUE;
+
 #if !defined(PVR_DVFS)
 		mtk_mfg_gpu_calc_power_off(mfg_base);
 #endif
+
 #if defined(MTK_ENABLE_HWAPM)
 		mtk_mfg_disable_hw_apm(mfg_base);
 #endif
+
 		mtk_mfg_disable_clock(mfg_base);
 		mfg_base->power_on = false;
 	}
@@ -315,14 +365,21 @@ PVRSRV_ERROR MTKDevPostPowerState(PVRSRV_DEV_POWER_STATE eNewPowerState,
 
 	if ((PVRSRV_DEV_POWER_STATE_ON == eNewPowerState) &&
 	    (PVRSRV_DEV_POWER_STATE_OFF == eCurrentPowerState)) {
+
 		mtk_mfg_enable_clock(mfg_base);
+
 #if defined(MTK_ENABLE_HWAPM)
 		mtk_mfg_enable_hw_apm(mfg_base);
 #endif
+
 #if !defined(PVR_DVFS)
 		mtk_mfg_gpu_calc_power_on(mfg_base);
 #endif
+
 		mfg_base->power_on = true;
+
+		if (g_hDVFSTimer && PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_SUCCESSFUL))
+			g_bExit = IMG_FALSE;
 	}
 
 	mutex_unlock(&mfg_base->set_power_state);
@@ -403,6 +460,7 @@ int MTKMFGBaseDeInit(struct platform_device *pdev)
 	}
 
 	mtk_mfg_unprepare_clock(mfg_base);
+
 #if !defined(PVR_DVFS) && !defined(MTK_MFG_DVFS)
 	mtk_mfg_gpu_dvfs_deinit(mfg_base);
 #endif
@@ -411,9 +469,513 @@ int MTKMFGBaseDeInit(struct platform_device *pdev)
 	return 0;
 }
 
+static PVRSRV_DEVICE_NODE *MTKGetRGXDevNode(void)
+{
+	PVRSRV_DATA *psPVRSRVData = PVRSRVGetPVRSRVData();
+	IMG_UINT32 i;
+
+	for (i = 0; i < psPVRSRVData->ui32RegisteredDevices; i++) {
+		PVRSRV_DEVICE_NODE *psDeviceNode = psPVRSRVData->apsRegisteredDevNodes[i];
+
+		if (psDeviceNode && psDeviceNode->psDevConfig &&
+			psDeviceNode->psDevConfig->eDeviceType == PVRSRV_DEVICE_TYPE_RGX)
+			return psDeviceNode;
+	}
+
+	return NULL;
+}
+
+static IMG_UINT32 MTKGetRGXDevIdx(void)
+{
+	static IMG_UINT32 ms_ui32RGXDevIdx = MTK_RGX_DEVICE_INDEX_INVALID;
+
+	if (MTK_RGX_DEVICE_INDEX_INVALID == ms_ui32RGXDevIdx) {
+		PVRSRV_DATA *psPVRSRVData = PVRSRVGetPVRSRVData();
+		IMG_UINT32 i;
+
+		for (i = 0; i < psPVRSRVData->ui32RegisteredDevices; i++) {
+			PVRSRV_DEVICE_NODE *psDeviceNode = psPVRSRVData->apsRegisteredDevNodes[i];
+
+			if (psDeviceNode && psDeviceNode->psDevConfig &&
+				psDeviceNode->psDevConfig->eDeviceType == PVRSRV_DEVICE_TYPE_RGX) {
+				ms_ui32RGXDevIdx = i;
+				break;
+			}
+		}
+	}
+
+	return ms_ui32RGXDevIdx;
+}
+
+static void MTKWriteBackFreqToRGX(IMG_UINT32 ui32DeviceIndex, IMG_UINT32 ui32NewFreq)
+{
+	PVRSRV_DATA *psPVRSRVData = PVRSRVGetPVRSRVData();
+	PVRSRV_DEVICE_NODE *psDeviceNode = psPVRSRVData->apsRegisteredDevNodes[ui32DeviceIndex];
+	RGX_DATA *psRGXData = (RGX_DATA *)psDeviceNode->psDevConfig->hDevData;
+
+    /* kHz to Hz write to RGX as the same unit */
+	psRGXData->psRGXTimingInfo->ui32CoreClockSpeed = ui32NewFreq * 1000;
+}
+
+static IMG_BOOL MTKDoGpuDVFS(IMG_UINT32 ui32NewFreqID, IMG_BOOL bIdleDevice)
+{
+	PVRSRV_ERROR eResult;
+	IMG_UINT32 ui32RGXDevIdx;
+
+	if (mt_gpufreq_dvfs_ready() == false)
+		return IMG_FALSE;
+
+	/* bottom bound */
+	if (ui32NewFreqID > g_bottom_freq_id)
+		ui32NewFreqID = g_bottom_freq_id;
+
+	if (ui32NewFreqID > g_cust_boost_freq_id)
+		ui32NewFreqID = g_cust_boost_freq_id;
+
+	/* up bound */
+	if (ui32NewFreqID < g_cust_upbound_freq_id)
+		ui32NewFreqID = g_cust_upbound_freq_id;
+
+	/* thermal power limit */
+	if (ui32NewFreqID < mt_gpufreq_get_thermal_limit_index())
+		ui32NewFreqID = mt_gpufreq_get_thermal_limit_index();
+
+	/* no change */
+	if (ui32NewFreqID == mt_gpufreq_get_cur_freq_index())
+		return IMG_FALSE;
+
+	ui32RGXDevIdx = MTKGetRGXDevIdx();
+	if (MTK_RGX_DEVICE_INDEX_INVALID == ui32RGXDevIdx)
+		return IMG_FALSE;
+
+	eResult = PVRSRVDevicePreClockSpeedChange(ui32RGXDevIdx, bIdleDevice, (void *)NULL);
+	if ((PVRSRV_OK == eResult) || (PVRSRV_ERROR_RETRY == eResult)) {
+		unsigned int ui32GPUFreq;
+		unsigned int ui32CurFreqID;
+		PVRSRV_DEV_POWER_STATE ePowerState;
+
+		PVRSRVGetDevicePowerState(ui32RGXDevIdx, &ePowerState);
+		if (ePowerState != PVRSRV_DEV_POWER_STATE_ON)
+			MTKEnableMfgClock();
+
+		mt_gpufreq_target(ui32NewFreqID);
+
+		ui32CurFreqID = mt_gpufreq_get_cur_freq_index();
+		ui32GPUFreq = mt_gpufreq_get_frequency_by_level(ui32CurFreqID);
+		gpu_freq = ui32GPUFreq;
+
+		MTKWriteBackFreqToRGX(ui32RGXDevIdx, ui32GPUFreq);
+
+		if (ePowerState != PVRSRV_DEV_POWER_STATE_ON)
+			MTKDisableMfgClock();
+
+		if (PVRSRV_OK == eResult)
+			PVRSRVDevicePostClockSpeedChange(ui32RGXDevIdx, bIdleDevice, (void *)NULL);
+
+		return IMG_TRUE;
+	}
+
+	return IMG_FALSE;
+}
+
+static void MTKFreqInputBoostCB(unsigned int ui32BoostFreqID)
+{
+	if (g_iSkipCount > 0)
+		return;
+
+	if (boost_gpu_enable == 0)
+		return;
+
+	OSLockAcquire(ghDVFSLock);
+
+	if (ui32BoostFreqID < mt_gpufreq_get_cur_freq_index()) {
+		if (MTKDoGpuDVFS(ui32BoostFreqID, gpu_dvfs_cb_force_idle == 0 ? IMG_FALSE : IMG_TRUE))
+			g_sys_dvfs_time_ms = OSClockms();
+	}
+
+	OSLockRelease(ghDVFSLock);
+}
+
+static void MTKFreqPowerLimitCB(unsigned int ui32LimitFreqID)
+{
+	if (g_iSkipCount > 0)
+		return;
+
+	OSLockAcquire(ghDVFSLock);
+
+	if (ui32LimitFreqID > mt_gpufreq_get_cur_freq_index()) {
+		if (MTKDoGpuDVFS(ui32LimitFreqID, gpu_dvfs_cb_force_idle == 0 ? IMG_FALSE : IMG_TRUE))
+			g_sys_dvfs_time_ms = OSClockms();
+	}
+
+	OSLockRelease(ghDVFSLock);
+}
+
+
+/* Handle used by DebugFS to get GPU utilisation stats */
+static IMG_HANDLE ghGpuDVFSDebugFS;
+static void MTKCalGpuLoading(unsigned int *pui32Loading, unsigned int *pui32Block, unsigned int *pui32Idle)
+{
+	PVRSRV_DEVICE_NODE *psDeviceNode;
+	PVRSRV_RGXDEV_INFO *psDevInfo;
+
+	*pui32Loading = 0;
+	*pui32Block = 0;
+	*pui32Idle = 0;
+
+	psDeviceNode = MTKGetRGXDevNode();
+	if (!psDeviceNode)
+		return;
+
+	psDevInfo = psDeviceNode->pvDevice;
+
+	if (psDevInfo->pfnRegisterGpuUtilStats && psDevInfo->pfnGetGpuUtilStats &&
+		psDeviceNode->eHealthStatus == PVRSRV_DEVICE_HEALTH_STATUS_OK) {
+		RGXFWIF_GPU_UTIL_STATS sGpuUtilStats;
+		PVRSRV_ERROR eError = PVRSRV_OK;
+
+		if (ghGpuDVFSDebugFS == NULL)
+			eError = psDevInfo->pfnRegisterGpuUtilStats(&ghGpuDVFSDebugFS);
+
+		if (eError == PVRSRV_OK)
+			eError = psDevInfo->pfnGetGpuUtilStats(psDeviceNode, ghGpuDVFSDebugFS, &sGpuUtilStats);
+
+		if ((eError == PVRSRV_OK) && ((IMG_UINT32)sGpuUtilStats.ui64GpuStatCumulative)) {
+			IMG_UINT64 util;
+			IMG_UINT32 rem;
+
+			util = 100 * (sGpuUtilStats.ui64GpuStatActiveHigh + sGpuUtilStats.ui64GpuStatActiveLow);
+			*pui32Loading = OSDivide64(util, (IMG_UINT32)sGpuUtilStats.ui64GpuStatCumulative, &rem);
+
+			util = 100 * sGpuUtilStats.ui64GpuStatBlocked;
+			*pui32Block = OSDivide64(util, (IMG_UINT32)sGpuUtilStats.ui64GpuStatCumulative, &rem);
+
+			util = 100 * sGpuUtilStats.ui64GpuStatIdle;
+			*pui32Idle = OSDivide64(util, (IMG_UINT32)sGpuUtilStats.ui64GpuStatCumulative, &rem);
+		}
+	}
+}
+
+static IMG_BOOL MTKGpuDVFSPolicy(IMG_UINT32 ui32GPULoading, unsigned int *pui32NewFreqID)
+{
+	int i32MaxLevel = (int)(mt_gpufreq_get_dvfs_table_num() - 1);
+	int i32CurFreqID = (int)mt_gpufreq_get_cur_freq_index();
+	int i32NewFreqID = i32CurFreqID;
+
+	if (ui32GPULoading >= 99)
+		i32NewFreqID = 0;
+	else if (ui32GPULoading <= 1)
+		i32NewFreqID = i32MaxLevel;
+	else if (ui32GPULoading >= 85)
+		i32NewFreqID -= 2;
+	else if (ui32GPULoading <= 30)
+		i32NewFreqID += 2;
+	else if (ui32GPULoading >= 70)
+		i32NewFreqID -= 1;
+	else if (ui32GPULoading <= 50)
+		i32NewFreqID += 1;
+
+	if (i32NewFreqID < i32CurFreqID) {
+		if (gpu_pre_loading * 17 / 10 < ui32GPULoading)
+			i32NewFreqID -= 1;
+	} else if (i32NewFreqID > i32CurFreqID) {
+		if (ui32GPULoading * 17 / 10 < gpu_pre_loading)
+			i32NewFreqID += 1;
+	}
+
+	if (i32NewFreqID > i32MaxLevel)
+		i32NewFreqID = i32MaxLevel;
+	else if (i32NewFreqID < 0)
+		i32NewFreqID = 0;
+
+	if (i32NewFreqID != i32CurFreqID) {
+		*pui32NewFreqID = (unsigned int)i32NewFreqID;
+		return IMG_TRUE;
+	}
+
+	return IMG_FALSE;
+}
+
+static void MTKDVFSTimerFuncCB(void *pvData)
+{
+	IMG_UINT32 x1, x2, x3, y1, y2, y3;
+
+	int i32MaxLevel = (int)(mt_gpufreq_get_dvfs_table_num() - 1);
+	int i32CurFreqID = (int)mt_gpufreq_get_cur_freq_index();
+
+	x1 = 10000;
+	x2 = 30000;
+	x3 = 50000;
+	y1 = 50;
+	y2 = 430;
+	y3 = 750;
+
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKDVFSTimerFuncCB"));
+
+	if (gpu_dvfs_enable == 0) {
+		gpu_power = 0;
+		gpu_current = 0;
+		gpu_loading = 0;
+		gpu_block = 0;
+		gpu_idle = 0;
+
+		return;
+	}
+
+	if (g_iSkipCount > 0) {
+		gpu_power = 0;
+		gpu_current = 0;
+		gpu_loading = 0;
+		gpu_block = 0;
+		gpu_idle = 0;
+		g_iSkipCount -= 1;
+
+		return;
+	}
+
+	if ((!g_bExit) || (i32CurFreqID < i32MaxLevel)) {
+		IMG_UINT32 ui32NewFreqID;
+
+		gpu_power = 0;
+		gpu_current = 0;
+
+		MTKCalGpuLoading(&gpu_loading, &gpu_block, &gpu_idle);
+
+		OSLockAcquire(ghDVFSLock);
+
+		/* check system boost duration */
+		if ((g_sys_dvfs_time_ms > 0) && (OSClockms() - g_sys_dvfs_time_ms < MTK_SYS_BOOST_DURATION_MS)) {
+			OSLockRelease(ghDVFSLock);
+			return;
+		}
+
+		g_sys_dvfs_time_ms = 0;
+
+		/* do gpu dvfs */
+		if (MTKGpuDVFSPolicy(gpu_loading, &ui32NewFreqID))
+			MTKDoGpuDVFS(ui32NewFreqID, gpu_dvfs_force_idle == 0 ? IMG_FALSE : IMG_TRUE);
+
+		gpu_pre_loading = gpu_loading;
+
+		OSLockRelease(ghDVFSLock);
+	}
+}
+
+void MTKMFGEnableDVFSTimer(bool bEnable)
+{
+	/* OSEnableTimer() and OSDisableTimer() should be called sequentially, following call will lead to assertion.
+	   OSEnableTimer();
+	   OSEnableTimer();
+	   OSDisableTimer();
+	   ...
+	   bPreEnable is to avoid such scenario */
+	static bool bPreEnable;
+
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKMFGEnableDVFSTimer: %s (%s)",
+			bEnable ? "yes" : "no", bPreEnable ? "yes" : "no"));
+
+	if (g_hDVFSTimer) {
+		if (bEnable == true && bPreEnable == false) {
+			OSEnableTimer(g_hDVFSTimer);
+			bPreEnable = true;
+		} else if (bEnable == false && bPreEnable == true) {
+			OSDisableTimer(g_hDVFSTimer);
+			bPreEnable = false;
+		} else if (gpu_debug_enable)
+			BUG();
+	}
+}
+
+static void MTKBoostGpuFreq(void)
+{
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKBoostGpuFreq"));
+
+	MTKFreqInputBoostCB(0);
+}
+
+static void MTKSetBottomGPUFreq(unsigned int ui32FreqLevel)
+{
+	unsigned int ui32MaxLevel;
+
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKSetBottomGPUFreq: freq = %d", ui32FreqLevel));
+
+	ui32MaxLevel = mt_gpufreq_get_dvfs_table_num() - 1;
+	if (ui32MaxLevel < ui32FreqLevel)
+		ui32FreqLevel = ui32MaxLevel;
+
+	OSLockAcquire(ghDVFSLock);
+
+	/* 0 => The highest frequency
+	   table_num - 1 => The lowest frequency */
+	g_bottom_freq_id = ui32MaxLevel - ui32FreqLevel;
+	gpu_bottom_freq = mt_gpufreq_get_frequency_by_level(g_bottom_freq_id);
+
+	if (g_bottom_freq_id < mt_gpufreq_get_cur_freq_index())
+		MTKDoGpuDVFS(g_bottom_freq_id, gpu_dvfs_cb_force_idle == 0 ? IMG_FALSE : IMG_TRUE);
+
+	OSLockRelease(ghDVFSLock);
+}
+
+static unsigned int MTKCustomGetGpuFreqLevelCount(void)
+{
+	return mt_gpufreq_get_dvfs_table_num();
+}
+
+static void MTKCustomBoostGpuFreq(unsigned int ui32FreqLevel)
+{
+	unsigned int ui32MaxLevel;
+
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKCustomBoostGpuFreq: freq = %d", ui32FreqLevel));
+
+	ui32MaxLevel = mt_gpufreq_get_dvfs_table_num() - 1;
+	if (ui32MaxLevel < ui32FreqLevel)
+		ui32FreqLevel = ui32MaxLevel;
+
+	OSLockAcquire(ghDVFSLock);
+
+	/* 0 => The highest frequency
+	   table_num - 1 => The lowest frequency */
+	g_cust_boost_freq_id = ui32MaxLevel - ui32FreqLevel;
+	gpu_cust_boost_freq = mt_gpufreq_get_frequency_by_level(g_cust_boost_freq_id);
+
+	if (g_cust_boost_freq_id < mt_gpufreq_get_cur_freq_index())
+		MTKDoGpuDVFS(g_cust_boost_freq_id, gpu_dvfs_cb_force_idle == 0 ? IMG_FALSE : IMG_TRUE);
+
+	OSLockRelease(ghDVFSLock);
+}
+
+static void MTKCustomUpBoundGpuFreq(unsigned int ui32FreqLevel)
+{
+	unsigned int ui32MaxLevel;
+
+	if (gpu_debug_enable)
+		PVR_DPF((PVR_DBG_ERROR, "MTKCustomUpBoundGpuFreq: freq = %d", ui32FreqLevel));
+
+	ui32MaxLevel = mt_gpufreq_get_dvfs_table_num() - 1;
+	if (ui32MaxLevel < ui32FreqLevel)
+		ui32FreqLevel = ui32MaxLevel;
+
+	OSLockAcquire(ghDVFSLock);
+
+	/* 0 => The highest frequency
+	   table_num - 1 => The lowest frequency */
+	g_cust_upbound_freq_id = ui32MaxLevel - ui32FreqLevel;
+	gpu_cust_upbound_freq = mt_gpufreq_get_frequency_by_level(g_cust_upbound_freq_id);
+
+	if (g_cust_upbound_freq_id > mt_gpufreq_get_cur_freq_index())
+		MTKDoGpuDVFS(g_cust_upbound_freq_id, gpu_dvfs_cb_force_idle == 0 ? IMG_FALSE : IMG_TRUE);
+
+	OSLockRelease(ghDVFSLock);
+}
+
+static unsigned int MTKGetCustomBoostGpuFreq(void)
+{
+	unsigned int ui32MaxLevel = mt_gpufreq_get_dvfs_table_num() - 1;
+
+	return (ui32MaxLevel - g_cust_boost_freq_id);
+}
+
+static unsigned int MTKGetCustomUpBoundGpuFreq(void)
+{
+	unsigned int ui32MaxLevel = mt_gpufreq_get_dvfs_table_num() - 1;
+
+	return (ui32MaxLevel - g_cust_upbound_freq_id);
+}
+
+static IMG_UINT32 MTKGetGpuLoading(void)
+{
+	return gpu_loading;
+}
+
+static IMG_UINT32 MTKGetGpuBlock(void)
+{
+	return gpu_block;
+}
+
+static IMG_UINT32 MTKGetGpuIdle(void)
+{
+	return gpu_idle;
+}
+
+static IMG_UINT32 MTKGetPowerIndex(void)
+{
+	return gpu_current;
+}
 
 int MTKMFGSystemInit(void)
 {
+	PVRSRV_ERROR error;
+
+	error = OSLockCreate(&ghDVFSLock, LOCK_TYPE_PASSIVE);
+	if (error != PVRSRV_OK) {
+		PVR_DPF((PVR_DBG_ERROR, "Create DVFS Lock Failed"));
+		return error;
+	}
+
+	g_iSkipCount = MTK_DEFER_DVFS_WORK_MS / MTK_DVFS_SWITCH_INTERVAL_MS;
+
+	g_hDVFSTimer = OSAddTimer(MTKDVFSTimerFuncCB, (IMG_VOID *)NULL, MTK_DVFS_SWITCH_INTERVAL_MS);
+	if (!g_hDVFSTimer) {
+		OSLockDestroy(ghDVFSLock);
+		PVR_DPF((PVR_DBG_ERROR, "Create DVFS Timer Failed"));
+		return PVRSRV_ERROR_OUT_OF_MEMORY;
+	}
+
+	MTKMFGEnableDVFSTimer(true);
+
+#ifdef MTK_GPU_DVFS
+	gpu_dvfs_enable = 1;
+#else
+	gpu_dvfs_enable = 0;
+#endif
+
+	boost_gpu_enable = 1;
+
+	g_sys_dvfs_time_ms = 0;
+
+	g_bottom_freq_id = mt_gpufreq_get_dvfs_table_num() - 1;
+	gpu_bottom_freq = mt_gpufreq_get_frequency_by_level(g_bottom_freq_id);
+
+	g_cust_boost_freq_id = mt_gpufreq_get_dvfs_table_num() - 1;
+	gpu_cust_boost_freq = mt_gpufreq_get_frequency_by_level(g_cust_boost_freq_id);
+
+	g_cust_upbound_freq_id = 0;
+	gpu_cust_upbound_freq = mt_gpufreq_get_frequency_by_level(g_cust_upbound_freq_id);
+
+	gpu_debug_enable = 0;
+
+	mt_gpufreq_mfgclock_notify_registerCB(MTKEnableMfgClock, MTKDisableMfgClock);
+
+	mt_gpufreq_input_boost_notify_registerCB(MTKFreqInputBoostCB);
+	mt_gpufreq_power_limit_notify_registerCB(MTKFreqPowerLimitCB);
+
+	mtk_boost_gpu_freq_fp = MTKBoostGpuFreq;
+
+	mtk_set_bottom_gpu_freq_fp = MTKSetBottomGPUFreq;
+
+	mtk_custom_get_gpu_freq_level_count_fp = MTKCustomGetGpuFreqLevelCount;
+
+	mtk_custom_boost_gpu_freq_fp = MTKCustomBoostGpuFreq;
+
+	mtk_custom_upbound_gpu_freq_fp = MTKCustomUpBoundGpuFreq;
+
+	mtk_get_custom_boost_gpu_freq_fp = MTKGetCustomBoostGpuFreq;
+
+	mtk_get_custom_upbound_gpu_freq_fp = MTKGetCustomUpBoundGpuFreq;
+
+	/* mtk_enable_gpu_dvfs_timer_fp = MTKMFGEnableDVFSTimer; */
+
+	mtk_get_gpu_power_loading_fp = MTKGetPowerIndex;
+
+	mtk_get_gpu_loading_fp = MTKGetGpuLoading;
+	mtk_get_gpu_block_fp = MTKGetGpuBlock;
+	mtk_get_gpu_idle_fp = MTKGetGpuIdle;
+
 	mtk_mfg_debug("MTKMFGSystemInit\n");
 	return PVRSRV_OK;
 }
@@ -421,6 +983,32 @@ int MTKMFGSystemInit(void)
 int MTKMFGSystemDeInit(void)
 {
 	mtk_mfg_debug("MTKMFGSystemDeInit\n");
+	g_bExit = IMG_TRUE;
+
+	if (g_hDVFSTimer) {
+		MTKMFGEnableDVFSTimer(false);
+		OSRemoveTimer(g_hDVFSTimer);
+		g_hDVFSTimer = IMG_NULL;
+	}
+
+	if (ghDVFSLock)	{
+		OSLockDestroy(ghDVFSLock);
+		ghDVFSLock = NULL;
+	}
+
 	return PVRSRV_OK;
 }
 
+module_param(gpu_loading, uint, 0644);
+module_param(gpu_block, uint, 0644);
+module_param(gpu_idle, uint, 0644);
+module_param(gpu_power, uint, 0644);
+module_param(gpu_dvfs_enable, uint, 0644);
+module_param(boost_gpu_enable, uint, 0644);
+module_param(gpu_debug_enable, uint, 0644);
+module_param(gpu_dvfs_force_idle, uint, 0644);
+module_param(gpu_dvfs_cb_force_idle, uint, 0644);
+module_param(gpu_bottom_freq, uint, 0644);
+module_param(gpu_cust_boost_freq, uint, 0644);
+module_param(gpu_cust_upbound_freq, uint, 0644);
+module_param(gpu_freq, uint, 0644);

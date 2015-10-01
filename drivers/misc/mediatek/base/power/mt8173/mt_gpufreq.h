@@ -1,8 +1,6 @@
 #ifndef _MT_GPUFREQ_H
 #define _MT_GPUFREQ_H
 
-#include <linux/module.h>
-
 
 /**************************************************
 * GPU DVFS touch boost feature

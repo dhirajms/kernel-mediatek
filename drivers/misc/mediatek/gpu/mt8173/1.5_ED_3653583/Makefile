@@ -2,9 +2,9 @@
 
 OPTIM = -Os
 
-#RGX_TOP := $(srctree)/drivers/gpu/img/$(MTK_PLATFORM)/1.5_ED_3653583/
 RGX_TOP := $(srctree)/drivers/misc/mediatek/gpu/$(MTK_PLATFORM)/1.5_ED_3653583/
-#RGX_TOP := $(srctree)/drivers/misc/mediatek/gpu/$(MTK_PLATFORM)/rgx
+
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 
 VER := $(if $(filter eng,$(TARGET_BUILD_VARIANT)),eng,user)
 ccflags-y += -include $(RGX_TOP)/include/config_kernel_$(VER).h

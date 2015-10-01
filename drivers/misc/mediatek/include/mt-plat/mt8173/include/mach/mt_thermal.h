@@ -12,7 +12,7 @@
 
 #include "mt-plat/sync_write.h"
 #include <linux/types.h>
-#include "mach/mt_gpufreq.h"
+#include "mt_gpufreq.h"
 
 #if 1
 extern void __iomem *thermal_base;
