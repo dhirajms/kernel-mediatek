@@ -902,6 +902,11 @@ static IMG_UINT32 MTKGetGpuIdle(void)
 	return gpu_idle;
 }
 
+static IMG_UINT32 MTKGetGpuFreq(void)
+{
+	return gpu_freq;
+}
+
 static IMG_UINT32 MTKGetPowerIndex(void)
 {
 	return gpu_current;
@@ -968,13 +973,12 @@ int MTKMFGSystemInit(void)
 
 	mtk_get_custom_upbound_gpu_freq_fp = MTKGetCustomUpBoundGpuFreq;
 
-	/* mtk_enable_gpu_dvfs_timer_fp = MTKMFGEnableDVFSTimer; */
-
 	mtk_get_gpu_power_loading_fp = MTKGetPowerIndex;
 
 	mtk_get_gpu_loading_fp = MTKGetGpuLoading;
 	mtk_get_gpu_block_fp = MTKGetGpuBlock;
 	mtk_get_gpu_idle_fp = MTKGetGpuIdle;
+	mtk_get_gpu_freq_fp = MTKGetGpuFreq;
 
 	mtk_mfg_debug("MTKMFGSystemInit\n");
 	return PVRSRV_OK;
