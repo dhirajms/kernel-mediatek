@@ -974,7 +974,7 @@ static void mt_gpufreq_power_throttle_protect(void)
 	}
 
 	g_limited_max_id = limited_index;
-	pr_info("Final limit frequency upper bound to id = %d, frequency = %d\n",
+	pr_debug("Final limit frequency upper bound to id = %d, frequency = %d\n",
 		g_limited_max_id, mt_gpufreqs[g_limited_max_id].gpufreq_khz);
 
 	if (g_pGpufreq_power_limit_notify)
