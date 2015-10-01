@@ -22,7 +22,7 @@ typedef struct CmdqMdpModuleBaseVA {
 	long MDP_WROT0;
 	long MDP_WROT1;
 	long MDP_WDMA;
-	long VENC;
+/*	long VENC; */
 } CmdqMdpModuleBaseVA;
 static CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
 
@@ -43,7 +43,7 @@ IMP_MDP_MODULE_BASE_VA(MDP_MOUT1);
 IMP_MDP_MODULE_BASE_VA(MDP_WROT0);
 IMP_MDP_MODULE_BASE_VA(MDP_WROT1);
 IMP_MDP_MODULE_BASE_VA(MDP_WDMA);
-IMP_MDP_MODULE_BASE_VA(VENC);
+/* IMP_MDP_MODULE_BASE_VA(VENC); */
 #undef IMP_MDP_MODULE_BASE_VA
 
 #ifdef CMDQ_OF_SUPPORT
@@ -59,7 +59,7 @@ IMP_MDP_MODULE_BASE_VA(VENC);
 #define MDP_WROT0_BASE_VA cmdq_mdp_get_module_base_VA_MDP_WROT0()
 #define MDP_WROT1_BASE_VA cmdq_mdp_get_module_base_VA_MDP_WROT1()
 #define MDP_WDMA_BASE_VA cmdq_mdp_get_module_base_VA_MDP_WDMA()
-#define VENC_BASE_VA cmdq_mdp_get_module_base_VA_VENC()
+/* #define VENC_BASE_VA cmdq_mdp_get_module_base_VA_VENC() */
 #else
 #include <mach/mt_reg_base.h>
 #endif
@@ -156,7 +156,7 @@ void cmdq_mdp_init_module_base_VA(void)
 	gCmdqMdpModuleBaseVA.MDP_WROT1 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_WROT1");
 	gCmdqMdpModuleBaseVA.MDP_TDSHP0 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_TDSHP0");
 	gCmdqMdpModuleBaseVA.MDP_TDSHP1 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-MDP_TDSHP1");
-	gCmdqMdpModuleBaseVA.VENC = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-venc");
+/*	gCmdqMdpModuleBaseVA.VENC = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt8173-venc"); */
 #endif
 }
 
@@ -173,7 +173,7 @@ void cmdq_mdp_deinit_module_base_VA(void)
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_WROT1());
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_TDSHP0());
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_TDSHP1());
-	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_VENC());
+/*	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_VENC()); */
 
 	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(CmdqMdpModuleBaseVA));
 #else
@@ -228,8 +228,8 @@ struct MODULE_BASE {
 
 int32_t cmdqVEncDumpInfo(uint64_t engineFlag, int logLevel)
 {
-	if (engineFlag & (1LL << CMDQ_ENG_VIDEO_ENC))
-		cmdq_mdp_dump_venc(VENC_BASE_VA, "VENC");
+/*	if (engineFlag & (1LL << CMDQ_ENG_VIDEO_ENC)) */
+/*		cmdq_mdp_dump_venc(VENC_BASE_VA, "VENC"); */
 
 	return 0;
 }
