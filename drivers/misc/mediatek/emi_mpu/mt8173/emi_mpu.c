@@ -377,76 +377,59 @@ static u32 __id2mst(u32 id)
 	return MST_INVALID;
 }
 #endif
+
+/*
 static void __clear_emi_mpu_vio(void)
 {
-	KREE_SESSION_HANDLE emi_session;
-	MTEEC_PARAM param[4];
-	TZ_RESULT ret;
-
-	ret = KREE_CreateSession(TZ_TA_EMI_UUID, &emi_session);
-	if (ret != TZ_RESULT_SUCCESS)
-		pr_err("create emi session fail.\n");
-
-	/* call emi service in tz to clear emi violation*/
-	ret = KREE_TeeServiceCall(emi_session, TZCMD_EMI_CLR,
-							TZ_ParamTypes4(TZPT_VALUE_OUTPUT, TZPT_VALUE_OUTPUT,
-							TZPT_VALUE_OUTPUT, TZPT_VALUE_OUTPUT),
-							param);
-
-	ret = KREE_CloseSession(emi_session);
-	if (ret != TZ_RESULT_SUCCESS)
-		pr_err("close emi session fail.\n");
 
 }
-
+*/
 
 /*EMI MPU violation handler*/
 static irqreturn_t mpu_violation_irq(int irq, void *dev_id)
 {
-	u32 dbg_s, dbg_t, dbg_pqry;
+	u32 dbg_s, dbg_t, dbg_pqry, i;
 	u32 master_ID, domain_ID, wr_vio;
 	s32 region;
-	int i;
 	char *master_name;
 
-	dbg_s = readl(IOMEM(EMI_MPUS));
-	dbg_t = readl(IOMEM(EMI_MPUT));
+	KREE_SESSION_HANDLE emi_session;
+	MTEEC_PARAM param[4];
+	TZ_RESULT ret;
 
-	if (0 == dbg_s) {
+
+	pr_err("[EMI MPU] Violation information from TA.\n");
+
+	ret = KREE_CreateSession(TZ_TA_EMI_UUID, &emi_session);
+	if (ret != TZ_RESULT_SUCCESS)
+		return -1;
+
+	ret = KREE_TeeServiceCall(emi_session, TZCMD_EMI_REG,
+			TZ_ParamTypes4(TZPT_VALUE_OUTPUT, TZPT_VALUE_OUTPUT,
+			TZPT_VALUE_OUTPUT, TZPT_VALUE_OUTPUT), param);
+
+	dbg_s	  = (uint32_t)(param[0].value.a);
+	dbg_t	  = (uint32_t)(param[0].value.b);
+	master_ID = (uint32_t)(param[1].value.a);
+	domain_ID = (uint32_t)(param[1].value.b);
+	region	  = (uint32_t)(param[2].value.a);
+	dbg_pqry  = (uint32_t)(param[2].value.b);
+	wr_vio = (dbg_s >> 28) & 0x00000003;
+
+	ret = KREE_CloseSession(emi_session);
+	if (ret != TZ_RESULT_SUCCESS)
+		return -1;
+
+	if (dbg_s == 0) {
 		pr_err("It's not a MPU violation.\n");
 		return IRQ_NONE;
 	}
-	pr_err("It's a MPU violation.\n");
-
-	master_ID = (dbg_s & 0x00003FFF) | ((dbg_s & 0x0C000000) >> 12);
-	domain_ID = (dbg_s >> 14) & 0x00000003;
-	wr_vio = (dbg_s >> 28) & 0x00000003;
-	region = (dbg_s >> 16) & 0xFF;
 
 	for (i = 0; i < NR_REGION_ABORT; i++) {
 		if ((region >> i) & 1)
 			break;
 	}
-
 	region = (i >= NR_REGION_ABORT) ? -1 : i;
-
-	switch (domain_ID) {
-	case 0:
-		dbg_pqry = readl(IOMEM(EMI_MPUP));
-		break;
-	case 1:
-		dbg_pqry = readl(IOMEM(EMI_MPUQ));
-		break;
-	case 2:
-		dbg_pqry = readl(IOMEM(EMI_MPUR));
-		break;
-	case 3:
-		dbg_pqry = readl(IOMEM(EMI_MPUY));
-		break;
-	default:
-		dbg_pqry = 0;
-		break;
-	}
 
 	/*TBD: print the abort region */
 	pr_err("[EMI MPU] Debug info start ----------------------------------------\n");
@@ -473,10 +456,6 @@ static irqreturn_t mpu_violation_irq(int irq, void *dev_id)
 			dbg_s, dbg_t + EMI_PHY_OFFSET, master_name);
 	}
 #endif
-
-
-	pr_err("Clear emi violation status.\n");
-	__clear_emi_mpu_vio();
 
 	vio_addr = dbg_t + EMI_PHY_OFFSET;
 
@@ -1111,8 +1090,6 @@ static int __init emi_mpu_mod_init(void)
 	struct device_node *node;
 	unsigned int mpu_irq = 0;
 
-	pr_err("Initialize EMI MPU.\n");
-
 	/* DTS version */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-emi");
 	if (node) {
@@ -1125,13 +1102,13 @@ static int __init emi_mpu_mod_init(void)
 
 	spin_lock_init(&emi_mpu_lock);
 
+
 #ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
-	__clear_emi_mpu_vio();
+	/*pr_err("EMI MPU request in kernel.\n");*/
 
 	ret = request_irq(mpu_irq, (irq_handler_t) mpu_violation_irq,
 			IRQF_TRIGGER_LOW | IRQF_SHARED, "mt_emi_mpu",
 			&emi_mpu_ctrl_platform_drv);
-	pr_err("EMI irq is %d\n", mpu_irq);
 
 	if (ret != 0) {
 		pr_err("Fail to request EMI_MPU interrupt. Error = %d.\n", ret);
@@ -1207,6 +1184,6 @@ static void __exit emi_mpu_mod_exit(void)
 }
 
 
-module_init(emi_mpu_mod_init);
+late_initcall(emi_mpu_mod_init);
 module_exit(emi_mpu_mod_exit);
 
