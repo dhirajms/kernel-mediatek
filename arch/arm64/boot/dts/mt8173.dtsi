@@ -1049,7 +1049,7 @@
 					"top_mfg";
 			interrupts = <GIC_SPI 217 IRQ_TYPE_LEVEL_LOW>;
 			interrupt-names = "RGX";
-			clock-frequency = <600000000>;
+			clock-frequency = <500000000>;
 		};
 
 		mmsys: mmsys@14000000 {
