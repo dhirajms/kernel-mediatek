@@ -35,9 +35,12 @@
 #include <mtk_rtc.h>
 #endif
 
+static void deferred_restart(struct work_struct *dummy);
+
 static DEFINE_MUTEX(pmic_lock_mutex);
 static DEFINE_MUTEX(pmic_access_mutex);
 static DEFINE_SPINLOCK(pmic_smp_spinlock);
+static DECLARE_WORK(restart_work, deferred_restart);
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 static bool long_pwrkey_press;
@@ -45,6 +48,10 @@ static unsigned long timer_pre;
 static unsigned long timer_pos;
 #define LONG_PWRKEY_PRESS_TIME		(500*1000000)	/* 500ms */
 #endif
+
+static struct hrtimer check_pwrkey_release_timer;
+#define LONG_PRESS_PWRKEY_SHUTDOWN_TIME		(3)	/* 3sec */
+#define PWRKEY_INITIAL_STATE (0)
 
 static struct mt6397_chip_priv *mt6397_chip;
 
@@ -263,6 +270,20 @@ static ssize_t store_pmic_access(struct device *dev, struct device_attribute *at
 }
 
 static DEVICE_ATTR(pmic_access, 0664, show_pmic_access, store_pmic_access);	/* 664 */
+
+static void deferred_restart(struct work_struct *dummy)
+{
+	unsigned int pwrkey_deb = 0;
+
+	/* Double check if pwrkey is still pressed */
+	pwrkey_deb = upmu_get_pwrkey_deb();
+	if (pwrkey_deb == 1) {
+		pr_info("[check_pwrkey_release_timer] Release pwrkey\n");
+		kpd_pwrkey_pmic_handler(0x0);
+	} else
+		pr_info("[check_pwrkey_release_timer] Still press pwrkey, do nothing\n");
+
+}
 
 /* mt6397 irq chip clear event status for given event mask. */
 static void mt6397_ack_events_locked(struct mt6397_chip_priv *chip, unsigned int event_mask)
@@ -483,9 +504,17 @@ static irqreturn_t vgpu_int_handler(int irq, void *dev_id)
 
 #endif
 
+enum hrtimer_restart check_pwrkey_release_timer_func(struct hrtimer *timer)
+{
+	queue_work(system_highpri_wq, &restart_work);
+	return HRTIMER_NORESTART;
+}
+
 static irqreturn_t pwrkey_int_handler(int irq, void *dev_id)
 {
 	unsigned int pwrkey_deb = 0;
+	static int key_down = PWRKEY_INITIAL_STATE;
+	ktime_t ktime;
 
 	pr_info("%s:\n", __func__);
 
@@ -507,14 +536,27 @@ static irqreturn_t pwrkey_int_handler(int irq, void *dev_id)
 			}
 		}
 #endif
-		kpd_pwrkey_pmic_handler(0x0);
+		hrtimer_cancel(&check_pwrkey_release_timer);
+
+		if (key_down == 0) {
+			kpd_pwrkey_pmic_handler(0x1);
+			kpd_pwrkey_pmic_handler(0x0);
+		} else {
+			kpd_pwrkey_pmic_handler(0x0);
+		}
+
+		key_down = 0;
 	} else {
+		key_down = 1;
 		pr_info("[Power/PMIC][pwrkey_int_handler] Press pwrkey\n");
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 		if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT)
 			timer_pre = sched_clock();
 
 #endif
+		ktime = ktime_set(LONG_PRESS_PWRKEY_SHUTDOWN_TIME, 0);
+		hrtimer_start(&check_pwrkey_release_timer, ktime, HRTIMER_MODE_REL);
+
 		kpd_pwrkey_pmic_handler(0x1);
 	}
 
@@ -1210,6 +1252,9 @@ static int pmic_mt6397_probe(struct platform_device *pdev)
 	mt6397_chip = chip;
 	register_syscore_ops(&mt6397_syscore_ops);
 
+	hrtimer_init(&check_pwrkey_release_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	check_pwrkey_release_timer.function = check_pwrkey_release_timer_func;
+
 	return 0;
 }
 
@@ -1230,6 +1275,8 @@ static int pmic_mt6397_suspend(struct platform_device *pdev, pm_message_t state)
 	struct mt6397_chip_priv *chip = dev_get_drvdata(&pdev->dev);
 	u32 ret = 0;
 	u32 events;
+
+	hrtimer_cancel(&check_pwrkey_release_timer);
 
 	mt6397_set_suspended(chip, true);
 	disable_irq(chip->irq);
