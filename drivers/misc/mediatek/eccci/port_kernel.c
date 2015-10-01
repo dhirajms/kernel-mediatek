@@ -262,7 +262,7 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 		return -1;
 	}
 
-	for (i = BOOT_INFO; i < RUNTIME_FEATURE_ID_MAX; i++) {
+	for (i = BOOT_INFO; i < FEATURE_COUNT; i++) {
 		memset(&rt_feature, 0, sizeof(struct ccci_runtime_feature));
 		memset(&rt_shm, 0, sizeof(struct ccci_runtime_share_memory));
 		memset(&rt_f_element, 0, sizeof(struct ccci_misc_info_element));
