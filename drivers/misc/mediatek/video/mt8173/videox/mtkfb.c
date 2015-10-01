@@ -1615,6 +1615,9 @@ static void mtkfb_blank_resume(void);
 #if defined(CONFIG_PM_AUTOSLEEP)
 static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
+	if (get_boot_mode() == RECOVERY_BOOT)
+		return 0;
+
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 	case FB_BLANK_NORMAL:
