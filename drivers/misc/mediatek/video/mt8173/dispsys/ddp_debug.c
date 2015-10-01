@@ -803,8 +803,6 @@ static void process_dbg_opt(const char *opt)
 		dbg_opt_ext(opt, buf);
 	} else if (0 == strncmp(opt, "mmp", 3)) {
 		init_ddp_mmp_events();
-	} else if (0 == strncmp(opt, "dumpdcbuf", 9)) {
-		primary_display_dump_decouple_buffer();
 #ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
 	} else if (0 == strncmp(opt, "svp:", 4)) {
 		char *p = (char *)opt + 4;
