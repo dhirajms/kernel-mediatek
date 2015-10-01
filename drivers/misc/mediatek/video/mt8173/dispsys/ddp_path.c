@@ -1194,7 +1194,7 @@ int ddp_path_top_clock_on(void)
 	DDPDBG("ddp path vcore notify on\n");
 #endif
 	mtk_smi_larb_clock_on(0, true);
-	mtk_smi_larb_clock_on(4, false);
+	mtk_smi_larb_clock_on(4, true);
 	ddp_module_clock_enable(MM_CLK_MUTEX_32K, true);
 
 	DDPMSG("ddp CG100:0x%x CG110:0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
@@ -1207,7 +1207,7 @@ int ddp_path_top_clock_off(void)
 	DDPMSG("ddp path top clock off\n");
 
 	ddp_module_clock_enable(MM_CLK_MUTEX_32K, false);
-	mtk_smi_larb_clock_off(4, false);
+	mtk_smi_larb_clock_off(4, true);
 	mtk_smi_larb_clock_off(0, true);
 #ifdef CONFIG_DISPLAY_VCORE_DVFS
 	vcorefs_clkmgr_notify_mm_off();
@@ -1218,14 +1218,14 @@ int ddp_path_top_clock_off(void)
 
 int ddp_path_lp_top_clock_on(void)
 {
-	mtk_smi_larb_clock_on(0, false);
+	mtk_smi_larb_clock_on(0, true);
 
 	return 0;
 }
 
 int ddp_path_lp_top_clock_off(void)
 {
-	mtk_smi_larb_clock_off(0, false);
+	mtk_smi_larb_clock_off(0, true);
 
 	return 0;
 }

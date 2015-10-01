@@ -3502,14 +3502,6 @@ int primary_display_resume(void)
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("dpmanager path power on[end]\n");
 
-	/* reconfig used module m4u port after resume*/
-	config_display_m4u_port(M4U_PORT_DISP_OVL0, DISP_MODULE_OVL0);
-	config_display_m4u_port(M4U_PORT_DISP_RDMA0, DISP_MODULE_RDMA0);
-	config_display_m4u_port(M4U_PORT_DISP_WDMA0, DISP_MODULE_WDMA0);
-	config_display_m4u_port(M4U_PORT_DISP_OVL1, DISP_MODULE_OVL1);
-	config_display_m4u_port(M4U_PORT_DISP_RDMA1, DISP_MODULE_RDMA1);
-	config_display_m4u_port(M4U_PORT_DISP_WDMA1, DISP_MODULE_WDMA1);
-
 	if (_is_decouple_mode(pgc->session_mode))
 		dpmgr_path_power_on(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
@@ -5333,13 +5325,13 @@ int primary_display_enable_path_cg(int enable)
 
 		clk_disable(ddp_clk_map[MM_CLK_MUTEX_32K]);
 		clk_unprepare(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		mtk_smi_larb_clock_off(4, false);
+		mtk_smi_larb_clock_off(4, true);
 		mtk_smi_larb_clock_off(0, true);
 	} else {
 		ret += clk_prepare(ddp_clk_map[MM_CLK_MUTEX_32K]);
 		ret += clk_enable(ddp_clk_map[MM_CLK_MUTEX_32K]);
 		mtk_smi_larb_clock_on(0, true);
-		mtk_smi_larb_clock_on(4, false);
+		mtk_smi_larb_clock_on(4, true);
 
 		ret += clk_prepare(ddp_clk_map[MM_CLK_DSI0_ENGINE]);
 		ret += clk_enable(ddp_clk_map[MM_CLK_DSI0_ENGINE]);
