@@ -428,6 +428,7 @@
 			compatible = "mediatek,mt8173-rgu";
 			reg = <0 0x10007000 0 0x1000>;
 			interrupts = <GIC_SPI 120 IRQ_TYPE_EDGE_FALLING>;
+			#reset-cells = <1>;
 		};
 
 		apxgpt: apxgpt@10008000 {

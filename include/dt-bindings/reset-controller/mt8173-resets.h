@@ -60,4 +60,19 @@
 #define MT8173_PERI_HDMI_SW_RST         29
 #define MT8173_PERI_SPI0_SW_RST         33
 
+/* TOPRGU resets */
+#define MT8173_TOPRGU_INFRA_RST         0
+#define MT8173_TOPRGU_MM_RST            1
+#define MT8173_TOPRGU_MFG_RST           2
+#define MT8173_TOPRGU_VENC_RST          3
+#define MT8173_TOPRGU_VDEC_RST          4
+#define MT8173_TOPRGU_IMG_RST           5
+#define MT8173_TOPRGU_DDRPHY_RST        6
+#define MT8173_TOPRGU_MD_RST            7
+#define MT8173_TOPRGU_INFRA_AO_RST      8
+#define MT8173_TOPRGU_USB_RST           9
+#define MT8173_TOPRGU_APMIXED_RST       10
+#define MT8173_TOPRGU_PWRAP_SPICTL_RST  11
+#define MT8173_TOPRGU_CONN_MCU_RST      12
+
 #endif  /* _DT_BINDINGS_RESET_CONTROLLER_MT8173 */
