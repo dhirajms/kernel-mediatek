@@ -670,7 +670,6 @@ static PVRSRV_ERROR RGXHWPerfCtrlFwBuffer(PVRSRV_DEVICE_NODE *psDeviceNode,
 	RGXFWIF_KCCB_CMD sKccbCmd;
 
 	OSLockAcquire(psDevice->hLockHWPerfModule);
-	PMRLock();
 	/* If this method is being used whether to enable or disable
 	 * then the hwperf buffers (host and FW) are likely to be needed
 	 * eventually so create them, also helps unit testing. Buffers
@@ -687,7 +686,6 @@ static PVRSRV_ERROR RGXHWPerfCtrlFwBuffer(PVRSRV_DEVICE_NODE *psDeviceNode,
 			return eError;
 		}
 	}
-	PMRUnlock();
 	OSLockRelease(psDevice->hLockHWPerfModule);
 
 	/* Prepare command parameters ... */

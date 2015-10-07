@@ -469,13 +469,13 @@ IMG_UINT32 OSCPUCacheAttributeSize(IMG_DCACHE_ATTRIBUTE eCacheAttribute)
 }
 
 /*************************************************************************/ /*!
-@Function       OSMemCopy
+@Function       OSCachedMemCopy
 @Description    Copies memory around
 @Input          pvDst    Pointer to dst
 @Output         pvSrc    Pointer to src
 @Input          ui32Size Bytes to copy
 */ /**************************************************************************/
-void OSMemCopy(void *pvDst, const void *pvSrc, size_t uiSize)
+void OSCachedMemCopy(void *pvDst, const void *pvSrc, size_t uiSize)
 {
 #if defined(__arm64__) || defined(__aarch64__) || defined (PVRSRV_DEVMEM_SAFE_MEMSETCPY)
 	/* Use volatile to avoid compiler optimisations */
@@ -523,13 +523,13 @@ void OSMemCopy(void *pvDst, const void *pvSrc, size_t uiSize)
 
 
 /*************************************************************************/ /*!
-@Function       OSMemSet
+@Function       OSCachedMemSet
 @Description    Function that does the same as the C memset() functions
 @Modified      *pvDest     Pointer to start of buffer to be set
 @Input          ui8Value   Value to set each byte to
 @Input          ui32Size   Number of bytes to set
 */ /**************************************************************************/
-void OSMemSet(void *pvDest, IMG_UINT8 ui8Value, size_t uiSize)
+void OSCachedMemSet(void *pvDest, IMG_UINT8 ui8Value, size_t uiSize)
 {
 #if defined(__arm64__) || defined(__aarch64__) || defined (PVRSRV_DEVMEM_SAFE_MEMSETCPY)
 

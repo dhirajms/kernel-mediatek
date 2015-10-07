@@ -170,9 +170,13 @@ PVRSRV_ERROR OSThreadCreatePriority(IMG_HANDLE *phThread,
 */ /**************************************************************************/
 PVRSRV_ERROR OSThreadDestroy(IMG_HANDLE hThread);
 
-void OSMemCopy(void *pvDst, const void *pvSrc, size_t ui32Size);
-#define OSCachedMemCopy OSMemCopy
-#define OSDeviceMemCopy OSMemCopy
+void OSCachedMemCopy(void *pvDst, const void *pvSrc, size_t ui32Size);
+void OSDeviceMemCopy(void *pvDst, const void *pvSrc, size_t ui32Size);
+#if defined(__arm64__) || defined(__aarch64__) || defined (PVRSRV_DEVMEM_SAFE_MEMSETCPY)
+#define OSMemCopy OSDeviceMemCopy
+#else
+#define OSMemCopy OSCachedMemCopy
+#endif
 void *OSMapPhysToLin(IMG_CPU_PHYADDR BasePAddr, size_t ui32Bytes, IMG_UINT32 ui32Flags);
 IMG_BOOL OSUnMapPhysToLin(void *pvLinAddr, size_t ui32Bytes, IMG_UINT32 ui32Flags);
 
@@ -211,9 +215,13 @@ IMG_PID OSGetCurrentClientProcessIDKM(void);
 IMG_CHAR *OSGetCurrentClientProcessNameKM(void);
 uintptr_t OSGetCurrentClientThreadIDKM(void);
 
-void OSMemSet(void *pvDest, IMG_UINT8 ui8Value, size_t ui32Size);
-#define OSCachedMemSet OSMemSet
-#define OSDeviceMemSet OSMemSet
+void OSCachedMemSet(void *pvDest, IMG_UINT8 ui8Value, size_t ui32Size);
+void OSDeviceMemSet(void *pvDest, IMG_UINT8 ui8Value, size_t ui32Size);
+#if defined(__arm64__) || defined(__aarch64__) || defined (PVRSRV_DEVMEM_SAFE_MEMSETCPY)
+#define OSMemSet OSDeviceMemSet
+#else
+#define OSMemSet OSCachedMemSet
+#endif
 IMG_INT OSMemCmp(void *pvBufA, void *pvBufB, size_t uiLen);
 
 PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,

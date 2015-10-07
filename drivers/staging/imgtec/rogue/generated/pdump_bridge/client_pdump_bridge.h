@@ -1,6 +1,8 @@
 /*************************************************************************/ /*!
-@File           debugfs_dma_buf.h
+@File
+@Title          Client bridge header for pdump
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
+@Description    Exports the client bridge functions for pdump
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -38,22 +40,34 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
-/* vi: set ts=8: */
 
-#ifndef _DEBUGFS_DMA_BUF_H
-#define _DEBUGFS_DMA_BUF_H
+#ifndef CLIENT_PDUMP_BRIDGE_H
+#define CLIENT_PDUMP_BRIDGE_H
 
-/* This creates a debugfs file for reading out the current content of the dma
- * buffer provided by the set function. Please note that you can get tearing in
- * the final dumps if the content is quickly changing. */
+#include "pvr_bridge_client.h"
+#include "pvr_bridge.h"
 
-/* Uncomment the following line to enable */
-/*#define DEBUGFS_DMA_BUF 1*/
+#include "common_pdump_bridge.h"
 
-#include <linux/dma-buf.h>
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemPDumpBitmap(IMG_HANDLE hBridge,
+							       IMG_CHAR *puiFileName,
+							       IMG_UINT32 ui32FileOffset,
+							       IMG_UINT32 ui32Width,
+							       IMG_UINT32 ui32Height,
+							       IMG_UINT32 ui32StrideInBytes,
+							       IMG_DEV_VIRTADDR sDevBaseAddr,
+							       IMG_HANDLE hDevmemCtx,
+							       IMG_UINT32 ui32Size,
+							       PDUMP_PIXEL_FORMAT ePixelFormat,
+							       IMG_UINT32 ui32AddrMode,
+							       IMG_UINT32 ui32PDumpFlags);
 
-int debugfs_dma_buf_init(const char *name);
-void debugfs_dma_buf_deinit(void);
-void debugfs_dma_buf_set(struct dma_buf *dma_buf);
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePVRSRVPDumpComment(IMG_HANDLE hBridge,
+								IMG_CHAR *puiComment,
+								IMG_UINT32 ui32Flags);
 
-#endif /* _DEBUGFS_DMA_BUF_H */
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePVRSRVPDumpSetFrame(IMG_HANDLE hBridge,
+								 IMG_UINT32 ui32Frame);
+
+
+#endif /* CLIENT_PDUMP_BRIDGE_H */

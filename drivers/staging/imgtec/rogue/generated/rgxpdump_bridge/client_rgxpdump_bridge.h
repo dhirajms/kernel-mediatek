@@ -1,9 +1,8 @@
 /*************************************************************************/ /*!
 @File
-@Title          Version numbers and strings.
+@Title          Client bridge header for rgxpdump
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    Version numbers and strings for PVR Consumer services
-                components.
+@Description    Exports the client bridge functions for rgxpdump
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -42,31 +41,19 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#ifndef _PVRVERSION_H_
-#define _PVRVERSION_H_
+#ifndef CLIENT_RGXPDUMP_BRIDGE_H
+#define CLIENT_RGXPDUMP_BRIDGE_H
 
-#define PVR_STR(X) #X
-#define PVR_STR2(X) PVR_STR(X)
+#include "pvr_bridge_client.h"
+#include "pvr_bridge.h"
 
-#define PVRVERSION_MAJ               1
-#define PVRVERSION_MIN               6
+#include "common_rgxpdump_bridge.h"
 
-#define PVRVERSION_FAMILY           "rogueddk"
-#define PVRVERSION_BRANCHNAME       "1.6"
-#define PVRVERSION_BUILD             3755086
-#define PVRVERSION_BSCONTROL        "Rogue_DDK_Android"
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePDumpTraceBuffer(IMG_HANDLE hBridge,
+							      IMG_UINT32 ui32PDumpFlags);
 
-#define PVRVERSION_STRING           "Rogue_DDK_Android rogueddk 1.6@" PVR_STR2(PVRVERSION_BUILD)
-#define PVRVERSION_STRING_SHORT     "1.6@" PVR_STR2(PVRVERSION_BUILD) ""
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePDumpSignatureBuffer(IMG_HANDLE hBridge,
+								  IMG_UINT32 ui32PDumpFlags);
 
-#define COPYRIGHT_TXT               "Copyright (c) Imagination Technologies Ltd. All Rights Reserved."
 
-#define PVRVERSION_BUILD_HI          375
-#define PVRVERSION_BUILD_LO          5086
-#define PVRVERSION_STRING_NUMERIC    PVR_STR2(PVRVERSION_MAJ) "." PVR_STR2(PVRVERSION_MIN) "." PVR_STR2(PVRVERSION_BUILD_HI) "." PVR_STR2(PVRVERSION_BUILD_LO)
-
-#define PVRVERSION_PACK(MAJ,MIN) ((((MAJ)&0xFFFF) << 16) | (((MIN)&0xFFFF) << 0))
-#define PVRVERSION_UNPACK_MAJ(VERSION) (((VERSION) >> 16) & 0xFFFF)
-#define PVRVERSION_UNPACK_MIN(VERSION) (((VERSION) >> 0) & 0xFFFF)
-
-#endif /* _PVRVERSION_H_ */
+#endif /* CLIENT_RGXPDUMP_BRIDGE_H */

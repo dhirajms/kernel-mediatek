@@ -75,7 +75,7 @@ PVRSRV_ERROR CacheOpQueue(PMR *psPMR,
 	}
 
 	/* Carry out full dcache operation if size qualifies */
-	if (uiSize >= PVR_DIRTY_PAGECOUNT_FLUSH_THRESHOLD)
+	if ((uiSize >> PAGE_SHIFT) >= PVR_DIRTY_PAGECOUNT_FLUSH_THRESHOLD)
 	{
 		OSCPUOperation(uiCacheOp);
 		return PVRSRV_OK;

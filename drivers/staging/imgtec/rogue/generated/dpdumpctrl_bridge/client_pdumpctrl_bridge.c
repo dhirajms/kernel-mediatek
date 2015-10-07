@@ -1,5 +1,5 @@
 /*************************************************************************/ /*!
-@File           adf_sunxi.h
+@Title          Direct client bridge for pdumpctrl
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
 @License        Dual MIT/GPLv2
 
@@ -38,47 +38,75 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
-/* vi: set ts=8: */
 
-#ifndef _ADF_SUNXI_
-#define _ADF_SUNXI_
+#include "client_pdumpctrl_bridge.h"
+#include "img_defs.h"
+#include "pvr_debug.h"
 
-extern struct ion_device *idev;
+/* Module specific includes */
 
-#include <video/drv_display.h>
-#define DISPLAY_INTERNAL 0
-#define DISPLAY_HDMI 1
-#define DISPLAY_EDP 2
+#include "pdump_km.h"
 
-struct setup_dispc_data {
-	int			layer_num[3];
-	disp_layer_info		layer_info[3][4];
-	void			*hConfigData;
-};
 
-struct disp_composer_ops {
-	int (*get_screen_width)(u32 screen_id);
-	int (*get_screen_height)(u32 screen_id);
-	int (*get_output_type)(u32 screen_id);
-	int (*hdmi_enable)(u32 screen_id);
-	int (*hdmi_disable)(u32 screen_id);
-	int (*hdmi_set_mode)(u32 screen_id,  disp_tv_mode mode);
-	int (*hdmi_get_mode)(u32 screen_id);
-	int (*hdmi_check_support_mode)(u32 screen_id,  u8 mode);
-	int (*is_support_scaler_layer)(unsigned int screen_id,
-		unsigned int src_w, unsigned int src_h, unsigned int out_w,
-		unsigned int out_h);
-	int (*dispc_gralloc_queue)(struct setup_dispc_data *psDispcData);
-	int (*set_retire_callback)(void (*retire_fn)(void));
-	int (*vsync_enable)(u32 screen_id, bool enable);
-	int (*vsync_callback)(void *user_data, void (*cb_fn)(void *user_data,
-		u32 screen_id));
-	int (*hotplug_enable)(u32 screen_id, bool enable);
-	int (*hotplug_callback)(u32 screen_id, void *user_data,
-		hdmi_hotplug_callback_function cb_fn);
-	int (*hotplug_state)(u32 screen_id);
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePVRSRVPDumpIsCapturing(IMG_HANDLE hBridge,
+								    IMG_BOOL *pbIsCapturing)
+{
+	PVRSRV_ERROR eError;
+	PVR_UNREFERENCED_PARAMETER(hBridge);
 
-};
-extern int disp_get_composer_ops(struct disp_composer_ops *ops);
 
-#endif
+	eError =
+		PDumpIsCaptureFrameKM(
+					pbIsCapturing);
+
+	return eError;
+}
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePVRSRVPDumpGetFrame(IMG_HANDLE hBridge,
+								 IMG_UINT32 *pui32Frame)
+{
+	PVRSRV_ERROR eError;
+
+
+	eError =
+		PDumpGetFrameKM(NULL, (PVRSRV_DEVICE_NODE *)((void*) hBridge)
+		,
+					pui32Frame);
+
+	return eError;
+}
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePVRSRVPDumpSetDefaultCaptureParams(IMG_HANDLE hBridge,
+										IMG_UINT32 ui32Mode,
+										IMG_UINT32 ui32Start,
+										IMG_UINT32 ui32End,
+										IMG_UINT32 ui32Interval,
+										IMG_UINT32 ui32MaxParamFileSize)
+{
+	PVRSRV_ERROR eError;
+	PVR_UNREFERENCED_PARAMETER(hBridge);
+
+
+	eError =
+		PDumpSetDefaultCaptureParamsKM(
+					ui32Mode,
+					ui32Start,
+					ui32End,
+					ui32Interval,
+					ui32MaxParamFileSize);
+
+	return eError;
+}
+
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePVRSRVPDumpIsLastCaptureFrame(IMG_HANDLE hBridge)
+{
+	PVRSRV_ERROR eError;
+	PVR_UNREFERENCED_PARAMETER(hBridge);
+
+
+	eError =
+		PDumpIsLastCaptureFrameKM(
+					);
+	return eError;
+}
+

@@ -1461,9 +1461,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 				goto RGXKickTA3D_exit;
 			}
 
-#if defined(PDUMP)
 	PMRLock();
-#endif
 
 
 				{
@@ -1475,9 +1473,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_RGX_SERVER_RENDER_CONTEXT);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1497,9 +1493,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SYNC_PRIMITIVE_BLOCK);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1521,9 +1515,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SYNC_PRIMITIVE_BLOCK);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1545,9 +1537,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SERVER_SYNC_PRIMITIVE);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1569,9 +1559,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SYNC_PRIMITIVE_BLOCK);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1593,9 +1581,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SYNC_PRIMITIVE_BLOCK);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1617,9 +1603,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SERVER_SYNC_PRIMITIVE);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1636,9 +1620,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_SYNC_PRIMITIVE_BLOCK);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1654,9 +1636,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_RGX_RTDATA_CLEANUP);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1672,9 +1652,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_RGX_FWIF_ZSBUFFER);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1690,9 +1668,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_RGX_FWIF_ZSBUFFER);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1712,9 +1688,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
-#if defined(PDUMP)
 						PMRUnlock();
-#endif
 						goto RGXKickTA3D_exit;
 					}
 				}
@@ -1778,9 +1752,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 					psRGXKickTA3DIN->ui32SyncPMRCount,
 					ui32SyncPMRFlagsInt,
 					psSyncPMRsInt);
-#if defined(PDUMP)
 	PMRUnlock();
-#endif
 
 
 

@@ -28,6 +28,7 @@ pvrsrvkm-y += hash.o
 pvrsrvkm-y += htbserver.o
 pvrsrvkm-y += htbuffer.o
 pvrsrvkm-y += lists.o
+pvrsrvkm-y += mem_utils.o
 pvrsrvkm-y += mm.o
 pvrsrvkm-y += mmu_common.o
 pvrsrvkm-y += module_common.o

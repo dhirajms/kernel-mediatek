@@ -4,7 +4,6 @@
 #define PVR_BUILD_TYPE "release"
 #define PVRSRV_MODNAME "pvrsrvkm"
 #define SUPPORT_RGX 1
-#define DISPLAY_CONTROLLER adf_fbdev
 #define RELEASE 
 #define RGX_BVNC_CORE_KM_HEADER "cores/rgxcore_km_4.40.2.51.h"
 #define RGX_BNC_CONFIG_KM_HEADER "configs/rgxconfig_km_4.V.2.51.h"

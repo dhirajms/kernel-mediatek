@@ -512,8 +512,7 @@ adf_fbdev_alloc_simple_buffer(struct adf_interface *intf, u16 w, u16 h,
 
 		*dma_buf = dma_buf_export(&export_info);
 	}
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0)) || \
-      (defined(CONFIG_ARCH_MT8173) && !defined(CONFIG_TB8173_P1))
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0))
 	*dma_buf = dma_buf_export(fbdev_dmabuf, &adf_fbdev_dma_buf_ops,
 				  fbdev_dmabuf->length, O_RDWR, NULL);
 #else
@@ -673,12 +672,25 @@ static int __init init_adf_fbdev(void)
 	}
 
 	if (fb_info->var.bits_per_pixel == 32) {
-		if (fb_info->var.red.length   != 8  ||
-		    fb_info->var.green.length != 8  ||
-		    fb_info->var.blue.length  != 8  ||
-		    fb_info->var.red.offset   != 16 ||
-		    fb_info->var.green.offset != 8  ||
-		    fb_info->var.blue.offset  != 0) {
+		if (fb_info->var.red.length   == 8  ||
+		    fb_info->var.green.length == 8  ||
+		    fb_info->var.blue.length  == 8  ||
+		    fb_info->var.red.offset   == 16 ||
+		    fb_info->var.green.offset == 8  ||
+		    fb_info->var.blue.offset  == 0) {
+#if defined(ADF_FBDEV_FORCE_XRGB8888)
+			adf_fbdev_supported_format = DRM_FORMAT_BGRX8888;
+#else
+			adf_fbdev_supported_format = DRM_FORMAT_BGRA8888;
+#endif
+		} else if (fb_info->var.red.length   == 8  ||
+			   fb_info->var.green.length == 8  ||
+			   fb_info->var.blue.length  == 8  ||
+			   fb_info->var.red.offset   == 0  ||
+			   fb_info->var.green.offset == 8  ||
+			   fb_info->var.blue.offset  == 16) {
+			adf_fbdev_supported_format = DRM_FORMAT_RGBA8888;
+		} else {
 			pr_err("The fbdev device detected uses an unrecognized 32bit pixel format (%u/%u/%u, %u/%u/%u)\n",
 			       fb_info->var.red.length,
 			       fb_info->var.green.length,
@@ -688,11 +700,6 @@ static int __init init_adf_fbdev(void)
 			       fb_info->var.blue.offset);
 			goto err_unlock;
 		}
-#if defined(ADF_FBDEV_FORCE_XRGB8888)
-		adf_fbdev_supported_format = DRM_FORMAT_BGRX8888;
-#else
-		adf_fbdev_supported_format = DRM_FORMAT_BGRA8888;
-#endif
 	} else if (fb_info->var.bits_per_pixel == 16) {
 		if (fb_info->var.red.length   != 5  ||
 		    fb_info->var.green.length != 6  ||
@@ -715,6 +722,13 @@ static int __init init_adf_fbdev(void)
 		       fb_info->var.bits_per_pixel);
 		goto err_unlock;
 	}
+
+#if defined(CONFIG_ARCH_MT8173)
+	/* Workaround for broken framebuffer driver. The wrong pixel format
+	 * is reported to this module. It is always really RGBA8888.
+	 */
+	adf_fbdev_supported_format = DRM_FORMAT_RGBA8888;
+#endif
 
 	if (!try_module_get(fb_info->fbops->owner)) {
 		pr_err("try_module_get() failed");

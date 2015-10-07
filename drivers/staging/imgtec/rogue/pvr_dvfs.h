@@ -48,8 +48,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvrsrv_error.h"
 #include "img_types.h"
 
-typedef void (*PFN_SYS_DEV_DVFS_SET_FREQUENCY)(IMG_UINT32 ui64Freq);
-typedef void (*PFN_SYS_DEV_DVFS_SET_VOLTAGE)(IMG_UINT32 ui64Volt);
+typedef void (*PFN_SYS_DEV_DVFS_SET_FREQUENCY)(IMG_UINT32 ui32Freq);
+typedef void (*PFN_SYS_DEV_DVFS_SET_VOLTAGE)(IMG_UINT32 ui32Volt);
+
+#if defined(CONFIG_DEVFREQ_THERMAL)
+typedef IMG_UINT32 (*PFN_GET_STATIC_POWER)(IMG_UINT32 ui32Voltage, IMG_INT32 i32Temp);
+typedef IMG_UINT32 (*PFN_GET_MAX_DYNAMIC_POWER)(IMG_UINT32 ui32Freq, IMG_UINT32 ui32Voltage);
+#endif
 
 typedef struct _IMG_OPP_
 {
@@ -67,16 +72,35 @@ typedef struct _IMG_DVFS_GOVERNOR_CFG_
 
 typedef struct _IMG_DVFS_DEVICE_CFG_
 {
-	IMG_OPP_TABLE			pasOPPTable;
-	IMG_UINT32			ui32OPPTableSize;
+	IMG_OPP_TABLE   pasOPPTable;
+	IMG_UINT32      ui32OPPTableSize;
 
-	IMG_UINT32			ui32FreqMin;
-	IMG_UINT32			ui32FreqMax;
-	IMG_UINT32			ui32PollMs;
-	IMG_BOOL			bIdleReq;
+	IMG_UINT32      ui32FreqMin;
+	IMG_UINT32      ui32FreqMax;
+	IMG_UINT32      ui32PollMs;
+	IMG_BOOL        bIdleReq;
 
 	PFN_SYS_DEV_DVFS_SET_FREQUENCY	pfnSetFrequency;
 	PFN_SYS_DEV_DVFS_SET_VOLTAGE	pfnSetVoltage;
+
+#if defined(CONFIG_DEVFREQ_THERMAL)
+	/*
+	 * Call back function for getting static power.
+	 * Input voltage and temperature specified in mV and celcius respectively.
+	 * If temperature is set to INT_MAX, system (platform) layer needs to 
+	 * retrieve the temperature from thermal zone that the device belongs to.
+	 * Ouput static power in mW.
+	 */
+	PFN_GET_STATIC_POWER		pfnGetStaticPower;
+
+	/*
+	 * Call back function for getting maximum dynamic power for 100% utilization.
+	 * Input voltage in mV. Frequency specified in same unit as OPP table.
+	 * Ouput dynamic power in mW.
+	 */
+	PFN_GET_MAX_DYNAMIC_POWER	pfnGetMaxDynamicPower;
+#endif
+
 } IMG_DVFS_DEVICE_CFG;
 
 typedef struct _IMG_DVFS_GOVERNOR_
@@ -87,10 +111,14 @@ typedef struct _IMG_DVFS_GOVERNOR_
 #if defined(__linux__)
 typedef struct _IMG_DVFS_DEVICE_
 {
-	struct dev_pm_opp		*psOPP;
-	struct devfreq			*psDevFreq;
-	IMG_BOOL			bEnabled;
-	IMG_HANDLE			hGpuUtilUserDVFS;
+	struct dev_pm_opp             *psOPP;
+	struct devfreq                *psDevFreq;
+	IMG_BOOL                       bEnabled;
+	IMG_HANDLE                     hGpuUtilUserDVFS;
+#if defined(CONFIG_DEVFREQ_THERMAL)
+	struct device_node            *psDeviceNode;
+	struct devfreq_cooling_device *psDevfreqCoolingDevice;
+#endif
 } IMG_DVFS_DEVICE;
 
 typedef struct _IMG_POWER_AVG_

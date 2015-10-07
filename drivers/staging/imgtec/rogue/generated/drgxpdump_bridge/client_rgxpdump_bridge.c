@@ -1,9 +1,6 @@
 /*************************************************************************/ /*!
-@File
-@Title          Version numbers and strings.
+@Title          Direct client bridge for rgxpdump
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    Version numbers and strings for PVR Consumer services
-                components.
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -42,31 +39,41 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#ifndef _PVRVERSION_H_
-#define _PVRVERSION_H_
+#include "client_rgxpdump_bridge.h"
+#include "img_defs.h"
+#include "pvr_debug.h"
 
-#define PVR_STR(X) #X
-#define PVR_STR2(X) PVR_STR(X)
+/* Module specific includes */
+#include "rgx_bridge.h"
 
-#define PVRVERSION_MAJ               1
-#define PVRVERSION_MIN               6
+#include "rgxpdump.h"
 
-#define PVRVERSION_FAMILY           "rogueddk"
-#define PVRVERSION_BRANCHNAME       "1.6"
-#define PVRVERSION_BUILD             3755086
-#define PVRVERSION_BSCONTROL        "Rogue_DDK_Android"
 
-#define PVRVERSION_STRING           "Rogue_DDK_Android rogueddk 1.6@" PVR_STR2(PVRVERSION_BUILD)
-#define PVRVERSION_STRING_SHORT     "1.6@" PVR_STR2(PVRVERSION_BUILD) ""
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePDumpTraceBuffer(IMG_HANDLE hBridge,
+							      IMG_UINT32 ui32PDumpFlags)
+{
+	PVRSRV_ERROR eError;
 
-#define COPYRIGHT_TXT               "Copyright (c) Imagination Technologies Ltd. All Rights Reserved."
 
-#define PVRVERSION_BUILD_HI          375
-#define PVRVERSION_BUILD_LO          5086
-#define PVRVERSION_STRING_NUMERIC    PVR_STR2(PVRVERSION_MAJ) "." PVR_STR2(PVRVERSION_MIN) "." PVR_STR2(PVRVERSION_BUILD_HI) "." PVR_STR2(PVRVERSION_BUILD_LO)
+	eError =
+		PVRSRVPDumpTraceBufferKM(NULL, (PVRSRV_DEVICE_NODE *)((void*) hBridge)
+		,
+					ui32PDumpFlags);
 
-#define PVRVERSION_PACK(MAJ,MIN) ((((MAJ)&0xFFFF) << 16) | (((MIN)&0xFFFF) << 0))
-#define PVRVERSION_UNPACK_MAJ(VERSION) (((VERSION) >> 16) & 0xFFFF)
-#define PVRVERSION_UNPACK_MIN(VERSION) (((VERSION) >> 0) & 0xFFFF)
+	return eError;
+}
 
-#endif /* _PVRVERSION_H_ */
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePDumpSignatureBuffer(IMG_HANDLE hBridge,
+								  IMG_UINT32 ui32PDumpFlags)
+{
+	PVRSRV_ERROR eError;
+
+
+	eError =
+		PVRSRVPDumpSignatureBufferKM(NULL, (PVRSRV_DEVICE_NODE *)((void*) hBridge)
+		,
+					ui32PDumpFlags);
+
+	return eError;
+}
+
