@@ -38,6 +38,10 @@
 #include <asm/param.h>
 #include <asm/page.h>
 
+#ifdef CONFIG_MTK_EXTMEM
+#include <linux/exm_driver.h>
+#endif
+
 #ifndef user_long_t
 #define user_long_t long
 #endif
@@ -554,11 +558,12 @@ out:
 
 static unsigned long randomize_stack_top(unsigned long stack_top)
 {
-	unsigned int random_variable = 0;
+	unsigned long random_variable = 0;
 
 	if ((current->flags & PF_RANDOMIZE) &&
 		!(current->personality & ADDR_NO_RANDOMIZE)) {
-		random_variable = get_random_int() & STACK_RND_MASK;
+		random_variable = (unsigned long) get_random_int();
+		random_variable &= STACK_RND_MASK;
 		random_variable <<= PAGE_SHIFT;
 	}
 #ifdef CONFIG_STACK_GROWSUP
@@ -749,6 +754,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
 	    i < loc->elf_ex.e_phnum; i++, elf_ppnt++) {
 		int elf_prot = 0, elf_flags;
 		unsigned long k, vaddr;
+		unsigned long total_size = 0;
 
 		if (elf_ppnt->p_type != PT_LOAD)
 			continue;
@@ -811,10 +817,16 @@ static int load_elf_binary(struct linux_binprm *bprm)
 #else
 			load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
 #endif
+			total_size = total_mapping_size(elf_phdata,
+							loc->elf_ex.e_phnum);
+			if (!total_size) {
+				retval = -EINVAL;
+				goto out_free_dentry;
+			}
 		}
 
 		error = elf_map(bprm->file, load_bias + vaddr, elf_ppnt,
-				elf_prot, elf_flags, 0);
+				elf_prot, elf_flags, total_size);
 		if (BAD_ADDR(error)) {
 			retval = IS_ERR((void *)error) ?
 				PTR_ERR((void*)error) : -EINVAL;
@@ -941,8 +953,20 @@ static int load_elf_binary(struct linux_binprm *bprm)
 
 #ifdef arch_randomize_brk
 	if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1)) {
-		current->mm->brk = current->mm->start_brk =
-			arch_randomize_brk(current->mm);
+		int rand_tries = 0;
+
+		while (++rand_tries < 32) {
+			current->mm->brk = current->mm->start_brk =
+				arch_randomize_brk(current->mm);
+
+			if (find_vma_intersection(current->mm, current->mm->brk,
+						  current->mm->brk + PAGE_SIZE) &&
+			    rand_tries < 32) {
+				current->mm->brk = current->mm->start_brk = elf_brk;
+				continue;
+			} else
+				break;
+		}
 #ifdef CONFIG_COMPAT_BRK
 		current->brk_randomized = 1;
 #endif
@@ -1107,6 +1131,11 @@ static bool always_dump_vma(struct vm_area_struct *vma)
 	 */
 	if (arch_vma_name(vma))
 		return true;
+
+#ifdef CONFIG_MTK_EXTMEM
+	if (extmem_in_mspace(vma))
+		return true;
+#endif
 
 	return false;
 }
@@ -2155,6 +2184,23 @@ static int elf_core_dump(struct coredump_params *cprm)
 		unsigned long end;
 
 		end = vma->vm_start + vma_dump_size(vma, cprm->mm_flags);
+
+#ifdef CONFIG_MTK_EXTMEM
+		if (extmem_in_mspace(vma)) {
+			void *extmem_va = (void *)get_virt_from_mspace(vma->vm_pgoff << PAGE_SHIFT);
+
+			for (addr = vma->vm_start; addr < end; addr += PAGE_SIZE, extmem_va += PAGE_SIZE) {
+				int stop = !dump_emit(cprm, extmem_va, PAGE_SIZE);
+
+				if (stop) {
+					pr_err("[EXT_MEM]stop addr:0x%lx, extmem_va:0x%p, vm_start:0x%lx, vm_end:0x%lx\n",
+						addr, extmem_va, vma->vm_start, end);
+					goto end_coredump;
+				}
+			}
+			continue;
+		}
+#endif
 
 		for (addr = vma->vm_start; addr < end; addr += PAGE_SIZE) {
 			struct page *page;

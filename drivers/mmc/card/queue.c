@@ -38,7 +38,7 @@ static int mmc_prep_request(struct request_queue *q, struct request *req)
 		return BLKPREP_KILL;
 	}
 
-	if (mq && mmc_card_removed(mq->card))
+	if (mq && (mmc_card_removed(mq->card) || mmc_access_rpmb(mq)))
 		return BLKPREP_KILL;
 
 	req->cmd_flags |= REQ_DONTPREP;
@@ -50,6 +50,9 @@ static int mmc_queue_thread(void *d)
 {
 	struct mmc_queue *mq = d;
 	struct request_queue *q = mq->queue;
+#ifdef MTK_BKOPS_IDLE_MAYA
+	struct mmc_card *card = mq->card;
+#endif
 
 	current->flags |= PF_MEMALLOC;
 
@@ -94,6 +97,9 @@ static int mmc_queue_thread(void *d)
 				set_current_state(TASK_RUNNING);
 				break;
 			}
+#ifdef MTK_BKOPS_IDLE_MAYA
+			mmc_start_delayed_bkops(card);
+#endif
 			up(&mq->thread_sem);
 			schedule();
 			down(&mq->thread_sem);

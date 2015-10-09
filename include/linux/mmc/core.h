@@ -121,6 +121,7 @@ struct mmc_data {
 	struct mmc_request	*mrq;		/* associated request */
 
 	unsigned int		sg_len;		/* size of scatter list */
+	int			sg_count;	/* mapped sg entries */
 	struct scatterlist	*sg;		/* I/O scatter list */
 	s32			host_cookie;	/* host private data */
 };
@@ -139,6 +140,11 @@ struct mmc_request {
 
 struct mmc_card;
 struct mmc_async_req;
+#ifdef MTK_BKOPS_IDLE_MAYA
+extern void mmc_start_delayed_bkops(struct mmc_card *card);
+extern void mmc_start_idle_time_bkops(struct work_struct *work);
+extern void mmc_blk_init_bkops_statistics(struct mmc_card *card);
+#endif
 
 extern int mmc_stop_bkops(struct mmc_card *);
 extern int mmc_read_bkops_status(struct mmc_card *);

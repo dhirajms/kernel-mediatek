@@ -593,6 +593,20 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 		else
 			answ = tp->write_seq - tp->snd_nxt;
 		break;
+				/* MTK_NET_CHANGES */
+case SIOCKILLSOCK:
+{
+	struct uid_err uid_e;
+
+	if (copy_from_user(&uid_e, (char __user *)arg, sizeof(uid_e)))
+		return -EFAULT;
+	pr_debug("SIOCKILLSOCK uid = %d , err = %d", uid_e.appuid, uid_e.errNum);
+	if (uid_e.errNum == 0)
+		tcp_v4_handle_retrans_time_by_uid(uid_e);
+	else
+		tcp_v4_reset_connections_by_uid(uid_e);
+	return 0;
+}
 	default:
 		return -ENOIOCTLCMD;
 	}
@@ -2602,10 +2616,13 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
 
 	case TCP_FASTOPEN:
 		if (val >= 0 && ((1 << sk->sk_state) & (TCPF_CLOSE |
-		    TCPF_LISTEN)))
+		    TCPF_LISTEN))) {
+			tcp_fastopen_init_key_once(true);
+
 			err = fastopen_init_queue(sk, val);
-		else
+		} else {
 			err = -EINVAL;
+		}
 		break;
 	case TCP_TIMESTAMP:
 		if (!tp->repair)
@@ -2656,6 +2673,7 @@ void tcp_get_info(const struct sock *sk, struct tcp_info *info)
 	const struct tcp_sock *tp = tcp_sk(sk);
 	const struct inet_connection_sock *icsk = inet_csk(sk);
 	u32 now = tcp_time_stamp;
+	u32 rate;
 
 	memset(info, 0, sizeof(*info));
 
@@ -2716,10 +2734,11 @@ void tcp_get_info(const struct sock *sk, struct tcp_info *info)
 
 	info->tcpi_total_retrans = tp->total_retrans;
 
-	info->tcpi_pacing_rate = sk->sk_pacing_rate != ~0U ?
-					sk->sk_pacing_rate : ~0ULL;
-	info->tcpi_max_pacing_rate = sk->sk_max_pacing_rate != ~0U ?
-					sk->sk_max_pacing_rate : ~0ULL;
+	rate = READ_ONCE(sk->sk_pacing_rate);
+	info->tcpi_pacing_rate = rate != ~0U ? rate : ~0ULL;
+
+	rate = READ_ONCE(sk->sk_max_pacing_rate);
+	info->tcpi_max_pacing_rate = rate != ~0U ? rate : ~0ULL;
 }
 EXPORT_SYMBOL_GPL(tcp_get_info);
 
@@ -3192,6 +3211,8 @@ restart:
 			struct inet_sock *inet = inet_sk(sk);
 
 			if (sysctl_ip_dynaddr && sk->sk_state == TCP_SYN_SENT)
+				continue;
+			if (sk->sk_state == TCP_TIME_WAIT)
 				continue;
 			if (sock_flag(sk, SOCK_DEAD))
 				continue;

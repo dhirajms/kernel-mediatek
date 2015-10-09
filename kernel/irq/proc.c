@@ -15,6 +15,23 @@
 
 #include "internals.h"
 
+/*
+ * Access rules:
+ *
+ * procfs protects read/write of /proc/irq/N/ files against a
+ * concurrent free of the interrupt descriptor. remove_proc_entry()
+ * immediately prevents new read/writes to happen and waits for
+ * already running read/write functions to complete.
+ *
+ * We remove the proc entries first and then delete the interrupt
+ * descriptor from the radix tree and free it. So it is guaranteed
+ * that irq_to_desc(N) is valid as long as the read/writes are
+ * permitted by procfs.
+ *
+ * The read from /proc/interrupts is a different problem because there
+ * is no protection. So the lookup and the access to irqdesc
+ * information must be protected by sparse_irq_lock.
+ */
 static struct proc_dir_entry *root_irq_dir;
 
 #ifdef CONFIG_SMP
@@ -223,6 +240,44 @@ static const struct file_operations default_affinity_proc_fops = {
 	.write		= default_affinity_write,
 };
 
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+static int irq_need_migrate_list_show(struct seq_file *m, void *v)
+{
+	struct per_cpu_irq_desc *node;
+	struct list_head *pos, *temp;
+	int cpu;
+
+	rcu_read_lock();
+	for_each_cpu(cpu, cpu_possible_mask) {
+		seq_printf(m, "dump per-cpu irq-need-migrate list of CPU%u\n", cpu);
+		list_for_each_safe(pos, temp, &(irq_need_migrate_list[cpu].list)) {
+			node = list_entry_rcu(pos, struct per_cpu_irq_desc, list);
+			seq_printf(m, "IRQ %d\n", (node->desc->irq_data).irq);
+		}
+	}
+	rcu_read_unlock();
+	return 0;
+}
+
+static int irq_need_migrate_list_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, irq_need_migrate_list_show, PDE_DATA(inode));
+}
+
+static const struct file_operations irq_need_migrate_list_fops = {
+	.open		= irq_need_migrate_list_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static void register_irq_need_migrate_list_proc(void)
+{
+	proc_create("irq/dump_irq_need_migrate_list", 0400, NULL,
+		    &irq_need_migrate_list_fops);
+}
+#endif
+
 static int irq_node_proc_show(struct seq_file *m, void *v)
 {
 	struct irq_desc *desc = irq_to_desc((long) m->private);
@@ -389,6 +444,10 @@ void init_irq_proc(void)
 
 	register_default_affinity_proc();
 
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+	register_irq_need_migrate_list_proc();
+#endif
+
 	/*
 	 * Create entries for all existing IRQs.
 	 */
@@ -437,9 +496,10 @@ int show_interrupts(struct seq_file *p, void *v)
 		seq_putc(p, '\n');
 	}
 
+	irq_lock_sparse();
 	desc = irq_to_desc(i);
 	if (!desc)
-		return 0;
+		goto outsparse;
 
 	raw_spin_lock_irqsave(&desc->lock, flags);
 	for_each_online_cpu(j)
@@ -479,6 +539,8 @@ int show_interrupts(struct seq_file *p, void *v)
 	seq_putc(p, '\n');
 out:
 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+outsparse:
+	irq_unlock_sparse();
 	return 0;
 }
 #endif

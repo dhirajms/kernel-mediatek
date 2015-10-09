@@ -406,6 +406,7 @@ static int selinux_is_sblabel_mnt(struct super_block *sb)
 	return sbsec->behavior == SECURITY_FS_USE_XATTR ||
 		sbsec->behavior == SECURITY_FS_USE_TRANS ||
 		sbsec->behavior == SECURITY_FS_USE_TASK ||
+		sbsec->behavior == SECURITY_FS_USE_NATIVE ||
 		/* Special handling. Genfs but also in-core setxattr handler */
 		!strcmp(sb->s_type->name, "sysfs") ||
 		!strcmp(sb->s_type->name, "pstore") ||
@@ -1607,6 +1608,9 @@ static int inode_has_perm(const struct cred *cred,
 
 	sid = cred_sid(cred);
 	isec = inode->i_security;
+
+	if (NULL == isec)
+		return -EINVAL;
 
 	return avc_has_perm(sid, isec->sid, isec->sclass, perms, adp);
 }
@@ -4056,6 +4060,9 @@ static int sock_has_perm(struct task_struct *task, struct sock *sk, u32 perms)
 	struct common_audit_data ad;
 	struct lsm_network_audit net = {0,};
 	u32 tsid = task_sid(task);
+
+	if (NULL == sksec)
+		return -EINVAL;
 
 	if (sksec->sid == SECINITSID_KERNEL)
 		return 0;

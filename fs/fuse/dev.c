@@ -7,6 +7,7 @@
 */
 
 #include "fuse_i.h"
+#include "fuse.h"
 
 #include <linux/init.h>
 #include <linux/module.h>
@@ -508,10 +509,21 @@ static void __fuse_request_send(struct fuse_conn *fc, struct fuse_req *req)
 	spin_unlock(&fc->lock);
 }
 
+void fuse_request_send_ex(struct fuse_conn *fc, struct fuse_req *req,
+	__u32 size)
+{
+	FUSE_IOLOG_INIT(size, req->in.h.opcode);
+	req->isreply = 1;
+	FUSE_IOLOG_START();
+	__fuse_request_send(fc, req);
+	FUSE_IOLOG_END();
+	FUSE_IOLOG_PRINT();
+}
+EXPORT_SYMBOL_GPL(fuse_request_send_ex);
+
 void fuse_request_send(struct fuse_conn *fc, struct fuse_req *req)
 {
-	req->isreply = 1;
-	__fuse_request_send(fc, req);
+	fuse_request_send_ex(fc, req, 0);
 }
 EXPORT_SYMBOL_GPL(fuse_request_send);
 
@@ -543,10 +555,21 @@ static void fuse_request_send_nowait(struct fuse_conn *fc, struct fuse_req *req)
 	}
 }
 
-void fuse_request_send_background(struct fuse_conn *fc, struct fuse_req *req)
+void fuse_request_send_background_ex(struct fuse_conn *fc, struct fuse_req *req,
+	__u32 size)
 {
+	FUSE_IOLOG_INIT(size, req->in.h.opcode);
+	FUSE_IOLOG_START();
 	req->isreply = 1;
 	fuse_request_send_nowait(fc, req);
+	FUSE_IOLOG_END();
+	FUSE_IOLOG_PRINT();
+}
+EXPORT_SYMBOL_GPL(fuse_request_send_background_ex);
+
+void fuse_request_send_background(struct fuse_conn *fc, struct fuse_req *req)
+{
+	fuse_request_send_background_ex(fc, req, 0);
 }
 EXPORT_SYMBOL_GPL(fuse_request_send_background);
 
@@ -818,8 +841,8 @@ static int fuse_try_move_page(struct fuse_copy_state *cs, struct page **pagep)
 
 	newpage = buf->page;
 
-	if (WARN_ON(!PageUptodate(newpage)))
-		return -EIO;
+	if (!PageUptodate(newpage))
+		SetPageUptodate(newpage);
 
 	ClearPageMappedToDisk(newpage);
 
@@ -1725,6 +1748,9 @@ copy_finish:
 static int fuse_notify(struct fuse_conn *fc, enum fuse_notify_code code,
 		       unsigned int size, struct fuse_copy_state *cs)
 {
+	/* Don't try to move pages (yet) */
+	cs->move_pages = 0;
+
 	switch (code) {
 	case FUSE_NOTIFY_POLL:
 		return fuse_notify_poll(fc, size, cs);

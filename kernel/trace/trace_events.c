@@ -8,6 +8,7 @@
  *
  */
 
+#define DEBUG 1
 #define pr_fmt(fmt) fmt
 
 #include <linux/workqueue.h>
@@ -23,6 +24,8 @@
 #include <asm/setup.h>
 
 #include "trace_output.h"
+
+#include "mtk_ftrace.h"
 
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM "TRACE_SYSTEM"
@@ -287,6 +290,9 @@ static int __ftrace_event_enable_disable(struct ftrace_event_file *file,
 	int ret = 0;
 	int disable;
 
+	if (call->name && ((file->flags & FTRACE_EVENT_FL_ENABLED) ^ enable))
+		pr_debug("[ftrace]event '%s' is %s\n", call->name, enable ? "enabled" : "disabled");
+
 	switch (enable) {
 	case 0:
 		/*
@@ -461,7 +467,7 @@ static void remove_event_file_dir(struct ftrace_event_file *file)
 
 	if (dir) {
 		spin_lock(&dir->d_lock);	/* probably unneeded */
-		list_for_each_entry(child, &dir->d_subdirs, d_u.d_child) {
+		list_for_each_entry(child, &dir->d_subdirs, d_child) {
 			if (child->d_inode)	/* probably unneeded */
 				child->d_inode->i_private = NULL;
 		}
@@ -618,12 +624,12 @@ ftrace_event_write(struct file *file, const char __user *ubuf,
 
 		ret = ftrace_set_clr_event(tr, parser.buffer + !set, set);
 		if (ret)
-			goto out_put;
+			pr_debug("[ftrace]fail to %s event '%s'\n", set ? "enable" : "disable", parser.buffer + !set);
+		/* continue to handle rest user's input instead of going out directly */
 	}
 
 	ret = read;
 
- out_put:
 	trace_parser_put(&parser);
 
 	return ret;
