@@ -769,6 +769,11 @@ PVRSRV_BridgeDispatchKM(struct file *pFile, unsigned int ioctlCmd, unsigned long
 		return -EFAULT;
 	}
 
+	if(OSGetDriverSuspended())
+	{
+		return -EINTR;
+	}
+
 #if defined(SUPPORT_DRM)
 	psBridgePackageKM = (PVRSRV_BRIDGE_PACKAGE *)arg;
 	PVR_ASSERT(psBridgePackageKM != NULL);
@@ -851,6 +856,11 @@ PVRSRV_BridgeCompatDispatchKM(struct file *pFile,
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: Connection is closed", __FUNCTION__));
 		return -EFAULT;
+	}
+
+	if(OSGetDriverSuspended())
+	{
+		return -EINTR;
 	}
 
 	/* make sure there is no padding inserted by compiler */

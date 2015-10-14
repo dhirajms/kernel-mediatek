@@ -213,14 +213,14 @@ int PVRSRVDriverSuspend(struct device *pDevice)
 
 		if (PVRSRVSetPowerStateKM(PVRSRV_SYS_POWER_STATE_OFF, IMG_TRUE) == PVRSRV_OK)
 		{
-			/* The bridge mutex will be held until we resume */
 			bDriverIsSuspended = IMG_TRUE;
+			OSSetDriverSuspended();
 		}
 		else
 		{
-			OSReleaseBridgeLock();
 			res = -EINVAL;
 		}
+		OSReleaseBridgeLock();
 	}
 
 	mutex_unlock(&gsPMMutex);
@@ -252,16 +252,18 @@ int PVRSRVDriverResume(struct device *pDevice)
 
 	if (bDriverIsSuspended && !bDriverIsShutdown)
 	{
+		OSAcquireBridgeLock();
+
 		if (PVRSRVSetPowerStateKM(PVRSRV_SYS_POWER_STATE_ON, IMG_TRUE) == PVRSRV_OK)
 		{
 			bDriverIsSuspended = IMG_FALSE;
-			OSReleaseBridgeLock();
+			OSClearDriverSuspended();
 		}
 		else
 		{
-			/* The bridge mutex is not released on failure */
 			res = -EINVAL;
 		}
+		OSReleaseBridgeLock();
 	}
 
 	mutex_unlock(&gsPMMutex);

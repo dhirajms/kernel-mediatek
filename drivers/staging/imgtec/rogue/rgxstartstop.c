@@ -156,8 +156,7 @@ static PVRSRV_ERROR RGXInitMetaProcWrapper(const void *hPrivate)
 	/* Garten IDLE bit controlled by META */
 	ui64GartenConfig = RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_IDLE_CTRL_META;
 
-	/* Set fence addr to the bootloader */
-	ui64GartenConfig |= (RGXFW_BOOTLDR_DEVV_ADDR & ~RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_ADDR_CLRMSK);
+	/* The fence addr is set at the fw init sequence */
 
 	/* Set PC = 0 for fences */
 	ui64GartenConfig &= RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_PC_BASE_CLRMSK;
