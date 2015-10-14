@@ -4009,9 +4009,6 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	if (!se) {
 		update_rq_runnable_avg(rq, rq->nr_running);
 		add_nr_running(rq, 1);
-#ifndef CONFIG_CFS_BANDWIDTH
-		BUG_ON(rq->cfs.nr_running > rq->cfs.h_nr_running);
-#endif
 	}
 	hrtick_update(rq);
 }
@@ -4072,9 +4069,6 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 
 	if (!se) {
 		sub_nr_running(rq, 1);
-#ifndef CONFIG_CFS_BANDWIDTH
-		BUG_ON(rq->cfs.nr_running > rq->cfs.h_nr_running);
-#endif
 		update_rq_runnable_avg(rq, 1);
 	}
 	hrtick_update(rq);
@@ -4913,10 +4907,6 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
 
 again:
 #ifdef CONFIG_FAIR_GROUP_SCHED
-	/* in case nr_running!=0 but h_nr_running==0 */
-	if (!cfs_rq->h_nr_running)
-		return NULL;
-
 	if (!cfs_rq->nr_running)
 		goto idle;
 
