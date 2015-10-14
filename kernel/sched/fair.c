@@ -91,12 +91,7 @@ unsigned int sysctl_sched_child_runs_first __read_mostly;
 unsigned int sysctl_sched_wakeup_granularity = 1000000UL;
 unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
 
-#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
-/* shorten the schedule migration cost and let the idle balance more aggregative */
-const_debug unsigned int sysctl_sched_migration_cost = 33000UL;
-#else
 const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
-#endif
 
 /*
  * The exponential sliding  window over which load is averaged for shares
@@ -5154,9 +5149,6 @@ struct lb_env {
 
 	enum fbq_type		fbq_type;
 	struct list_head	tasks;
-#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
-	int			mt_ignore_cachehot_in_idle;
-#endif
 };
 
 /*
@@ -5173,16 +5165,6 @@ static int task_hot(struct task_struct *p, struct lb_env *env)
 
 	if (unlikely(p->policy == SCHED_IDLE))
 		return 0;
-
-#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
-	/*
-	force ignore the cache hot when current rq is idle and src cpu have more than 2 tasks
-	 */
-	if (env->mt_ignore_cachehot_in_idle) {
-		if (!this_rq()->nr_running && (task_rq(p)->nr_running >= 2))
-			return 0;
-	}
-#endif
 
 	/*
 	 * Buddy candidates are cache hot:
@@ -5393,9 +5375,6 @@ static struct task_struct *detach_one_task(struct lb_env *env)
 {
 	struct task_struct *p, *n;
 
-#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
-	env->mt_ignore_cachehot_in_idle = 0;
-#endif
 	lockdep_assert_held(&env->src_rq->lock);
 
 	list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
@@ -5417,18 +5396,6 @@ static struct task_struct *detach_one_task(struct lb_env *env)
 }
 
 static const unsigned int sched_nr_migrate_break = 32;
-
-/* in second round load balance, we migrate heavy load_weight task
-     as long as RT tasks exist in busy cpu*/
-#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
-	#define over_imbalance(lw, im) \
-		(((lw)/2 > (im)) && \
-		((env->mt_ignore_cachehot_in_idle == 0) || \
-		(env->src_rq->rt.rt_nr_running == 0) || \
-		(detached > 0)))
-#else
-	#define over_imbalance(lw, im) (((lw) / 2) > (im))
-#endif
 
 /*
  * detach_tasks() -- tries to detach up to imbalance weighted load from
@@ -5471,7 +5438,7 @@ static int detach_tasks(struct lb_env *env)
 		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
 			goto next;
 
-		if (over_imbalance(load, env->imbalance))
+		if ((load / 2) > env->imbalance)
 			goto next;
 
 		detach_task(p, env);
@@ -6732,9 +6699,6 @@ redo:
 		env.src_cpu   = busiest->cpu;
 		env.src_rq    = busiest;
 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
-#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
-		env.mt_ignore_cachehot_in_idle = 0;
-#endif
 
 more_balance:
 		raw_spin_lock_irqsave(&busiest->lock, flags);
@@ -6824,25 +6788,6 @@ more_balance:
 			}
 			goto out_all_pinned;
 		}
-
-#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
-		/* when move tasks fil, force migration no matter cache-hot */
-		/*  use mt_ignore_cachehot_in_idle */
-		if (!ld_moved && ((CPU_NEWLY_IDLE == idle) || (CPU_IDLE == idle))) {
-			env.mt_ignore_cachehot_in_idle = 1;
-			env.loop = 0;
-			raw_spin_lock_irqsave(&busiest->lock, flags);
-			cur_ld_moved = detach_tasks(&env);
-			raw_spin_unlock(&busiest->lock);
-
-			if (cur_ld_moved) {
-				attach_tasks(&env);
-				ld_moved += cur_ld_moved;
-			}
-
-			local_irq_restore(flags);
-		}
-#endif
 	}
 
 	if (!ld_moved) {
@@ -6986,9 +6931,6 @@ static int idle_balance(struct rq *this_rq)
 	struct sched_domain *sd;
 	int pulled_task = 0;
 	u64 curr_cost = 0;
-#if defined(CONFIG_MT_LOAD_BALANCE_ENHANCEMENT) && defined(CONFIG_LOCAL_TIMERS)
-	unsigned long counter = 0;
-#endif
 
 	idle_enter_fair(this_rq);
 
@@ -7005,14 +6947,9 @@ static int idle_balance(struct rq *this_rq)
 		if (sd)
 			update_next_balance(sd, 0, &next_balance);
 		rcu_read_unlock();
-		mt_sched_printf(sched_lb, "%d:idle balance bypass: %llu",
-				this_cpu, this_rq->avg_idle);
+
 		goto out;
 	}
-
-#if defined(CONFIG_MT_LOAD_BALANCE_ENHANCEMENT) && defined(CONFIG_LOCAL_TIMERS)
-must_do:
-#endif
 
 	/*
 	 * Drop the rq->lock, but keep IRQ/preempt disabled.
