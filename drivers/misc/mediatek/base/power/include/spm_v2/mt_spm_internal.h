@@ -165,7 +165,9 @@ struct pwr_ctrl {
 	u8 r7_ctrl_en;
 	u8 infra_dcm_lock;
 	u8 wdt_disable;
-
+#if defined(CONFIG_ARCH_MT6755)
+	u8 dvfs_halt_src_chk;
+#endif
 	u8 spm_apsrc_req;
 	u8 spm_f26m_req;
 	u8 spm_lte_req;
@@ -366,6 +368,9 @@ void spm_set_dummy_read_addr(void);
 extern int spm_fs_init(void);
 /* extern int is_ext_buck_exist(void); */
 
+/* check dvfs halt source by mask-off test */
+int __check_dvfs_halt_source(int enable);
+
 /*
  * if in talking, modify @spm_flags based on @lpscen and return __spm_talking,
  * otherwise, do nothing and return @lpscen
@@ -380,10 +385,9 @@ extern void __spm_restore_pmic_ck_pdn(void);
 extern void __spm_bsi_top_init_setting(void);
 extern void __spm_pmic_pg_force_on(void);
 extern void __spm_pmic_pg_force_off(void);
-
-#if defined(CONFIG_ARCH_MT6755)
 extern struct dram_info *g_dram_info_dummy_read;
-#elif defined(CONFIG_ARCH_MT6797)
+
+#if defined(CONFIG_ARCH_MT6797)
 extern u32 spm_get_sodi_pcm_index(void);
 #endif
 

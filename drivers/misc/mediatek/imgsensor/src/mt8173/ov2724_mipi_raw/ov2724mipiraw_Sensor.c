@@ -536,7 +536,7 @@ static void sensor_init(void)
 	LOG_INF("[OV2724MIPI]init config node = %d\n", main_sensor_init_setting_switch);
 	write_cmos_sensor(0x0100, 0x00);	/* standby */
 	write_cmos_sensor(0x0103, 0x01);	/* software reset */
-	mdelay(200);		/* delay 200ms */
+	mdelay(5);		/* delay 200ms */
 	write_cmos_sensor(0x0101, 0x01);
 	write_cmos_sensor(0x0301, 0x0a);
 	write_cmos_sensor(0x0303, 0x05);
@@ -732,7 +732,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0100, 0x01);
 
 	imgsensor.autoflicker_en = KAL_FALSE;
-	mdelay(50);
+	mdelay(1);
 	LOG_INF("[OV2724MIPI]exit OV2724MIPI_init function\n");
 }
 

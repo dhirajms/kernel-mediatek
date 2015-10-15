@@ -1,6 +1,7 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/cpuidle_v1/
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
@@ -27,7 +28,7 @@ obj-y += mt_sleep.o
 obj-y += mt_spm.o
 obj-y += mt_spm_dpidle.o
 obj-y += mt_spm_dpidle_mt6755.o
-#obj-y += mt_spm_fs.o
+obj-y += mt_spm_fs.o
 obj-y += mt_spm_internal.o
 #obj-y += mt_spm_mcdi.o
 obj-y += mt_spm_pmic_wrap.o
@@ -44,7 +45,6 @@ obj-y += mt_idle_mt6797.o
 obj-y += mt_spm.o
 obj-y += mt_spm_sleep.o
 obj-y += mt_sleep.o
-obj-y += mt_pm_init.o
 obj-y += mt_spm_internal.o
 obj-y += mt_spm_dpidle.o
 obj-y += mt_spm_dpidle_mt6797.o

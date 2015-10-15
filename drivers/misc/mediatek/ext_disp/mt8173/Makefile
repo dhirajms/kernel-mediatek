@@ -1,6 +1,6 @@
 
 #include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
+ifeq ($(CONFIG_MTK_HDMI_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/  \
              -I$(srctree)/drivers/misc/mediatek/video/     \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/ \
@@ -37,3 +37,7 @@ ccflags-y += -DHDMI_SUB_PATH_PRESENT_FENCE_SUPPORT
 endif
 
 obj-y	:= extd_ddp.o extd_debug.o  extd_drv.o extd_utils.o extd_lcm.o extd_fence.o
+
+else
+obj-y := dummy.o
+endif

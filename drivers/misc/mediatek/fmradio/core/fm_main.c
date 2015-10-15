@@ -271,7 +271,8 @@ fm_s32 fm_open(struct fm *fmp)
 		} else if ((chipid == 0x6572) || (chipid == 0x6582) || (chipid == 0x6592)
 			   || (chipid == 0x8127) || (chipid == 0x6571) || (chipid == 0x6752)
 			   || (chipid == 0x0321) || (chipid == 0x0335) || (chipid == 0x0337)
-			   || (chipid == 0x6735) || (chipid == 0x8163)) {
+			   || (chipid == 0x6735) || (chipid == 0x8163) || (chipid == 0x6755)
+			   || (chipid == 0x0326)) {
 #ifdef MT6627_FM
 			fm_low_ops = MT6627fm_low_ops;
 			fmp->chip_id = 0x6627;
@@ -2806,7 +2807,7 @@ struct fm *fm_dev_init(fm_u32 arg)
 	if (!fm) {
 		WCN_DBG(FM_ALT | MAIN, "-ENOMEM\n");
 		ret = -ENOMEM;
-		goto ERR_EXIT;
+		return NULL;
 	}
 
 	fm->ref = 0;
@@ -3003,6 +3004,10 @@ fm_s32 fm_dev_destroy(struct fm *fm)
 	WCN_DBG(FM_DBG | MAIN, "%s\n", __func__);
 
 	fm_timer_sys->stop(fm_timer_sys);
+	if (!fm) {
+		WCN_DBG(FM_NTC | MAIN, "fm is null\n");
+		return -1;
+	}
 
 	if (fm->eint_wkthd) {
 		ret = fm_workthread_put(fm->eint_wkthd);

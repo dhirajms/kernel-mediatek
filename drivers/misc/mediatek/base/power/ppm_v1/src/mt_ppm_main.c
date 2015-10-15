@@ -204,7 +204,6 @@ int ppm_main_register_policy(struct ppm_policy_data *policy)
 		ret = -ENOMEM;
 		goto out;
 	}
-	mutex_init(&policy->lock);
 	policy->req.cluster_num = ppm_main_info.cluster_num;
 	policy->req.power_budget = 0;
 	policy->req.perf_idx = 0;
@@ -411,6 +410,9 @@ static void ppm_main_calc_new_limit(void)
 		);
 	}
 
+	/* fill root cluster */
+	c_req->root_cluster = ppm_get_root_cluster_by_state(ppm_main_info.cur_power_state);
+
 	FUNC_EXIT(FUNC_LV_MAIN);
 }
 
@@ -513,7 +515,7 @@ int mt_ppm_main(void)
 		}
 	}
 
-	/* calculate final limit and send to clients */
+	/* calculate final limit and fill-in client request structure */
 	ppm_main_calc_new_limit();
 
 	/* notify client and print debug message if limits are changed */
@@ -552,7 +554,7 @@ int mt_ppm_main(void)
 				);
 		}
 
-		ppm_dbg("%s\n", buf);
+		ppm_dbg("(%d)%s\n", c_req->root_cluster, buf);
 
 		memcpy(last_req->cpu_limit, c_req->cpu_limit,
 			ppm_main_info.cluster_num * sizeof(*c_req->cpu_limit));
@@ -626,7 +628,8 @@ static void ppm_main_send_request_for_suspend(void)
 	/* modify advise freq to DVFS */
 	for (i = 0; i < c_req->cluster_num; i++) {
 		c_req->cpu_limit[i].has_advise_freq = true;
-		c_req->cpu_limit[i].advise_cpufreq_idx = get_cluster_suspend_fix_freq_idx(i);
+		c_req->cpu_limit[i].advise_cpufreq_idx =
+			ppm_main_freq_to_idx(i, get_cluster_suspend_fix_freq(i), CPUFREQ_RELATION_L);
 
 		ppm_ver("Result: [%d] --> (%d)(%d)(%d)(%d) (%d)(%d)(%d)(%d)\n",
 			i,
@@ -752,6 +755,7 @@ static int ppm_main_data_init(void)
 
 	for_each_ppm_clusters(i) {
 		ppm_main_info.client_req.cluster_num = ppm_main_info.cluster_num;
+		ppm_main_info.client_req.root_cluster = 0;
 		ppm_main_info.client_req.cpu_limit[i].cluster_id = i;
 		ppm_main_info.client_req.cpu_limit[i].cpu_id = ppm_main_info.cluster_info[i].cpu_id;
 

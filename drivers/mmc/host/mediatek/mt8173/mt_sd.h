@@ -185,12 +185,9 @@ enum {
 #define OFFSET_DAT3_TUNE_CRC             (0xcc)
 #define OFFSET_CMD_TUNE_CRC              (0xd0)
 #define OFFSET_SDIO_TUNE_WIND            (0xd4)
-#define OFFSET_MSDC_PAD_TUNE0            (0xf0)
-#define OFFSET_MSDC_PAD_TUNE1            (0xf4)
-#define OFFSET_MSDC_DAT_RDDLY0           (0xf8)
-#define OFFSET_MSDC_DAT_RDDLY1           (0xfc)
-#define OFFSET_MSDC_DAT_RDDLY2           (0x100)
-#define OFFSET_MSDC_DAT_RDDLY3           (0x104)
+#define OFFSET_MSDC_PAD_TUNE0            (0xec)
+#define OFFSET_MSDC_DAT_RDDLY0           (0xf0)
+#define OFFSET_MSDC_DAT_RDDLY1           (0xf4)
 #define OFFSET_MSDC_HW_DBG               (0x110)
 #define OFFSET_MSDC_VERSION              (0x114)
 #define OFFSET_MSDC_ECO_VER              (0x118)
@@ -313,11 +310,11 @@ enum {
 #define MSDC_CFG_BV18SDT        (0x1  << 5)	/* RW */
 #define MSDC_CFG_BV18PSS        (0x1  << 6)	/* R  */
 #define MSDC_CFG_CKSTB          (0x1  << 7)	/* R  */
-#define MSDC_CFG_CKDIV          (0xfff << 8)	/* RW */
-#define MSDC_CFG_CKMOD          (0x3  << 20)	/* W1C */
-#define MSDC_CFG_CKMOD_HS400    (0x1  << 22)	/* RW */
-#define MSDC_CFG_START_BIT      (0x3  << 23)	/* RW */
-#define MSDC_CFG_SCLK_STOP_DDR  (0x1  << 25)	/* RW */
+#define MSDC_CFG_CKDIV          (0xff << 8)	/* RW */
+#define MSDC_CFG_CKMOD          (0x3  << 16)	/* W1C */
+#define MSDC_CFG_CKMOD_HS400    (0x1  << 18)	/* RW */
+#define MSDC_CFG_START_BIT      (0x3  << 19)	/* RW */
+#define MSDC_CFG_SCLK_STOP_DDR  (0x1  << 21)	/* RW */
 
 /* MSDC_IOCON mask */
 #define MSDC_IOCON_SDR104CKS    (0x1  << 0)	/* RW */
@@ -918,6 +915,17 @@ enum {
 #define MSDC2_GPIO_RDSEL0_G0_ADDR		(GPIO_REG_BASE + 0x828)
 #define MSDC2_GPIO_DRV0_G0_ADDR			(GPIO_REG_BASE + 0x870)
 #define MSDC2_GPIO_PUPD0_G0_ADDR		(GPIO_REG_BASE + 0x880)
+
+#define MSDC3_GPIO_CLK_BASE             (GPIO_REG_BASE + 0xCC0)
+#define MSDC3_GPIO_CMD_BASE             (GPIO_REG_BASE + 0xCD0)
+#define MSDC3_GPIO_DAT_BASE             (GPIO_REG_BASE + 0xCE0)
+#define MSDC3_GPIO_PAD_BASE             (GPIO_REG_BASE + 0xCF0)
+#define MSDC3_GPIO_DAT1_BASE            (GPIO_REG_BASE + 0xD60)
+#define MSDC3_GPIO_DS_BASE              (GPIO_REG_BASE + 0xD70)
+#define MSDC3_GPIO_MODE0_BASE           (GPIO_REG_BASE + 0x640)
+#define MSDC3_GPIO_MODE1_BASE           (GPIO_REG_BASE + 0x650)
+
+#define GPIO_MSDC_DRV_MASK              (0x7 <<  8)
 
 /* MSDC2 mode mask*/
 #define MSDC2_MODE_CMD_MASK				(0x7  << 25)

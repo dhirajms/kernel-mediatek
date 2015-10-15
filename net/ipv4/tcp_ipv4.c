@@ -431,7 +431,7 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
 		icsk->icsk_backoff--;
 		icsk->icsk_rto = tp->srtt_us ? __tcp_set_rto(tp) :
 					       TCP_TIMEOUT_INIT;
-		icsk->icsk_rto = inet_csk_rto_backoff(icsk, TCP_RTO_MAX);
+		icsk->icsk_rto = inet_csk_rto_backoff(icsk, sysctl_tcp_rto_max);
 
 		skb = tcp_write_queue_head(sk);
 		BUG_ON(!skb);
@@ -442,7 +442,7 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
 
 		if (remaining) {
 			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
-						  remaining, TCP_RTO_MAX);
+						  remaining, sysctl_tcp_rto_max);
 		} else {
 			/* RTO revert clocked out retransmission.
 			 * Will retransmit now */
@@ -1574,7 +1574,7 @@ bool tcp_prequeue(struct sock *sk, struct sk_buff *skb)
 		if (!inet_csk_ack_scheduled(sk))
 			inet_csk_reset_xmit_timer(sk, ICSK_TIME_DACK,
 						  (3 * tcp_rto_min(sk)) / 4,
-						  TCP_RTO_MAX);
+						  sysctl_tcp_rto_max);
 	}
 	return true;
 }
@@ -1722,8 +1722,6 @@ do_time_wait:
 		inet_twsk_put(inet_twsk(sk));
 		goto csum_error;
 	}
-	if (sk->sk_state == TCP_TIME_WAIT)
-		atomic_inc(&sk->sk_refcnt);
 
 	switch (tcp_timewait_state_process(inet_twsk(sk), skb, th)) {
 	case TCP_TW_SYN: {

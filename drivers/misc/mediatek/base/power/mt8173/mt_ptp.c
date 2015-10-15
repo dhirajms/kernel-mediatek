@@ -57,7 +57,7 @@ struct devinfo {
 
 #include "mt_ptp.h"
 #include "mt_cpufreq.h"
-#include <mach/mt_gpufreq.h>
+#include "mt_gpufreq.h"
 #include <mach/mt_thermal.h>
 #include <mach/mt_freqhopping.h>
 #include <mt-plat/mt_pmic_wrap.h>
@@ -1245,7 +1245,7 @@ static void get_freq_table_gpu(struct ptp_det *det)
 
 static int _get_volt_vcore(void)
 {
-	return regulator_get_voltage(reg_vcore) / 1000;
+	return regulator_get_voltage(reg_vcore);
 }
 
 static int get_volt_vcore(struct ptp_det *det)
@@ -2548,12 +2548,12 @@ static int ptp_probe(struct platform_device *pdev)
 	vcore = mt_get_cur_volt_vcore() * 1000;
 	regulator_set_voltage(reg_vcore, 1000000, ret);
 #endif
-	vcore_original = _get_volt_vcore() * 1000;
+	vcore_original = _get_volt_vcore();
 	ptp_error("before PTP-OD initializing.\n");
 	ptp_error("Vcore = %duV\n", vcore_original);
-	ptp_error("axi_sel parent = %ld\n", __clk_get_rate(axi_sel_parent));
+	ptp_error("axi_sel parent = %ldHz\n", __clk_get_rate(axi_sel_parent));
 	mt_gpufreq_disable_by_ptpod();
-	ptp_error("clk_therm = %ld\n", __clk_get_rate(clk_therm));
+	ptp_error("clk_therm = %ldHz\n", __clk_get_rate(clk_therm));
 
 	ptp_error("Start to initialize PTP-OD module\n");
 	/* This case is for certain IC-efuse whose axi_sel clock is initialized as 208MHz.
@@ -2562,18 +2562,18 @@ static int ptp_probe(struct platform_device *pdev)
 		univpll2_d2 = devm_clk_get(&pdev->dev, "univpll2_d2");
 		BUG_ON(IS_ERR(univpll2_d2));
 		clk_set_parent(clk_axi_sel, univpll2_d2);
-		ptp_error("univpll2_d2 = %ld\n", __clk_get_rate(univpll2_d2));
+		ptp_error("univpll2_d2 = %ldHz\n", __clk_get_rate(univpll2_d2));
 	} else {
 		/* This case is for the rest IC-efuse whose axi_sel clock is initialized as 273MHz. */
 		syspll1_d2 = devm_clk_get(&pdev->dev, "syspll1_d2");
 		BUG_ON(IS_ERR(syspll1_d2));
 		regulator_set_voltage(reg_vcore, 1125000, 1125000);
 		clk_set_parent(clk_axi_sel, syspll1_d2);
-		ptp_error("Vcore will be rised to 1.125V = %d ?\n", _get_volt_vcore());
-		ptp_error("syspll1_d2 = %ld\n", __clk_get_rate(syspll1_d2));
+		ptp_error("Vcore will be risen to 1125000uV = %d ?\n", _get_volt_vcore());
+		ptp_error("syspll1_d2 = %ldHz\n", __clk_get_rate(syspll1_d2));
 	}
 
-	ptp_error("clk_axi_sel = %ld\n", __clk_get_rate(clk_axi_sel));
+	ptp_error("clk_axi_sel = %ldHz\n", __clk_get_rate(clk_axi_sel));
 
 	/* for slow idle */
 	ptp_data[0] = 0xffffffff;
@@ -2591,7 +2591,7 @@ static int ptp_probe(struct platform_device *pdev)
 	/* Set topckgen's axi back to its original parent clock */
 	clk_set_parent(clk_axi_sel, axi_sel_parent);
 	regulator_set_voltage(reg_vcore, vcore_original, vcore_original);
-	ptp_error("clk_therm = %ld\n", __clk_get_rate(clk_therm));
+	ptp_error("clk_therm = %ldHz\n", __clk_get_rate(clk_therm));
 
 	mt_gpufreq_enable_by_ptpod();
 	mt_cpufreq_enable_by_ptpod(MT_CPU_DVFS_LITTLE);
@@ -2602,8 +2602,8 @@ static int ptp_probe(struct platform_device *pdev)
 	regulator_set_voltage(reg_vcore, vcore, ret);
 #endif
 
-	ptp_error("clk_axi_sel = %ld\n", __clk_get_rate(clk_axi_sel));
-	ptp_error("Vcore = %d\n", _get_volt_vcore());
+	ptp_error("clk_axi_sel = %ldHz\n", __clk_get_rate(clk_axi_sel));
+	ptp_error("Vcore = %duV\n", _get_volt_vcore());
 
 	/* enable frequency hopping (main PLL) */
 	mt_fh_popod_restore();

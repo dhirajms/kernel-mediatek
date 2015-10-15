@@ -164,24 +164,43 @@ enum {
 } CMC_TRC;
 /*-----------------------------------------------------------------------------*/
 
-int CM36558_i2c_master_operate(struct i2c_client *client, const char *buf, int count, int i2c_flag)
+int CM36558_i2c_master_operate(struct i2c_client *client, char *buf, int count, int i2c_flag)
 {
 	int res = 0;
-
+#ifndef CONFIG_MTK_I2C_EXTENSION
+	struct i2c_msg msg[2];
+#endif
 	mutex_lock(&CM36558_mutex);
 	switch (i2c_flag) {
 	case I2C_FLAG_WRITE:
+#ifdef CONFIG_MTK_I2C_EXTENSION
 		client->addr &= I2C_MASK_FLAG;
 		res = i2c_master_send(client, buf, count);
 		client->addr &= I2C_MASK_FLAG;
+#else
+		res = i2c_master_send(client, buf, count);
+#endif
 		break;
 
 	case I2C_FLAG_READ:
+#ifdef CONFIG_MTK_I2C_EXTENSION
 		client->addr &= I2C_MASK_FLAG;
 		client->addr |= I2C_WR_FLAG;
 		client->addr |= I2C_RS_FLAG;
 		res = i2c_master_send(client, buf, count);
 		client->addr &= I2C_MASK_FLAG;
+#else
+		msg[0].addr = client->addr;
+		msg[0].flags = 0;
+		msg[0].len = 1;
+		msg[0].buf = buf;
+
+		msg[1].addr = client->addr;
+		msg[1].flags = I2C_M_RD;
+		msg[1].len = count;
+		msg[1].buf = buf;
+		res = i2c_transfer(client->adapter, msg, sizeof(msg)/sizeof(msg[0]));
+#endif
 		break;
 	default:
 		APS_LOG("CM36558_i2c_master_operate i2c_flag command not support!\n");
@@ -214,7 +233,7 @@ int CM36558_enable_ps(struct i2c_client *client, int enable)
 
 		APS_LOG("CM36558_enable_ps enable_ps\n");
 		databuf[0] = CM36558_REG_PS_CONF1_2;
-		res = CM36558_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+		res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
 		if (res < 0) {
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_PS_EXIT_ERR;
@@ -235,7 +254,7 @@ int CM36558_enable_ps(struct i2c_client *client, int enable)
 	} else {
 		APS_LOG("CM36558_enable_ps disable_ps\n");
 		databuf[0] = CM36558_REG_PS_CONF1_2;
-		res = CM36558_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+		res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
 		if (res < 0) {
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_PS_EXIT_ERR;
@@ -271,7 +290,7 @@ int CM36558_enable_als(struct i2c_client *client, int enable)
 	if (enable == 1) {
 		APS_LOG("CM36558_enable_als enable_als\n");
 		databuf[0] = CM36558_REG_ALS_UV_CONF;
-		res = CM36558_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+		res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
 		if (res < 0) {
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_ALS_EXIT_ERR;
@@ -293,7 +312,7 @@ int CM36558_enable_als(struct i2c_client *client, int enable)
 	} else {
 		APS_LOG("CM36558_enable_als disable_als\n");
 		databuf[0] = CM36558_REG_ALS_UV_CONF;
-		res = CM36558_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+		res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
 		if (res < 0) {
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_ALS_EXIT_ERR;
@@ -325,7 +344,7 @@ long CM36558_read_ps(struct i2c_client *client, u16 *data)
 	struct CM36558_priv *obj = i2c_get_clientdata(client);
 
 	databuf[0] = CM36558_REG_PS_DATA;
-	res = CM36558_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+	res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
 	if (res < 0) {
 		APS_ERR("i2c_master_send function err\n");
 		goto READ_PS_EXIT_ERR;
@@ -351,7 +370,7 @@ long CM36558_read_als(struct i2c_client *client, u16 *data)
 	struct CM36558_priv *obj = i2c_get_clientdata(client);
 
 	databuf[0] = CM36558_REG_ALS_DATA;
-	res = CM36558_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+	res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
 	if (res < 0) {
 		APS_ERR("i2c_master_send function err\n");
 		goto READ_ALS_EXIT_ERR;
@@ -601,7 +620,7 @@ static ssize_t CM36558_show_reg(struct device_driver *ddri, char *buf)
 
 	for (_bIndex = 0; _bIndex < 0x0E; _bIndex++) {
 		databuf[0] = _bIndex;
-		CM36558_i2c_master_operate(CM36558_obj->client, databuf, 0x201, I2C_FLAG_READ);
+		CM36558_i2c_master_operate(CM36558_obj->client, databuf, 2, I2C_FLAG_READ);
 		_tLength +=
 		    snprintf((buf + _tLength), (PAGE_SIZE - _tLength), "Reg[0x%02X]: 0x%04X\n", _bIndex,
 			     databuf[0] | databuf[1] << 8);
@@ -839,7 +858,7 @@ static int CM36558_check_intr(struct i2c_client *client)
 	u8 databuf[2];
 
 	databuf[0] = CM36558_REG_PS_DATA;
-	res = CM36558_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+	res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
 	if (res < 0) {
 		APS_ERR("i2c_master_send function err res = %d\n", res);
 		goto EXIT_ERR;
@@ -848,7 +867,7 @@ static int CM36558_check_intr(struct i2c_client *client)
 	APS_LOG("CM36558_REG_PS_DATA value value_low = %x, value_reserve = %x\n", databuf[0], databuf[1]);
 
 	databuf[0] = CM36558_REG_INT_FLAG;
-	res = CM36558_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+	res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
 	if (res < 0) {
 		APS_ERR("i2c_master_send function err res = %d\n", res);
 		goto EXIT_ERR;
@@ -941,19 +960,19 @@ int CM36558_setup_eint(struct i2c_client *client)
 	if (IS_ERR(pinctrl)) {
 		ret = PTR_ERR(pinctrl);
 		APS_ERR("Cannot find alsps pinctrl!\n");
+		return ret;
 	}
 	pins_default = pinctrl_lookup_state(pinctrl, "pin_default");
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
 		APS_ERR("Cannot find alsps pinctrl default!\n");
-
 	}
 
 	pins_cfg = pinctrl_lookup_state(pinctrl, "pin_cfg");
 	if (IS_ERR(pins_cfg)) {
 		ret = PTR_ERR(pins_cfg);
 		APS_ERR("Cannot find alsps pinctrl pin_cfg!\n");
-
+		return ret;
 	}
 	pinctrl_select_state(pinctrl, pins_cfg);
 /* eint request */
@@ -1287,6 +1306,16 @@ static int CM36558_init_client(struct i2c_client *client)
 	}
 	APS_LOG("CM36558 ps CM36558_REG_PS_CONF1_2 command!\n");
 
+	databuf[0] = CM36558_REG_PS_CONF3_MS;
+	databuf[1] = 0b00110000;
+	databuf[2] = 0b00000010;
+	res = CM36558_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+	if(res <= 0)
+	{
+		APS_ERR("i2c_master_send function err\n");
+		goto EXIT_ERR;
+	}
+	APS_LOG("CM36558 ps CM36558_REG_PS_CONF3_MS command!\n");
 	databuf[0] = CM36558_REG_PS_CANC;
 	databuf[1] = 0x00;
 	databuf[2] = 0x00;
@@ -1503,7 +1532,7 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	atomic_set(&obj->als_thd_val_high, obj->hw->als_threshold_high);
 	atomic_set(&obj->als_thd_val_low, obj->hw->als_threshold_low);
 	atomic_set(&obj->init_done, 0);
-	obj->irq_node = of_find_compatible_node(NULL, NULL, "mediatek,m_alsps_pl");
+	obj->irq_node = of_find_compatible_node(NULL, NULL, "mediatek,als_ps");
 
 	obj->enable = 0;
 	obj->pending_intr = 0;

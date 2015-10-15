@@ -39,7 +39,26 @@
 #define SMI_LOG_TAG "SMI"
 
 #define LARB_BACKUP_REG_SIZE 128
+#ifdef MT73
 #define SMI_COMMON_BACKUP_REG_NUM   10
+
+/* SMI COMMON register list to be backuped */
+static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
+	0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x220, 0x230, 0x234, 0x238
+};
+
+#elif defined MT27
+/*
+ * MT8127 do not have the following register, offset(0x220, 0x238),
+ * which are SMI_BUS_SEL and SMI_FIFO2_TH, so do not backup them.
+ */
+#define SMI_COMMON_BACKUP_REG_NUM   8
+
+static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
+	0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x230, 0x234
+};
+
+#endif
 
 #define SF_HWC_PIXEL_MAX_NORMAL  (2560 * 1600 * 7)
 #define SF_HWC_PIXEL_MAX_VR   (2560 * 1600 * 7)
@@ -66,11 +85,6 @@ static bool fglarbcallback;	/*larb backuprestore */
 struct mtk_smi_data *smi_data;
 
 static struct cdev *pSmiDev;
-
-/* SMI COMMON register list to be backuped */
-static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
-	0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x220, 0x230, 0x234, 0x238
-};
 
 static unsigned int g_smi_common_backup[SMI_COMMON_BACKUP_REG_NUM];
 
@@ -124,12 +138,10 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 */
 static unsigned long get_larb_base_addr(int larb_id)
 {
-	if (larb_id >= SMI_LARB_NR || larb_id < 0) {
-		WARN_ON(1);
+	if (larb_id >= SMI_LARB_NR || larb_id < 0 || !smi_data)
 		return SMI_ERROR_ADDR;
-	} else {
+	else
 		return smi_data->larb_base[larb_id];
-	}
 }
 
 unsigned long mtk_smi_larb_get_base(int larbid)
@@ -150,7 +162,7 @@ static unsigned int smi_get_larb_index(struct device *dev)
 
 int mtk_smi_larb_clock_on(int larbid, bool pm)
 {
-	if (larbid < 0 || larbid >= smi_data->larb_nr)
+	if (!smi_data || larbid < 0 || larbid >= smi_data->larb_nr)
 		return -EINVAL;
 
 	return _mtk_smi_larb_get(smi_data->larb[larbid], pm);
@@ -158,7 +170,7 @@ int mtk_smi_larb_clock_on(int larbid, bool pm)
 
 void mtk_smi_larb_clock_off(int larbid, bool pm)
 {
-	if (larbid < 0 || larbid >= smi_data->larb_nr)
+	if (!smi_data || larbid < 0 || larbid >= smi_data->larb_nr)
 		return;
 
 	_mtk_smi_larb_put(smi_data->larb[larbid], pm);
@@ -185,7 +197,6 @@ static void restore_smi_common(void)
 			       g_smi_common_backup[i]);
 	}
 }
-
 
 static void backup_larb_smi(int index)
 {
@@ -219,6 +230,7 @@ static void backup_larb_smi(int index)
 
 }
 
+
 static void restore_larb_smi(int index)
 {
 	int port_index = 0;
@@ -251,14 +263,14 @@ static void restore_larb_smi(int index)
 		larb_offset += 4;
 	}
 
+#ifndef MT27
 	/* we do not backup 0x20 because it is a fixed setting */
 	M4U_WriteReg32(larb_base, 0x20, smi_data->smi_priv->larb_vc_setting[index]);
-
+#endif
 	/* turn off EMI empty OSTD dobule, fixed setting */
 	M4U_WriteReg32(larb_base, 0x2c, 4);
 
 }
-
 
 static int larb_reg_backup(int larb)
 {
@@ -274,9 +286,9 @@ static int larb_reg_backup(int larb)
 
 	if (0 == larb)
 		g_bInited = 0;
-
+#ifndef MT27
 	m4u_larb_backup_sec(larb);
-
+#endif
 	return 0;
 }
 
@@ -343,9 +355,9 @@ int larb_reg_restore(int larb)
 	/*M4U_WriteReg32(larb_base, SMI_ROUTE_SEL, *(pReg++) ); */
 
 	smi_larb_init(larb);
-
+#ifndef MT27
 	m4u_larb_restore_sec(larb);
-
+#endif
 	return 0;
 }
 
@@ -581,7 +593,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 
 	/* Since send uevent may trigger sleeping, we must send the event after releasing spin lock */
 	ovl_limit_uevent(smi_profile, g_smi_bwc_mm_info.hw_ovl_limit);
-
+#ifndef MT27
 	/* force 30 fps in VR slow motion, because disp driver set fps apis got mutex,
 	 * call these APIs only when necessary */
 	{
@@ -599,7 +611,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 			SMIMSG("[SMI_PROFILE] back to %u fps\n", current_fps);
 		}
 	}
-
+#endif
 	SMIMSG("SMI_PROFILE to:%d %s,cur:%d,%d,%d,%d\n", p_conf->scenario,
 	       (p_conf->b_on_off ? "on" : "off"), eFinalScen,
 	       g_SMIInfo.pu4ConcurrencyTable[SMI_BWC_SCEN_NORMAL],
@@ -876,64 +888,15 @@ static int smi_dev_register(void)
 	return 0;
 }
 
-static int mtk_smi_disp_clk_prepare(struct mtk_smi_data *smi_data)
-{
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(smi_data->larb[0]);
-	int ret;
-
-	ret = clk_prepare(larbpriv->clk_apb);
-	if (ret)
-		return ret;
-	ret = clk_prepare(larbpriv->clk_smi);
-	if (ret) {
-		clk_unprepare(larbpriv->clk_apb);
-		return ret;
-	}
-
-	larbpriv = dev_get_drvdata(smi_data->larb[4]);
-	ret = clk_prepare(larbpriv->clk_apb);
-	if (ret)
-		goto err_larb0_unparepare;
-	ret = clk_prepare(larbpriv->clk_smi);
-	if (ret) {
-		clk_unprepare(larbpriv->clk_apb);
-		goto err_larb0_unparepare;
-	}
-
-	return 0;
-
-err_larb0_unparepare:
-	larbpriv = dev_get_drvdata(smi_data->larb[0]);
-	clk_unprepare(larbpriv->clk_smi);
-	clk_unprepare(larbpriv->clk_apb);
-	return ret;
-}
-
-static void mtk_smi_disp_clk_unprepare(struct mtk_smi_data *smi_data)
-{
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(smi_data->larb[4]);
-
-	clk_unprepare(larbpriv->clk_smi);
-	clk_unprepare(larbpriv->clk_apb);
-
-	larbpriv = dev_get_drvdata(smi_data->larb[0]);
-	clk_unprepare(larbpriv->clk_smi);
-	clk_unprepare(larbpriv->clk_apb);
-}
-
 static int mtk_smi_common_get(struct device *smidev, bool pm)
 {
 	struct mtk_smi_common *smipriv = dev_get_drvdata(smidev);
 	int ret;
 
-	ret = mtk_smi_disp_clk_prepare(smi_data);
-	if (ret)
-		return ret;
-
 	if (pm) {
 		ret = pm_runtime_get_sync(smidev);
 		if (ret < 0)
-			goto err_unprepare_disp;
+			return ret;
 	}
 
 	ret = clk_prepare_enable(smipriv->clk_apb);
@@ -952,9 +915,7 @@ err_disable_apb:
 	clk_disable_unprepare(smipriv->clk_apb);
 err_put_pm:
 	if (pm)
-		pm_runtime_put(smidev);
-err_unprepare_disp:
-	mtk_smi_disp_clk_unprepare(smi_data);
+		pm_runtime_put_sync(smidev);
 	return ret;
 }
 
@@ -963,10 +924,9 @@ static void mtk_smi_common_put(struct device *smidev, bool pm)
 	struct mtk_smi_common *smipriv = dev_get_drvdata(smidev);
 
 	if (pm)
-		pm_runtime_put(smidev);
+		pm_runtime_put_sync(smidev);
 	clk_disable_unprepare(smipriv->clk_smi);
 	clk_disable_unprepare(smipriv->clk_apb);
-	mtk_smi_disp_clk_unprepare(smi_data);
 }
 
 static int _mtk_smi_larb_get(struct device *larbdev, bool pm)
@@ -978,26 +938,19 @@ static int _mtk_smi_larb_get(struct device *larbdev, bool pm)
 	if (ret)
 		return ret;
 
-	ret = clk_prepare(larbpriv->clk_apb);
-	ret |= clk_prepare(larbpriv->clk_smi);
-	if (ret) {
-		dev_err(larbdev, "Failed to prepare the apb clock\n");
-		goto err_put_smicommon;
-	}
-
 	if (pm) {
 		ret = pm_runtime_get_sync(larbdev);
 		if (ret < 0)
 			goto err_put_smicommon;
 	}
 
-	ret = clk_enable(larbpriv->clk_apb);
+	ret = clk_prepare_enable(larbpriv->clk_apb);
 	if (ret) {
 		dev_err(larbdev, "Failed to enable the apb clock\n");
 		goto err_put_pm;
 	}
 
-	ret = clk_enable(larbpriv->clk_smi);
+	ret = clk_prepare_enable(larbpriv->clk_smi);
 	if (ret) {
 		dev_err(larbdev, "Failed to enable the smi clock\n");
 		goto err_disable_apb;
@@ -1009,7 +962,7 @@ err_disable_apb:
 	clk_disable_unprepare(larbpriv->clk_apb);
 err_put_pm:
 	if (pm)
-		pm_runtime_put(larbdev);
+		pm_runtime_put_sync(larbdev);
 err_put_smicommon:
 	mtk_smi_common_put(larbpriv->smi, pm);
 	return ret;
@@ -1019,23 +972,17 @@ static void _mtk_smi_larb_put(struct device *larbdev, bool pm)
 {
 	struct mtk_smi_larb *larbpriv = dev_get_drvdata(larbdev);
 
-	clk_disable(larbpriv->clk_smi);
-	clk_disable(larbpriv->clk_apb);
+	clk_disable_unprepare(larbpriv->clk_smi);
+	clk_disable_unprepare(larbpriv->clk_apb);
 	if (pm)
-		pm_runtime_put(larbdev);
-	clk_unprepare(larbpriv->clk_smi);
-	clk_unprepare(larbpriv->clk_apb);
+		pm_runtime_put_sync(larbdev);
 	mtk_smi_common_put(larbpriv->smi, pm);
 }
 
-/* The power is alway on during power-domain callback.
- * This callback is run in atmoic context.
- * So clk_prepare is before pm_runtime_get.
- */
+/* The power is alway on during power-domain callback.*/
 static int mtk_smi_larb_runtime_suspend(struct device *dev)
 {
 	unsigned int idx = smi_get_larb_index(dev);
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(dev);
 	int ret;
 
 	if (!fglarbcallback)
@@ -1043,17 +990,15 @@ static int mtk_smi_larb_runtime_suspend(struct device *dev)
 	if (idx >= SMI_LARB_NR)
 		return 0;
 
-	ret = clk_enable(larbpriv->clk_apb);
-	ret |= clk_enable(larbpriv->clk_smi);
+	ret = _mtk_smi_larb_get(dev, false);
 	if (ret) {
-		dev_warn(dev, "runtime suspend clk fail %d(larb%d)\n", ret, idx);
+		dev_warn(dev, "runtime suspend clk-warn larb%d\n", idx);
 		return 0;
 	}
+
 	larb_reg_backup(idx);
 
-	clk_disable(larbpriv->clk_apb);
-	clk_disable(larbpriv->clk_smi);
-
+	_mtk_smi_larb_put(dev, false);
 	dev_warn(dev, "runtime suspend larb%d\n", idx);
 	return 0;
 }
@@ -1061,7 +1006,6 @@ static int mtk_smi_larb_runtime_suspend(struct device *dev)
 static int mtk_smi_larb_runtime_resume(struct device *dev)
 {
 	unsigned int idx = smi_get_larb_index(dev);
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(dev);
 	int ret;
 
 	if (!fglarbcallback)
@@ -1069,27 +1013,23 @@ static int mtk_smi_larb_runtime_resume(struct device *dev)
 	if (idx >= SMI_LARB_NR)
 		return 0;
 
-	ret = clk_enable(larbpriv->clk_apb);
-	ret |= clk_enable(larbpriv->clk_smi);
+	ret = _mtk_smi_larb_get(dev, false);
 	if (ret) {
-		dev_warn(dev, "runtime resume clk fail %d\n", ret);
+		dev_warn(dev, "runtime resume clk-warn larb%d\n", idx);
 		return 0;
 	}
+
 	larb_reg_restore(idx);
 
-	clk_disable(larbpriv->clk_apb);
-	clk_disable(larbpriv->clk_smi);
-
+	_mtk_smi_larb_put(dev, false);
 	dev_warn(dev, "runtime resume larb%d\n", idx);
-
 	return 0;
 }
 
+/* modify this to avoid build error when runtime_pm not configured */
 static const struct dev_pm_ops mtk_smi_larb_ops = {
-	SET_RUNTIME_PM_OPS(mtk_smi_larb_runtime_suspend,
-			   mtk_smi_larb_runtime_resume, NULL)
-	SET_SYSTEM_SLEEP_PM_OPS(mtk_smi_larb_runtime_suspend,
-			   mtk_smi_larb_runtime_resume)
+	.runtime_suspend = mtk_smi_larb_runtime_suspend,
+	.runtime_resume = mtk_smi_larb_runtime_resume,
 };
 
 static int mtk_smi_larb_probe(struct platform_device *pdev)
@@ -1156,7 +1096,8 @@ static int mtk_smi_larb_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id mtk_smi_larb_of_ids[] = {
-	{ .compatible = "mediatek,mt8173-smi-larb",},
+	{ .compatible = "mediatek,mt8173-smi-larb", },
+	{ .compatible = "mediatek,mt8127-smi-larb", },
 	{}
 };
 
@@ -1214,6 +1155,7 @@ static int mtk_smi_remove(struct platform_device *pdev)
 
 static const struct of_device_id mtk_smi_of_ids[] = {
 	{ .compatible = "mediatek,mt8173-smi",},
+	{ .compatible = "mediatek,mt8127-smi",},
 	{}
 };
 
@@ -1261,6 +1203,8 @@ static int __init smi_init(void)
 
 	#if defined MT73
 	smi_data->smi_priv = &smi_mt8173_priv;
+	#elif defined MT27
+	smi_data->smi_priv = &smi_mt8127_priv;
 	#endif
 
 	SMIMSG("smi_init done\n");
@@ -1296,13 +1240,24 @@ static void smi_dumpCommonDebugMsg(void)
 	       M4U_ReadReg32(u4Base, 0x204), M4U_ReadReg32(u4Base, 0x208));
 	SMIMSG("[0x20C,0x210,0x214]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x20C),
 	       M4U_ReadReg32(u4Base, 0x210), M4U_ReadReg32(u4Base, 0x214));
+	#ifdef MT73
 	SMIMSG("[0x220,0x230,0x234,0x238]=[0x%x,0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x220),
 	       M4U_ReadReg32(u4Base, 0x230), M4U_ReadReg32(u4Base, 0x234), M4U_ReadReg32(u4Base,
 											 0x238));
 	SMIMSG("[0x400,0x404,0x408]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x400),
 	       M4U_ReadReg32(u4Base, 0x404), M4U_ReadReg32(u4Base, 0x408));
 
-	/* TBD: M4U should dump these */
+	#elif defined MT27
+
+	SMIMSG("[0x218,0x230,0x234,0x238]=[0x%x,0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x218),
+	       M4U_ReadReg32(u4Base, 0x230), M4U_ReadReg32(u4Base, 0x234), M4U_ReadReg32(u4Base,
+											 0x238));
+	SMIMSG("[0x400,0x404,]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x400),
+	       M4U_ReadReg32(u4Base, 0x404));
+
+	#endif
+
+	/* TBD: M4U should dump these, the offset of MT27 have been checked and same with the followings. */
 /*
 	For VA and PA check:
 	0x1000C5C0 , 0x1000C5C4, 0x1000C5C8, 0x1000C5CC, 0x1000C5D0
@@ -1327,6 +1282,7 @@ static void smi_dumpLarbDebugMsg(unsigned int u4Index)
 	} else {
 		SMIMSG("===SMI LARB%d reg dump===\n", u4Index);
 
+		#ifdef MT73
 		SMIMSG("[0x0,0x8,0x10]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x0),
 		       M4U_ReadReg32(u4Base, 0x8), M4U_ReadReg32(u4Base, 0x10));
 		SMIMSG("[0x24,0x50,0x60]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x24),
@@ -1339,6 +1295,23 @@ static void smi_dumpLarbDebugMsg(unsigned int u4Index)
 		       M4U_ReadReg32(u4Base, 0xbc), M4U_ReadReg32(u4Base, 0xc0));
 		SMIMSG("[0xc8,0xcc]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xc8),
 		       M4U_ReadReg32(u4Base, 0xcc));
+		#elif defined MT27
+		{
+			unsigned int u4Offset = 0;
+
+			SMIMSG("[0x0,0x10,0x60]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x0),
+			       M4U_ReadReg32(u4Base, 0x10), M4U_ReadReg32(u4Base, 0x60));
+			SMIMSG("[0x64,0x8c,0x450]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x64),
+			       M4U_ReadReg32(u4Base, 0x8c), M4U_ReadReg32(u4Base, 0x450));
+			SMIMSG("[0x454,0x600,0x604]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x454),
+			       M4U_ReadReg32(u4Base, 0x600), M4U_ReadReg32(u4Base, 0x604));
+			SMIMSG("[0x610,0x614]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x610),
+			       M4U_ReadReg32(u4Base, 0x614));
+
+			for (u4Offset = 0x200; u4Offset < 0x200 + SMI_LARB_NR * 4; u4Offset += 4)
+				SMIMSG("[0x%x = 0x%x ]\n", u4Offset, M4U_ReadReg32(u4Base , u4Offset));
+		}
+		#endif
 	}
 }
 
@@ -1406,7 +1379,7 @@ void smi_dumpDebugMsg(void)
 
 int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump)
 {
-#ifdef CONFIG_MTK_SMI
+#ifdef CONFIG_MTK_SMI_EXT
 	int i = 0;
 	int dump_time = 0;
 	int is_smi_issue = 0;
@@ -1773,7 +1746,7 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 
 #endif
 
-fs_initcall(smi_init);
+module_init(smi_init);
 module_exit(smi_exit);
 late_initcall(smi_init_late);
 

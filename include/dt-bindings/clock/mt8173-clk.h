@@ -18,7 +18,6 @@
 /* TOPCKGEN */
 
 #define CLK_TOP_CLKPH_MCK_O		1
-#define CLK_TOP_DPI			2
 #define CLK_TOP_USB_SYSPLL_125M		3
 #define CLK_TOP_HDMITX_DIG_CTS		4
 #define CLK_TOP_ARMCA7PLL_754M		5
@@ -154,7 +153,11 @@
 #define CLK_TOP_I2S2_M_SEL		135
 #define CLK_TOP_I2S3_M_SEL		136
 #define CLK_TOP_I2S3_B_SEL		137
-#define CLK_TOP_NR_CLK			138
+#define CLK_TOP_DSI0_DIG		138
+#define CLK_TOP_DSI1_DIG		139
+#define CLK_TOP_LVDS_PXL		140
+#define CLK_TOP_LVDS_CTS		141
+#define CLK_TOP_NR_CLK			142
 
 /* APMIXED_SYS */
 
@@ -188,7 +191,10 @@
 #define CLK_INFRA_CEC			9
 #define CLK_INFRA_PMICSPI		10
 #define CLK_INFRA_PMICWRAP		11
-#define CLK_INFRA_NR_CLK		12
+#define CLK_INFRA_CLK_13M		12
+#define CLK_INFRA_CA53SEL		13
+#define CLK_INFRA_CA57SEL		14
+#define CLK_INFRA_NR_CLK		15
 
 /* PERI_SYS */
 

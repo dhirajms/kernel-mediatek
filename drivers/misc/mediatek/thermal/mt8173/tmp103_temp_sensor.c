@@ -1,3 +1,22 @@
+/*
+ * tmp103 Temperature sensor driver file
+ *
+ * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
+ * Author: Steven King <sfking@fdwdc.com>
+ * Author: Sabatier, Sebastien" <s-sabatier1@ti.com>
+ * Author: Mandrenko, Ievgen" <ievgen.mandrenko@ti.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ */
+
 #include <linux/kernel.h>
 #include <linux/interrupt.h>
 #include <linux/clk.h>

@@ -598,16 +598,10 @@ void msdc_dump_register(struct msdc_host *host)
 
 	pr_err("sd%d R[%x]=0x%.8x\n", i, OFFSET_MSDC_PAD_TUNE0,
 		sdr_read32(MSDC_PAD_TUNE0));
-	pr_err("sd%d R[%x]=0x%.8x\n", i, OFFSET_MSDC_PAD_TUNE1,
-		sdr_read32(MSDC_PAD_TUNE1));
 	pr_err("sd%d R[%x]=0x%.8x\n", i, OFFSET_MSDC_DAT_RDDLY0,
 		sdr_read32(MSDC_DAT_RDDLY0));
 	pr_err("sd%d R[%x]=0x%.8x\n", i, OFFSET_MSDC_DAT_RDDLY1,
 		sdr_read32(MSDC_DAT_RDDLY1));
-	pr_err("sd%d R[%x]=0x%.8x\n", i, OFFSET_MSDC_DAT_RDDLY2,
-		sdr_read32(MSDC_DAT_RDDLY2));
-	pr_err("sd%d R[%x]=0x%.8x\n", i, OFFSET_MSDC_DAT_RDDLY3,
-		sdr_read32(MSDC_DAT_RDDLY3));
 	pr_err("sd%d R[%x]=0x%.8x\n", i, OFFSET_MSDC_HW_DBG,
 		sdr_read32(MSDC_HW_DBG));
 	pr_err("sd%d R[%x]=0x%.8x\n", i, OFFSET_MSDC_VERSION,
@@ -975,50 +969,26 @@ static void msdc_reset_hw(unsigned int id)
 	msdc_clr_int();
 }
 
-static int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
-							u32 hs400_src)
+static int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div, u32 hs400_src)
 {
 	void __iomem *base = host->base;
 	int retry = 0;
 	int cnt = 1000;
 	int retry_cnt = 1;
-
-#if defined(CFG_DEV_MSDC3)
-	/* MSDC3 is dedicated for C2K, need special clock setting */
-	if (host->id == 3) {
-		sdr_set_field(MSDC_CFG, MSDC_CFG_CKDIV, 0);
-		sdr_set_field(MSDC_CFG, MSDC_CFG_CKMOD, 1);
-		sdr_set_field(MSDC_IOCON, MSDC_IOCON_SDR104CKS, 1);
-		return 0;
-	}
-#endif
-
 	do {
 		retry = 3;
-		sdr_set_field(MSDC_CFG, MSDC_CFG_CKMOD_HS400 | MSDC_CFG_CKMOD
-			| MSDC_CFG_CKDIV,
-			(hs400_src << 14) | (mode << 12) | ((div + retry_cnt) % 0xfff));
+		sdr_set_field(MSDC_CFG, MSDC_CFG_CKMOD_HS400 | MSDC_CFG_CKMOD | MSDC_CFG_CKDIV,
+			      (hs400_src << 10) | (mode << 8) | ((div + retry_cnt) % 0xff));
 		/* sdr_set_field(MSDC_CFG, MSDC_CFG_CKMOD, mode); */
-		msdc_retry(!(sdr_read32(MSDC_CFG) & MSDC_CFG_CKSTB),
-		retry, cnt, host->id);
+		msdc_retry(!(sdr_read32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
 		if (retry == 0) {
 			pr_err("msdc%d host->onclock(%d)\n", host->id, host->core_clkon);
 			pr_err("msdc%d on clock failed ===> retry twice\n", host->id);
-#ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_CLKMGR
-			disable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
-			enable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
-#else
-			clk_disable(host->clock_control);
-			clk_enable(host->clock_control);
-#endif
-#endif
 			msdc_dump_info(host->id);
 		}
 		retry = 3;
 		sdr_set_field(MSDC_CFG, MSDC_CFG_CKDIV, div);
-		msdc_retry(!(sdr_read32(MSDC_CFG) & MSDC_CFG_CKSTB),
-			retry, cnt, host->id);
+		msdc_retry(!(sdr_read32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
 		if (retry == 0)
 			msdc_dump_info(host->id);
 		msdc_reset_hw(host->id);
@@ -1310,6 +1280,11 @@ void msdc_set_smt(struct msdc_host *host, int set_smt)
 		break;
 
 #endif
+#ifdef CFG_DEV_MSDC2
+		case 3:
+			break;
+#endif
+
 	default:
 		pr_err("error...[%s] host->id out of range!!!\n", __func__);
 		break;
@@ -1544,6 +1519,13 @@ void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18)
 			MSDC2_DRV_DAT_MASK, hw->dat_drv);
 		break;
 
+#endif
+#ifdef CFG_DEV_MSDC3
+	case 3:
+		sdr_set_field(MSDC3_GPIO_CLK_BASE, GPIO_MSDC_DRV_MASK, hw->clk_drv);
+		sdr_set_field(MSDC3_GPIO_CMD_BASE, GPIO_MSDC_DRV_MASK, hw->cmd_drv);
+		sdr_set_field(MSDC3_GPIO_DAT_BASE, GPIO_MSDC_DRV_MASK, hw->dat_drv);
+		break;
 #endif
 	default:
 		pr_err("error...[%s] host->id out of range!!!\n", __func__);
@@ -2228,17 +2210,17 @@ static void msdc_eirq_sdio(void *data)
 
 static void sdio_unreq_vcore(struct work_struct *work)
 {
-	struct msdc_host *host = mtk_msdc_host[2];	/* 6630 in msdc2@Denali */
-
 	pr_warn("** sdio_unreq_vcore() irqs_disabled():%d\n", irqs_disabled());
 	might_sleep();
 	/* mmc_claim_host(host->mmc); */
+#if 0
 	if (vcorefs_request_dvfs_opp(KIR_SDIO, OPPI_UNREQ) == 0) {
 		pr_debug("unrequest vcore pass\n");
 		host->sdio_performance_vcore = 0;
 	} else {
 		pr_err("unrequest vcore fail\n");
 	}
+#endif
 	/* mmc_release_host(host->mmc); */
 }
 
@@ -2257,12 +2239,14 @@ static noinline void sdio_set_vcore_performance(struct msdc_host *host,
 		/* true if dwork was pending, false otherwise */
 		if (cancel_delayed_work_sync(&(host->set_vcore_workq)) == 0) {
 			pr_warn("** cancel @ FALSE\n");
+#if 0
 			if (vcorefs_request_dvfs_opp(KIR_SDIO, OPPI_PERF) == 0) {
 				pr_debug("msdc%d -> request vcore pass\n", host->id);
 				host->sdio_performance_vcore = 1;
 			} else {
 				pr_err("msdc%d -> request vcore fail\n", host->id);
 			}
+#endif
 		}
 	} else {
 		schedule_delayed_work(&(host->set_vcore_workq), CLK_TIMEOUT);
@@ -2459,8 +2443,8 @@ static void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 
 	}
 
-	pr_err("msdc%d Set<%dK> src:<%dK> sclk:<%dK> timing<%d> mode:%d div:%d\n",
-	       host->id, hz / 1000, hclk / 1000, sclk / 1000, timing, mode, div);
+	pr_err("msdc%d Set<%dK> src:<%dK> sclk:<%dK> timing<%d> mode:%d div:%d cfg:0x%x\n",
+	       host->id, hz / 1000, hclk / 1000, sclk / 1000, timing, mode, div, sdr_read32(MSDC_CFG));
 
 	msdc_irq_restore(flags);
 }
@@ -3380,6 +3364,12 @@ static void msdc_pm(pm_message_t state, void *data)
 	} else {
 		msdc_gate_clock(host, 1);
 	}
+
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
+	}
+
 	if (host->hw->host_function == MSDC_EMMC)
 		emmc_do_sleep_awake = 0;
 }
@@ -4877,6 +4867,8 @@ static void msdc_restore_info(struct msdc_host *host)
 	sdr_set_field(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 		host->saved_para.inten_sdio_irq);	/* get INTEN status for SDIO */
 	sdr_write32(MSDC_IOCON, host->saved_para.iocon);
+	if (host->hw->host_function == MSDC_SDIO)
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
 }
 
 static void msdc_update_cahce_status(struct msdc_host *host,
@@ -9260,8 +9252,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	l_irq_data.irq = host->irq;
 
 	if (gpio_node == NULL) {
-		gpio_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-ispsys");
-		gpio_reg_base = of_iomap(gpio_node, 4);
+		gpio_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-pctl-a-syscfg");
+		gpio_reg_base = of_iomap(gpio_node, 0);
 		pr_err("of_iomap for gpio base @ 0x%p\n", gpio_reg_base);
 	}
 
@@ -9308,6 +9300,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		topckgen_reg_base = of_iomap(topckgen_node, 0);
 		pr_err("of_iomap for TOPCKGEN base @ 0x%p\n", topckgen_reg_base);
 	}
+
 #ifndef CONFIG_MTK_LEGACY
 	/* backup original dev.of_node */
 	msdc_node = pdev->dev.of_node;
@@ -9361,7 +9354,19 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #endif
 #if defined(CFG_DEV_MSDC3)
 	if (strcmp(pdev->dev.of_node->name, "sdio") == 0) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->pm_caps |= MMC_PM_KEEP_POWER;
+		mmc->caps |= MMC_CAP_NONREMOVABLE;
 		pdev->id = 3;
+		host->hw->cmd_drv = 3;
+		host->hw->clk_drv = 3;
+		host->hw->dat_drv = 3;
+		host->hw->cmdrtactr_sdr50 = 0x1;
+		host->hw->wdatcrctactr_sdr50 = 0x1;
+		host->hw->intdatlatcksel_sdr50 = 0x0;
+		host->hw->cmdrtactr_sdr200 = 0x3;
+		host->hw->wdatcrctactr_sdr200 = 0x3;
+		host->hw->intdatlatcksel_sdr200 = 0x0;
 		pr_err("platform_data hw:0x%p, is msdc3_hw\n", host->hw);
 	}
 #endif
@@ -9775,9 +9780,13 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 					host->error = 0;
 				}
 			}
-			ERR_MSG("msdc suspend cur_cfg=%x, save_cfg=%x, cur_hz=%d,save_hz=%d"
+
+			if (host->hw->host_function == MSDC_SDIO)
+				host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+
+			ERR_MSG("msdc suspend cur_cfg=%x, save_cfg=%x, cur_hz=%d,save_hz=%d, pm_flags=0x%x"
 				, sdr_read32(MSDC_CFG), host->saved_para.msdc_cfg,
-				host->mclk, host->saved_para.hz);
+				host->mclk, host->saved_para.hz, host->mmc->pm_flags);
 		}
 	}
 	return ret;
@@ -9793,12 +9802,11 @@ static int msdc_drv_resume(struct platform_device *pdev)
 	if (host->hw->flags & MSDC_SDIO_IRQ)
 		pr_debug("msdc msdc_drv_resume\n");
 	state.event = PM_EVENT_RESUME;
-	if (mmc && (host->hw->flags & MSDC_SYS_SUSPEND)) {	/* will set for card */
+	if (mmc && (host->hw->flags & MSDC_SYS_SUSPEND))
 		msdc_pm(state, (void *)host);
-	}
-
 	/* This mean WIFI not controller by PM */
-
+	if (host->hw->host_function == MSDC_SDIO)
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
 	return ret;
 }
 #endif

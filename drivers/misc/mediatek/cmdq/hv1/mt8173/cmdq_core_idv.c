@@ -36,12 +36,6 @@ char *cmdq_core_get_clk_name(CMDQ_CLK_ENUM clk_enum)
 		return "MT_CG_INFRA_GCE";
 	case CMDQ_CLK_DISP0_MUTEX_32K:
 		return "MT_CG_DISP0_MUTEX_32K";
-	case CMDQ_CLK_DISP0_SMI_COMMON:
-		return "MT_CG_DISP0_SMI_COMMON";
-	case CMDQ_CLK_DISP0_SMI_LARB0:
-		return "MT_CG_DISP0_SMI_LARB0";
-	case CMDQ_CLK_DISP0_SMI_LARB4:
-		return "MT_CG_DISP0_SMI_LARB4";
 	case CMDQ_CLK_DISP0_CAM_MDP:
 		return "MT_CG_DISP0_CAM_MDP";
 	case CMDQ_CLK_DISP0_MDP_RDMA0:

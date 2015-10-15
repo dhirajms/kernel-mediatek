@@ -63,7 +63,7 @@ static kgid_t gid = KGIDT_INIT(1000);
 struct clk *therm_main;		/* main clock for Thermal */
 #if defined(CONFIG_ARCH_MT6755)
 /*Patch to pause thermal controller and turn off auxadc GC.
-  For Jade only*/
+  For mt6755 only*/
 struct clk *therm_auxadc;
 #endif
 #endif
@@ -553,8 +553,10 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 	curr_temp = tscpu_get_curr_temp();
 	tscpu_dprintk("tscpu_get_temp CPU Max T=%d\n", curr_temp);
 
-	if ((curr_temp > (trip_temp[0] - 15000)) || (curr_temp < -30000) || (curr_temp > 85000))
-		tscpu_warn("%d %d CPU T=%d\n", get_adaptive_power_limit(0), get_adaptive_power_limit(1), curr_temp);
+	if ((curr_temp > (trip_temp[0] - 15000)) || (curr_temp < -30000) || (curr_temp > 85000)) {
+		printk_ratelimited("%d %d CPU T=%d\n",
+			get_adaptive_power_limit(0), get_adaptive_power_limit(1), curr_temp);
+	}
 
 	temp_temp = curr_temp;
 	if (curr_temp != 0) {/* not resumed from suspensio... */
@@ -1057,10 +1059,10 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 	};
 
 	struct mtktscpu_data *ptr_mtktscpu_data = kmalloc(sizeof(*ptr_mtktscpu_data), GFP_KERNEL);
-
-	if (ptr_mtktscpu_data == NULL)
+	if (ptr_mtktscpu_data == NULL) {
+		pr_warn("[%s] kmalloc fail\n\n", __func__);
 		return -ENOMEM;
-
+	}
 
 	len = (count < (sizeof(ptr_mtktscpu_data->desc) - 1)) ? count : (sizeof(ptr_mtktscpu_data->desc) - 1);
 	if (copy_from_user(ptr_mtktscpu_data->desc, buffer, len)) {
@@ -1814,7 +1816,7 @@ static int thermal_auxadc_get_data(int times, int channel)
 }
 #endif
 /*Patch to pause thermal controller and turn off auxadc GC.
-  For Jade only*/
+  For mt6755 only*/
 #if 1
 static void tscpu_thermal_pause(void)
 {
@@ -2001,7 +2003,7 @@ void tscpu_cancel_thermal_timer(void)
 
 #if defined(CONFIG_ARCH_MT6755)
 /*Patch to pause thermal controller and turn off auxadc GC.
-  For Jade only*/
+  For mt6755 only*/
 	tscpu_thermal_pause();
 #endif
 }
@@ -2015,7 +2017,7 @@ void tscpu_start_thermal_timer(void)
 
 #if defined(CONFIG_ARCH_MT6755)
 /*Patch to pause thermal controller and turn off auxadc GC.
-  For Jade only*/
+  For mt6755 only*/
 	tscpu_thermal_release();
 #endif
 }
@@ -2191,7 +2193,7 @@ static int tscpu_thermal_probe(struct platform_device *dev)
 #if !defined(CONFIG_MTK_CLKMGR)
 #if defined(CONFIG_ARCH_MT6755)
 /*Patch to pause thermal controller and turn off auxadc GC.
-  For Jade only*/
+  For mt6755 only*/
 	therm_auxadc = devm_clk_get(&dev->dev, "therm-auxadc");
 
 	if (IS_ERR(therm_auxadc))

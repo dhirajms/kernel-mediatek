@@ -13,6 +13,7 @@
 #include <linux/slab.h>
 #include <linux/clk.h>
 #include <linux/reboot.h>
+#include "mtk_thermal_typedefs.h"
 /* #include <mach/mt_ptp.h> */
 #include "../../base/power/mt8173/mt_spm.h"
 #include <mt-plat/sync_write.h>
@@ -1041,7 +1042,7 @@ int mtk_cpufreq_register(struct mtk_cpu_power_info *freqs, int num)
 	int i = 0;
 	int gpu_power = 0;
 
-	pr_debug("mtk_cpufreq_register\n");
+	pr_info("mtk_cpufreq_register\n");
 
 	tscpu_num_opp = num;
 
@@ -1118,7 +1119,7 @@ int mtk_gpufreq_register(struct mt_gpufreq_power_table_info *freqs, int num)
 {
 	int i = 0;
 
-	pr_debug("mtk_gpufreq_register\n");
+	pr_info("mtk_gpufreq_register\n");
 	mtk_gpu_power = kzalloc((num) * sizeof(struct mt_gpufreq_power_table_info), GFP_KERNEL);
 	if (mtk_gpu_power == NULL)
 		return -ENOMEM;
@@ -1967,6 +1968,17 @@ static int tscpu_set_power_consumption_state(void)
 				pr_debug("previous_opp=%d, now_opp=%d\n", previous_step, i);
 				previous_step = i;
 				mtktscpu_limited_dmips = tscpu_cpu_dmips[previous_step];
+
+				/* Add error-checking */
+				if (!mtk_gpu_power) {
+					pr_err("%s GPU POWER NOT READY!!", __func__);
+					/* GPU freq = 396500, power = 568 */
+					power = (i * 100) + 700 - 568;
+					pr_err("%s cpu_power=%d\n", __func__, power);
+					set_static_cpu_power_limit(power);
+					return -ENOMEM;
+				}
+
 				if (Num_of_GPU_OPP == 3) {
 					power =
 					    (i * 100 + 700) - mtk_gpu_power[Num_of_GPU_OPP -

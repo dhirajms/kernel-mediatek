@@ -9,7 +9,6 @@
  * This file is released under the GPLv2.
  *
  */
-
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/mm.h>
@@ -823,7 +822,7 @@ static bool rtree_next_node(struct memory_bitmap *bm, int index)
 }
 
 /**
- *	memory_bm_rtree_next_pfn - Find the next set bit in the bitmap @bm
+ *	memory_bm_next_pfn - Find the next set bit in the bitmap @bm
  *
  *	Starting from the last returned position this function searches
  *	for the next set bit in the memory bitmap and returns its
@@ -836,8 +835,14 @@ unsigned long memory_bm_next_pfn(struct memory_bitmap *bm, int index)
 {
 	unsigned long bits, pfn, pages;
 	int bit;
+	static int nrcpu = 1;
 
-	index += num_possible_cpus();	/* Iteration state is separated from get/set/test */
+	index += nr_cpumask_bits;	/* Iteration state is separated from get/set/test */
+	if (nrcpu) {
+		pr_warn("%s: num_possible_cpus=%d, nr_cpumask_bits=%d",
+			__func__, num_possible_cpus(), nr_cpumask_bits);
+		nrcpu = 0;
+	}
 
 	do {
 		pages = bm->cur[index].zone->end_pfn - bm->cur[index].zone->start_pfn;
@@ -973,25 +978,6 @@ static void mark_nosave_pages(struct memory_bitmap *bm)
 				mem_bm_set_bit_check(bm, 0, pfn);
 			}
 	}
-}
-
-static bool is_nosave_page(unsigned long pfn)
-{
-	struct nosave_region *region;
-
-	list_for_each_entry(region, &nosave_regions, list) {
-		if (pfn >= region->start_pfn && pfn < region->end_pfn) {
-			pr_err("PM: %#010llx in e820 nosave region: "
-			       "[mem %#010llx-%#010llx]\n",
-			       (unsigned long long)pfn << PAGE_SHIFT,
-			       (unsigned long long)region->start_pfn << PAGE_SHIFT,
-			       ((unsigned long long)region->end_pfn << PAGE_SHIFT)
-			       - 1);
-			return true;
-		}
-	}
-
-	return false;
 }
 
 /**

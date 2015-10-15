@@ -1303,6 +1303,21 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	if (err)
 		goto err;
 
+#ifdef CONFIG_MMC_FFU
+	if (oldcard && (oldcard->state & MMC_STATE_FFUED)) {
+		/* After FFU, some fields in CID may change,
+		   so just copy new CID into card->raw_cid */
+		memcpy((void *)oldcard->raw_cid, (void *)cid, sizeof(cid));
+		err = mmc_decode_cid(oldcard);
+		if (err)
+			goto free_card;
+
+		card = oldcard;
+		card->nr_parts = 0;
+		oldcard = NULL;
+
+	} else
+#endif
 	if (oldcard) {
 		if (memcmp(cid, oldcard->raw_cid, sizeof(cid)) != 0) {
 			err = -ENOENT;
@@ -1526,6 +1541,10 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			card->ext_csd.hpi_en = 1;
 	}
 
+#ifdef CONFIG_MTK_EMMC_CACHE
+	if (card->quirks & MMC_QUIRK_DISABLE_CACHE)
+		goto skip_cache;
+#endif
 	/*
 	 * If cache size is higher than 0, this indicates
 	 * the existence of cache and it can be turned on.
@@ -1549,6 +1568,9 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			card->ext_csd.cache_ctrl = 1;
 		}
 	}
+#ifdef CONFIG_MTK_EMMC_CACHE
+skip_cache:
+#endif
 
 	/*
 	 * The mandatory minimum values are defined for packed command.
@@ -1587,6 +1609,13 @@ err:
 
 	return err;
 }
+
+#ifdef CONFIG_MMC_FFU
+int mmc_reinit_oldcard(struct mmc_host *host)
+{
+	return mmc_init_card(host, host->card->ocr, host->card);
+}
+#endif
 
 static int mmc_can_sleep(struct mmc_card *card)
 {
@@ -1907,15 +1936,44 @@ static int mmc_runtime_resume(struct mmc_host *host)
 	return 0;
 }
 
-static int mmc_power_restore(struct mmc_host *host)
+int mmc_can_reset(struct mmc_card *card)
 {
-	int ret;
+	u8 rst_n_function;
 
-	mmc_claim_host(host);
-	ret = mmc_init_card(host, host->card->ocr, host->card);
-	mmc_release_host(host);
+	rst_n_function = card->ext_csd.rst_n_function;
+	if ((rst_n_function & EXT_CSD_RST_N_EN_MASK) != EXT_CSD_RST_N_ENABLED)
+		return 0;
+	return 1;
+}
+EXPORT_SYMBOL(mmc_can_reset);
 
-	return ret;
+static int mmc_reset(struct mmc_host *host)
+{
+	struct mmc_card *card = host->card;
+	u32 status;
+
+	if (!(host->caps & MMC_CAP_HW_RESET) || !host->ops->hw_reset)
+		return -EOPNOTSUPP;
+
+	if (!mmc_can_reset(card))
+		return -EOPNOTSUPP;
+
+	mmc_host_clk_hold(host);
+	mmc_set_clock(host, host->f_init);
+
+	host->ops->hw_reset(host);
+
+	/* If the reset has happened, then a status command will fail */
+	if (!mmc_send_status(card, &status)) {
+		mmc_host_clk_release(host);
+		return -ENOSYS;
+	}
+
+	/* Set initial state and call mmc_set_ios */
+	mmc_set_initial_state(host);
+	mmc_host_clk_release(host);
+
+	return mmc_init_card(host, card->ocr, card);
 }
 
 static const struct mmc_bus_ops mmc_ops = {
@@ -1925,9 +1983,9 @@ static const struct mmc_bus_ops mmc_ops = {
 	.resume = mmc_resume,
 	.runtime_suspend = mmc_runtime_suspend,
 	.runtime_resume = mmc_runtime_resume,
-	.power_restore = mmc_power_restore,
 	.alive = mmc_alive,
 	.shutdown = mmc_shutdown,
+	.reset = mmc_reset,
 };
 
 /*

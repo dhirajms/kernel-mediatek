@@ -1992,6 +1992,12 @@ struct free_record {
 void musb_ep_restart(struct musb *musb, struct musb_request *req)
 {
 #ifdef MUSB_QMU_SUPPORT
+	/* limit debug mechanism to avoid printk too much */
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+
+	if (!(__ratelimit(&ratelimit)))
+		return;
+
 	QMU_WARN("<== %s request %p len %u on hw_ep%d\n",
 	    req->tx ? "TX/IN" : "RX/OUT", &req->request, req->request.length, req->epnum);
 #else
@@ -2165,7 +2171,7 @@ static int musb_gadget_dequeue(struct usb_ep *ep, struct usb_request *request)
 		musb_g_giveback(musb_ep, request, -ECONNRESET);
 #ifdef MUSB_QMU_SUPPORT
 	else {
-		QMU_WARN("dequeue req(%p), ep(%d), swep(%d)\n", request, musb_ep->hw_ep->epnum,
+		QMU_DBG("dequeue req(%p), ep(%d), swep(%d)\n", request, musb_ep->hw_ep->epnum,
 			 ep->address);
 		musb_flush_qmu(musb_ep->hw_ep->epnum, (musb_ep->is_in ? TXQ : RXQ));
 		musb_g_giveback(musb_ep, request, -ECONNRESET);
@@ -2478,37 +2484,28 @@ static int musb_gadget_set_self_powered(struct usb_gadget *gadget, int is_selfpo
 
 static void musb_pullup(struct musb *musb, int is_on, bool usb_in)
 {
-
-#if 0
 	u8 power;
-
-	power = musb_readb(musb->mregs, MUSB_POWER);
-	if (is_on)
-		power |= MUSB_POWER_SOFTCONN;
-	else
-		power &= ~MUSB_POWER_SOFTCONN;
-
-	/* FIXME if on, HdrcStart; if off, HdrcStop */
-
-	DBG(2, "gadget D+ pullup %s\n", is_on ? "on" : "off");
-	musb_writeb(musb->mregs, MUSB_POWER, power);
-#else
 	DBG(0, "MUSB: gadget pull up %d start\n", is_on);
-
-	if (!usb_in && is_on)
-		DBG(0, "no USB cable, don't need to turn on USB\n");
-	else if (musb->is_host)
-		DBG(0, "USB is host, don't need to control USB\n");
-	else if (musb->in_ipo_off)
-		DBG(0, "USB is charging mdoe, don't need to control USB\n");
-	else if (is_on)
-		musb_start(musb);
-	else
-		musb_stop(musb);
-
-
+	if (musb->power) {
+		power = musb_readb(musb->mregs, MUSB_POWER);
+		if (is_on)
+			power |= MUSB_POWER_SOFTCONN;
+		else
+			power &= ~MUSB_POWER_SOFTCONN;
+		musb_writeb(musb->mregs, MUSB_POWER, power);
+	} else {
+		if (!usb_in && is_on)
+			DBG(0, "no USB cable, don't need to turn on USB\n");
+		else if (musb->is_host)
+			DBG(0, "USB is host, don't need to control USB\n");
+		else if (musb->in_ipo_off)
+			DBG(0, "USB is charging mdoe, don't need to control USB\n");
+		else if (is_on)
+			musb_start(musb);
+		else
+			musb_stop(musb);
+	}
 	DBG(0, "MUSB: gadget pull up %d end\n", is_on);
-#endif
 }
 
 #if 0

@@ -199,6 +199,7 @@
 				regulator-min-microamp	= <2000000>;
 				regulator-max-microamp	= <4400000>;
 				regulator-ramp-delay = <10000>;
+				en-gpio = <&pio6397 24 0>;
 			};
 			da9212_vgpu_reg: BUCKB {
 				regulator-name = "VBUCKB";
@@ -207,7 +208,6 @@
 				regulator-min-microamp	= <2000000>;
 				regulator-max-microamp	= <3000000>;
 				regulator-ramp-delay = <10000>;
-				regulator-always-on;
 			};
 		};
 	};
@@ -364,11 +364,14 @@
 	pinctrl-1 = <&mmc3_pins_uhs>;
 	status = "okay";
 	bus-width = <4>;
-	max-frequency = <50000000>;
+	max-frequency = <200000000>;
 	cap-sd-highspeed;
 	sd-uhs-sdr12;
 	sd-uhs-sdr25;
 	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+	sd-uhs-ddr50;
+	non-removable;
 };
 
 &pio {
@@ -708,6 +711,14 @@
 		/* ----- Connectivity GPIO configs ----- */
 	};
 	/* ------ Connectivity GPIO configs ------ */
+
+	usb_iddig: usb_iddig {
+		pins_cmd_dat {
+			pinmux = <MT8173_PIN_16_IDDIG__FUNC_IDDIG>;
+			input-enable;
+			bias-pull-up;
+		};
+	};
 };
 
 &ptp_od {
@@ -773,6 +784,8 @@
 
 		mt6397codec: mt6397codec {
 			compatible = "mediatek,mt6397-codec";
+			mediatek,adc-warmup-time-us = <10000>;
+			mediatek,dmic-warmup-time-us = <45000>;
 			mediatek,speaker-mode = <0>; /* 0(CLASSD) 1(CLASSAB) */
 		};
 
@@ -1009,6 +1022,8 @@
 };
 
 &usb {
+	pinctrl-names = "default";
+	pinctrl-0 = <&usb_iddig>;
 	reg-vusb33-supply = <&mt6397_vusb_reg>;
 	port-num = <1>; /* is the max(u2-ports, u3-ports) */
 	drv-mode = <3>; /* 1: host, 2: device, 3 dual-mode */

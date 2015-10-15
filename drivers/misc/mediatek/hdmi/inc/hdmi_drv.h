@@ -49,6 +49,7 @@ enum IO_DRIVING_CURRENT {
 #if !defined(HDMI_MT8193_SUPPORT)
 enum HDMI_VIDEO_RESOLUTION {
 	HDMI_VIDEO_720x480p_60Hz = 0,
+	HDMI_VIDEO_1440x480i_60Hz = 1,
 	HDMI_VIDEO_1280x720p_60Hz = 2,
 	HDMI_VIDEO_1920x1080i_60Hz = 5,
 	HDMI_VIDEO_1920x1080p_30Hz = 6,
@@ -305,7 +306,7 @@ struct HDMI_DRIVER {
 	void (*hdmistatus)(void);
 	void (*hdcpkey)(u8 *pbhdcpkey);
 #if defined(HDMI_MT8193_SUPPORT)
-	      void (*getedid)(struct HDMI_EDID_INFO_T *pv_get_info);
+	      void (*getedid)(HDMI_EDID_T *pv_get_info);
 #else
 	void (*getedid)(void *pv_get_info);
 #endif

@@ -10,6 +10,7 @@
 #include <linux/reboot.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mach/mt_thermal.h"
+#include "mtk_thermal_typedefs.h"
 
 /* #include <mach/pmic_mt6329_hw_bank1.h> */
 /* #include <mach/pmic_mt6329_sw_bank1.h> */

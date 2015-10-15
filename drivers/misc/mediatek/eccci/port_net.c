@@ -496,6 +496,10 @@ static int port_net_init(struct ccci_port *port)
 {
 #ifdef CCMNI_U
 	if (port->rx_ch == CCCI_CCMNI1_RX) {
+#if defined CONFIG_MTK_IRAT_SUPPORT
+		CCCI_NOTICE_MSG(port->modem->index, NET, "clear MODEM_CAP_SGIO flag\n");
+		port->modem->capability &= (~(MODEM_CAP_SGIO));
+#endif
 		eccci_ccmni_ops.md_ability |= port->modem->capability;
 		if (port->modem->index == MD_SYS1)
 			ccmni_ops.init(port->modem->index, &eccci_ccmni_ops);
@@ -517,10 +521,13 @@ static int port_net_init(struct ccci_port *port)
 	dev->flags = IFF_NOARP &	/* ccmni is a pure IP device */
 	    (~IFF_BROADCAST & ~IFF_MULTICAST);	/* ccmni is P2P */
 	dev->features = NETIF_F_VLAN_CHALLENGED;	/* not support VLAN */
+
+#ifndef CONFIG_MTK_IRAT_SUPPORT
 	if (port->modem->capability & MODEM_CAP_SGIO) {
 		dev->features |= NETIF_F_SG;
 		dev->hw_features |= NETIF_F_SG;
 	}
+#endif
 	dev->addr_len = ETH_ALEN;	/* ethernet header size */
 	dev->destructor = free_netdev;
 	dev->hard_header_len += sizeof(struct ccci_header);	/* reserve Tx CCCI header room */
@@ -655,6 +662,9 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 {
 #ifdef CCMNI_U
+	if (((state == TX_IRQ) && ((port->flags & PORT_F_RX_FULLED) == 0)) ||
+		((state == TX_FULL) && (port->flags & PORT_F_RX_FULLED)))
+		return;
 	ccmni_ops.md_state_callback(port->modem->index, port->rx_ch, state);
 	switch (state) {
 	case TX_IRQ:
@@ -671,6 +681,9 @@ static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 	struct net_device *dev = nent->ndev;
 
 	/* CCCI_INF_MSG(port->modem->index, NET, "port_net_md_state_notice: %s, md_sta=%d\n", port->name, state); */
+	if (((state == TX_IRQ) && ((port->flags & PORT_F_RX_FULLED) == 0)) ||
+		((state == TX_FULL) && (port->flags & PORT_F_RX_FULLED)))
+		return;
 	switch (state) {
 	case RX_IRQ:
 		mod_timer(&nent->polling_timer, jiffies + HZ);

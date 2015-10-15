@@ -20,13 +20,9 @@
 #include <linux/of.h>
 #include <linux/types.h>
 #include <linux/of_address.h>
+#include <linux/of_platform.h>
 #include <linux/io.h>
 #include <linux/regulator/consumer.h>
-#ifdef CONFIG_PM_RUNTIME
-#include <linux/pm_runtime.h>
-#endif
-
-
 #include <linux/uaccess.h>
 #include <linux/atomic.h>
 #ifndef CONFIG_ARM64
@@ -59,7 +55,6 @@
 #include "fbconfig_kdebug_rome.h"
 
 #include "mtk_ovl.h"
-
 
 #if defined(MTK_ALPS_BOX_SUPPORT)
 #include "extd_ddp.h"
@@ -1620,6 +1615,9 @@ static void mtkfb_blank_resume(void);
 #if defined(CONFIG_PM_AUTOSLEEP)
 static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
+	if (get_boot_mode() == RECOVERY_BOOT)
+		return 0;
+
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 	case FB_BLANK_NORMAL:
@@ -1836,8 +1834,9 @@ static int init_framebuffer(struct fb_info *info)
 {
 	void *buffer = info->screen_base + info->var.yoffset * info->fix.line_length;
 
-	/* clean whole frame buffer as black */
-	memset(buffer, 0, info->screen_size);
+	/* clean the current frame buffer as black */
+	/* the ioremap_nocache memory will not support memset/memcpy */
+	memset_io(buffer, 0, info->screen_size/MTK_FB_PAGES);
 
 	return 0;
 }
@@ -2245,21 +2244,37 @@ static int mtkfb_probe(struct platform_device *pdev)
 	int r = 0;
 	int i = 0;
 	int bug_idx = -1;
+	struct device_node *larb_node[2];
+	struct platform_device *larb_pdev[2];
 
 	DISPFUNC();
 
 	MTKFB_MSG("mtkfb_probe start\n");
+
+	larb_node[0] = of_parse_phandle(pdev->dev.of_node, "mediatek,larb", 0);
+	if (!larb_node[0])
+		return -EINVAL;
+
+	larb_node[1] = of_parse_phandle(pdev->dev.of_node, "mediatek,larb", 1);
+	if (!larb_node[1])
+		return -EINVAL;
+
+	larb_pdev[0] = of_find_device_by_node(larb_node[0]);
+	of_node_put(larb_node[0]);
+	larb_pdev[1] = of_find_device_by_node(larb_node[1]);
+	of_node_put(larb_node[1]);
+
+	if ((!larb_pdev[0]) || (!larb_pdev[0]->dev.driver) ||
+		(!larb_pdev[0]) || (!larb_pdev[1]->dev.driver)) {
+		MTKFB_ERR("mtkfb_probe is earlier than SMI\n");
+		return -EPROBE_DEFER;
+	}
 
 	if (get_boot_mode() == META_BOOT || get_boot_mode() == FACTORY_BOOT
 	    || get_boot_mode() == ADVMETA_BOOT || get_boot_mode() == RECOVERY_BOOT)
 		first_update = false;
 
 	init_state = 0;
-
-	if (!pdev->dev.pm_domain) {
-		MTKFB_ERR("mtkfb_probe is earlier than PM domain\n");
-		return -EPROBE_DEFER;
-	}
 
 	mtkfb_fbdev = pdev;
 
@@ -2311,7 +2326,6 @@ static int mtkfb_probe(struct platform_device *pdev)
 					      (unsigned long *)&fbdev->fb_va_base, &fb_pa);
 		fb_base_va = (unsigned long)fbdev->fb_va_base;
 		fbdev->fb_pa_base = fb_base;
-
 #else
 		struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 		/* ASSERT(DISP_GetVRamSize() <= (res->end - res->start + 1)); */
@@ -2324,7 +2338,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 #ifdef CONFIG_OF
 	for (i = 0; i < MM_CLK_NUM; i++) {
 		ddp_clk_map[i] = devm_clk_get(&pdev->dev, ddp_get_clk_name(i));
-		if (IS_ERR(ddp_clk_map[i]) && i != MM_CLK_MTCMOS)
+		if (IS_ERR(ddp_clk_map[i]))
 			bug_idx = i;
 		MTKFB_LOG("***DT|DISPSYS clock|%s ID %d: 0x%lx\n", ddp_get_clk_name(i), i,
 			  (unsigned long)ddp_clk_map[i]);
@@ -2334,9 +2348,6 @@ static int mtkfb_probe(struct platform_device *pdev)
 			  ddp_get_clk_name(bug_idx));
 		BUG_ON(1);
 	}
-#ifdef CONFIG_PM_RUNTIME
-	pm_runtime_enable(&mtkfb_fbdev->dev);
-#endif
 #endif
 
 	/* mtkfb should parse lcm name from kernel boot command line */
@@ -2489,9 +2500,6 @@ static int mtkfb_remove(struct platform_device *pdev)
 
 	fbdev->state = MTKFB_DISABLED;
 	mtkfb_free_resources(fbdev, saved_state);
-#ifdef CONFIG_PM_RUNTIME
-	pm_runtime_disable(&mtkfb_fbdev->dev);
-#endif
 	MSG_FUNC_LEAVE();
 	return 0;
 }

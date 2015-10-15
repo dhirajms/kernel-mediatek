@@ -348,8 +348,6 @@ static int mt_gpt_set_next_event(unsigned long cycles,
 {
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
-	/* printk("[%s]entry, evt=%lu\n", __func__, cycles); */
-
 	__gpt_stop(dev);
 	__gpt_set_cmp(dev, cycles, 0);
 	__gpt_start_from_zero(dev);
@@ -362,7 +360,6 @@ static void mt_gpt_set_mode(enum clock_event_mode mode,
 {
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
-	/* printk("[%s]entry, mode=%d\n", __func__, mode); */
 	switch (mode) {
 	case CLOCK_EVT_MODE_PERIODIC:
 		__gpt_stop(dev);
@@ -832,4 +829,5 @@ module_init(gpt_mod_init);
 CLOCKSOURCE_OF_DECLARE(mt2701_apxgpt, "mediatek,mt2701-apxgpt", mt_gpt_init);
 CLOCKSOURCE_OF_DECLARE(mt8163_apxgpt, "mediatek,mt8163-apxgpt", mt_gpt_init);
 CLOCKSOURCE_OF_DECLARE(mt8173_apxgpt, "mediatek,mt8173-apxgpt", mt_gpt_init);
+CLOCKSOURCE_OF_DECLARE(mt8127_apxgpt, "mediatek,mt8127-apxgpt", mt_gpt_init);
 MODULE_LICENSE("GPL");

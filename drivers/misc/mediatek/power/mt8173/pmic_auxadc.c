@@ -217,7 +217,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 
 			break;
 		default:
-			pr_info("[Power/PMIC][AUXADC] " "Invalid channel value(%d,%d)\n", dwChannel, trimd);
+			pr_debug("[Power/PMIC][AUXADC] " "Invalid channel value(%d,%d)\n", dwChannel, trimd);
 			mutex_unlock(&pmic_adc_mutex);
 			return -1;
 		}
@@ -273,7 +273,7 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		adc_result = (adc_result_temp * r_val_temp * VOLTAGE_FULL_RANGE) / ADC_PRECISE;
 		break;
 	default:
-		pr_info("[Power/PMIC][AUXADC] " "Invalid channel value(%d,%d)\n", dwChannel, trimd);
+		pr_debug("[Power/PMIC][AUXADC] " "Invalid channel value(%d,%d)\n", dwChannel, trimd);
 		mutex_unlock(&pmic_adc_mutex);
 		return -1;
 	}

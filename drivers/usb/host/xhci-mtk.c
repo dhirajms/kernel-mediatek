@@ -1,5 +1,25 @@
-#include <xhci-mtk.h>
+/*
+ * Mediatek XHCI driver for SSUSB.
+ *
+ * Copyright (C) 2015 Mediatek Inc.
+ *
+ * Author:	Arvin Wang <arvin.wang@mediatek.com>,
+ *		Macpaul Lin <macpaul.lin@mediatek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/slab.h>
+#include <linux/init.h>
+#include <linux/list.h>
+#include <linux/platform_device.h>
+#include <linux/io.h>
+#include <xhci-mtk.h>
 
 static struct sch_ep **ss_out_eps[MAX_EP_NUM];
 static struct sch_ep **ss_in_eps[MAX_EP_NUM];
@@ -25,9 +45,10 @@ int mtk_xhci_scheduler_init(void)
 	return 0;
 }
 
-int add_sch_ep(int dev_speed, int is_in, int isTT, int ep_type, int maxp, int interval, int burst,
-	       int mult, int offset, int repeat, int pkts, int cs_count, int burst_mode,
-	       int bw_cost, mtk_u32 *ep, struct sch_ep *tmp_ep)
+int add_sch_ep(int dev_speed, int is_in, int isTT, int ep_type, int maxp,
+	       int interval, int burst, int mult, int offset, int repeat,
+	       int pkts, int cs_count, int burst_mode, int bw_cost,
+	       mtk_u32 *ep, struct sch_ep *tmp_ep)
 {
 
 	struct sch_ep **ep_array;
@@ -66,8 +87,8 @@ int add_sch_ep(int dev_speed, int is_in, int isTT, int ep_type, int maxp, int in
 	return SCH_FAIL;
 }
 
-int count_ss_bw(int is_in, int ep_type, int maxp, int interval, int burst, int mult, int offset,
-		int repeat, int td_size)
+int count_ss_bw(int is_in, int ep_type, int maxp, int interval, int burst,
+		int mult, int offset, int repeat, int td_size)
 {
 	int i, j, k;
 	int bw_required[3];
@@ -376,8 +397,8 @@ int count_tt_intr_bw(int interval, int frame_offset)
 	return SCH_SUCCESS;
 }
 
-struct sch_ep *mtk_xhci_scheduler_remove_ep(int dev_speed, int is_in, int isTT, int ep_type,
-					    mtk_u32 *ep)
+struct sch_ep *mtk_xhci_scheduler_remove_ep(int dev_speed, int is_in, int isTT,
+					    int ep_type, mtk_u32 *ep)
 {
 	int i;
 	struct sch_ep **ep_array;
@@ -402,8 +423,9 @@ struct sch_ep *mtk_xhci_scheduler_remove_ep(int dev_speed, int is_in, int isTT, 
 	return NULL;
 }
 
-int mtk_xhci_scheduler_add_ep(int dev_speed, int is_in, int isTT, int ep_type, int maxp,
-			      int interval, int burst, int mult, mtk_u32 *ep, mtk_u32 *ep_ctx,
+int mtk_xhci_scheduler_add_ep(int dev_speed, int is_in, int isTT, int ep_type,
+			      int maxp, int interval, int burst, int mult,
+			      mtk_u32 *ep, mtk_u32 *ep_ctx,
 			      struct sch_ep *sch_ep)
 {
 	mtk_u32 bPkts = 0;
@@ -608,3 +630,49 @@ int mtk_xhci_scheduler_add_ep(int dev_speed, int is_in, int isTT, int ep_type, i
 		return SCH_FAIL;
 	}
 }
+
+void mtk_xhci_vbus_on(struct platform_device *pdev)
+{
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pinctrl_drvvbus_high;
+
+	pinctrl = devm_pinctrl_get(&pdev->dev);
+
+	if (IS_ERR(pinctrl)) {
+		dev_err(&pdev->dev, "Cannot find usb pinctrl!\n");
+		return;
+	}
+
+	pinctrl_drvvbus_high = pinctrl_lookup_state(pinctrl, "drvvbus_high");
+
+	if (IS_ERR(pinctrl_drvvbus_high)) {
+		dev_err(&pdev->dev, "Cannot find usb pinctrl drvvbus_high\n");
+		return;
+	}
+	pinctrl_select_state(pinctrl, pinctrl_drvvbus_high);
+}
+
+void mtk_xhci_vbus_off(struct platform_device *pdev)
+{
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pinctrl_drvvbus_low;
+
+	pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(pinctrl)) {
+		dev_err(&pdev->dev, "Cannot find usb pinctrl!\n");
+		return;
+	}
+
+	pinctrl_drvvbus_low = pinctrl_lookup_state(pinctrl, "drvvbus_low");
+
+	if (IS_ERR(pinctrl_drvvbus_low)) {
+		dev_err(&pdev->dev, "Cannot find usb pinctrl drvvbus_low\n");
+		return;
+	}
+	pinctrl_select_state(pinctrl, pinctrl_drvvbus_low);
+}
+
+MODULE_DESCRIPTION(DRIVER_DESC);
+MODULE_AUTHOR("Arvin Wang <arvin.wang@mediatek.com>");
+MODULE_AUTHOR("Macpaul Lin <macpaul.lin@mediatek.com>");
+MODULE_LICENSE("GPL");

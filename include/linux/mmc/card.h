@@ -314,6 +314,9 @@ struct mmc_card {
 #ifdef MTK_BKOPS_IDLE_MAYA	/* maya is 1<<11 */
 #define MMC_STATE_NEED_BKOPS	(1<<12)	/* card needs to do BKOPS */
 #endif
+#ifdef CONFIG_MMC_FFU
+#define MMC_STATE_FFUED         (1<<22)     /* card has been FFUed */
+#endif
 #define MMC_STATE_SUSPENDED	(1<<6)		/* card is suspended */
 #define MMC_STATE_SLEEP     (1<<9)      /*card is sleep */
 	unsigned int		quirks; 	/* card quirks */
@@ -332,6 +335,9 @@ struct mmc_card {
 #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
 #define MMC_QUIRK_SEC_ERASE_TRIM_BROKEN (1<<10)	/* Skip secure for erase/trim */
 #define MMC_QUIRK_BROKEN_IRQ_POLLING	(1<<11)	/* Polling SDIO_CCCR_INTx could create a fake interrupt */
+#ifdef CONFIG_MTK_EMMC_CACHE
+#define MMC_QUIRK_DISABLE_CACHE     (1<<12) /* eMMC cache feature */
+#endif
 
 	unsigned int		erase_size;	/* erase size in sectors */
  	unsigned int		erase_shift;	/* if erase unit is power 2 */

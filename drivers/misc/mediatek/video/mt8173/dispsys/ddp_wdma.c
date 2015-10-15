@@ -15,6 +15,7 @@
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 #include "extd_ddp.h"
 #endif
+#include "mtk_ovl.h"
 
 #define WDMA_COLOR_SPACE_RGB (0)
 #define WDMA_COLOR_SPACE_YUV (1)
@@ -499,6 +500,8 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 		if (primary_display_is_decouple_mode() == 1
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 		    || ext_disp_is_decouple_mode() == 1
+#else
+			|| ovl2mem_is_alive() == 1
 #endif
 		    ) {
 			unsigned int idx = wdma_index(module);

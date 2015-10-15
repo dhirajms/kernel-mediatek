@@ -506,13 +506,13 @@ static void ke_gen_user_reg_msg(void)
 	LOGD("%s +++\n", __func__);
 }
 
-static void ke_gen_ind_msg(struct aee_oops *oops)
+static int ke_gen_ind_msg(struct aee_oops *oops)
 {
 	unsigned long flags = 0;
 
 	LOGD("%s oops %p\n", __func__, oops);
 	if (oops == NULL)
-		return;
+		return -1;
 
 	spin_lock_irqsave(&aed_device_lock, flags);
 	if (aed_dev.kerec.lastlog == NULL) {
@@ -530,7 +530,7 @@ static void ke_gen_ind_msg(struct aee_oops *oops)
 		aee_oops_free(oops);
 		spin_unlock_irqrestore(&aed_device_lock, flags);
 
-		return;
+		return -1;
 	}
 	spin_unlock_irqrestore(&aed_device_lock, flags);
 
@@ -539,7 +539,7 @@ static void ke_gen_ind_msg(struct aee_oops *oops)
 
 		rep_msg = msg_create(&aed_dev.kerec.msg, 0);
 		if (rep_msg == NULL)
-			return;
+			return 0;
 
 		rep_msg->cmdType = AE_IND;
 		switch (oops->attr) {
@@ -572,7 +572,7 @@ static void ke_gen_ind_msg(struct aee_oops *oops)
 		if (wait_for_completion_timeout(&aed_ke_com, msecs_to_jiffies(5 * 60 * 1000)))
 			LOGE("%s: TIMEOUT, not receive close event, skip\n", __func__);
 	}
-
+	return 0;
 }
 
 static void ke_destroy_log(void)
@@ -621,6 +621,7 @@ static void ke_queue_request(struct aee_oops *oops)
 
 static void ke_worker(struct work_struct *work)
 {
+	int ret = 0;
 	struct aee_oops *oops, *n;
 	unsigned long flags = 0;
 
@@ -630,9 +631,10 @@ static void ke_worker(struct work_struct *work)
 			return;
 		}
 
-		ke_gen_ind_msg(oops);
+		ret = ke_gen_ind_msg(oops);
 		spin_lock_irqsave(&ke_queue.lock, flags);
-		list_del(&oops->list);
+		if (!ret)
+			list_del(&oops->list);
 		spin_unlock_irqrestore(&ke_queue.lock, flags);
 		ke_destroy_log();
 	}
@@ -1815,10 +1817,10 @@ void aee_kernel_dal_api(const char *file, const int line, const char *msg)
 			strncpy(dal_show->msg, msg, sizeof(dal_show->msg) - 1);
 			dal_show->msg[sizeof(dal_show->msg) - 1] = 0;
 			DAL_Printf("%s", dal_show->msg);
-			kfree(dal_show);
 		} else {
 			LOGD("DAL not allowed (mode %d)\n", aee_mode);
 		}
+		kfree(dal_show);
 	}
 	up(&aed_dal_sem);
 #endif
@@ -1862,6 +1864,7 @@ static void external_exception(const char *assert_type, const int *log, int log_
 
 	if (NULL == ee_log) {
 		LOGE("%s : memory alloc() fail\n", __func__);
+		kfree(eerec);
 		return;
 	}
 

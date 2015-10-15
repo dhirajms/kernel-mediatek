@@ -263,7 +263,7 @@ static void simp_msdc_config_clock(struct simp_msdc_host *host, unsigned int hz)
 	/*simp_msdc_config_clksrc(host, MSDC_CLKSRC_NONE);*/
 
 	/* designer said: best way is wait clk stable while modify clk config bit */
-	sdr_set_field(MSDC_CFG, MSDC_CFG_CKMOD | MSDC_CFG_CKDIV, (mode << 12) | (div % 0xfff));
+	sdr_set_field(MSDC_CFG, MSDC_CFG_CKMOD | MSDC_CFG_CKDIV, (mode << 8) | (div % 0xff));
 
 	simp_msdc_config_clksrc(host, orig_clksrc);
 
@@ -550,7 +550,7 @@ static unsigned int simp_msdc_init(struct simp_mmc_host *mmc_host)
 	base = host->base;
 
 	/* set to SD/MMC mode, the first step while operation msdc */
-	sdr_set_field(MSDC_CFG, MSDC_CFG_MODE, 1);
+	sdr_set_field(MSDC_CFG, MSDC_CFG_MODE, 1);	/* MSDC_SDMMC */
 
 	/* reset controller */
 	msdc_resetd(host->id);

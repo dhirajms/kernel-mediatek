@@ -51,9 +51,11 @@
 #include "ddp_dump.h"
 #include "display_recorder.h"
 #include "fbconfig_kdebug.h"
+#include "ddp_manager.h"
 
 #include "mtk_ovl.h"
 #include "ion_drv.h"
+#include "ddp_drv.h"
 
 #ifdef DISP_GPIO_DTS
 #include "disp_dts_gpio.h" /* set gpio via DTS */
@@ -1373,6 +1375,7 @@ static void compat_convert(struct compat_fb_overlay_layer *compat_info,
 	info->src_width = compat_info->src_width;
 	info->src_height = compat_info->src_height;
 	info->tgt_offset_x = compat_info->tgt_offset_x;
+	info->tgt_offset_y = compat_info->tgt_offset_y;
 	info->tgt_width = compat_info->tgt_width;
 	info->tgt_height = compat_info->tgt_height;
 	info->layer_rotation = compat_info->layer_rotation;
@@ -1694,7 +1697,11 @@ static int init_framebuffer(struct fb_info *info)
 	void *buffer = info->screen_base + info->var.yoffset * info->fix.line_length;
 
 	/* clean whole frame buffer as black */
-	memset_io(buffer, 0, info->screen_size);
+	int size = info->var.xres_virtual * info->var.yres * info->var.bits_per_pixel/8;
+
+	/*memset_io(buffer, 0, info->screen_size)*/;
+
+	memset_io(buffer, 0, size);
 
 	return 0;
 }
@@ -1966,10 +1973,6 @@ unsigned int vramsize = 0;
 phys_addr_t fb_base = 0;
 static int is_videofb_parse_done;
 static unsigned long video_node;
-#if !defined(CONFIG_MTK_LEGACY)
-unsigned int lcm_driver_id = 0;
-unsigned int lcm_module_id = 0;
-#endif
 
 static int fb_early_init_dt_get_chosen(unsigned long node, const char *uname, int depth, void *data)
 {
@@ -1995,16 +1998,6 @@ int _parse_tag_videolfb(void)
 #endif
 
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0) {
-#if !defined(CONFIG_MTK_LEGACY)
-		u32 *p = NULL;
-
-		p = (u32 *)of_get_flat_dt_prop(video_node, "lcm_driver_id", NULL);
-		if (p)
-			lcm_driver_id = *p;
-		p = (u32 *)of_get_flat_dt_prop(video_node, "lcm_module_id", NULL);
-		if (p)
-			lcm_module_id = *p;
-#endif
 		videolfb_tag = (struct tag_videolfb *)of_get_flat_dt_prop(video_node, "atag,videolfb", NULL);
 		if (videolfb_tag) {
 			memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
@@ -2026,10 +2019,6 @@ int _parse_tag_videolfb(void)
 			DISPCHECK("[DT][videolfb] fps        = %d\n", lcd_fps);
 			DISPCHECK("[DT][videolfb] fb_base    = %p\n", (void *)fb_base);
 			DISPCHECK("[DT][videolfb] vram       = %d\n", vramsize);
-#if !defined(CONFIG_MTK_LEGACY)
-			DISPCHECK("[DT][videolfb] driver_id  = 0x%x\n", lcm_driver_id);
-			DISPCHECK("[DT][videolfb] module_id  = 0x%x\n", lcm_module_id);
-#endif
 			DISPCHECK("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
 #endif
 			return 0;
@@ -2446,82 +2435,6 @@ static void mtkfb_blank_suspend(void)
 	pr_debug("[FB Driver] leave early_suspend\n");
 }
 
-#ifdef DISP_IPOH_BOOT
-/* IPO-H workaround helper functions */
-struct ipoh_wkarnd {
-	bool is_ipoh_booting;
-	void (*on_restore_noirq)(struct ipoh_wkarnd *t, struct device *dev);
-	void (*on_late_resume_done)(struct ipoh_wkarnd *t);
-};
-
-static void ipoh_wkarnd_on_restore_noirq(struct ipoh_wkarnd *w, struct device *dev)
-{
-	if (w == 0)
-		return;
-
-	if (w->on_restore_noirq)
-		w->on_restore_noirq(w, dev);
-}
-
-static void ipoh_wkarnd_on_late_resume_done(struct ipoh_wkarnd *w)
-{
-	if (w == 0)
-		return;
-
-	if (w->on_late_resume_done)
-		w->on_late_resume_done(w);
-}
-
-/* workaround (2015/5/18)
- *
- *   Only happens in VDO mode.
- *
- *   These following external functions and local variable is workarounded for
- *   a case that during IPOH booting, unknown behavior that some one often
- *   disable/enabled clock of I2C channel 2 and this makes DISP_RDMA0 underflow.
- *
- *   However, we found that if DISPSYS enable one of MMSYS clock, and this
- *   problem can be workarounded. Therefore we enable a clock while ipoh booting,
- *   and disable it in late_resume.
- *
- *   Root cause not found.
- */
-#ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
-#define DISP_IPOH_WORKAROUND_CG     MT_CG_DISP0_SMI_LARB0
-const char *ipoh_wkarnd_caller = "MTKFB";
-
-/* RDMA workaround handler */
-static void wkarnd_rdma_undflw_on_restore_noirq(struct ipoh_wkarnd *t, struct device *dev)
-{
-	t->is_ipoh_booting = 1;
-	enable_clock(DISP_IPOH_WORKAROUND_CG, (char *)ipoh_wkarnd_caller);
-}
-
-static void wkarnd_rdma_undflw_on_lateresume_done(struct ipoh_wkarnd *t)
-{
-	if (t->is_ipoh_booting) {
-		t->is_ipoh_booting = 0;
-		disable_clock(DISP_IPOH_WORKAROUND_CG, (char *)ipoh_wkarnd_caller);
-	}
-}
-
-static struct ipoh_wkarnd ipoh_workaround_rdma_underflow = {
-	.on_restore_noirq = wkarnd_rdma_undflw_on_restore_noirq,
-	.on_late_resume_done = wkarnd_rdma_undflw_on_lateresume_done,
-	.is_ipoh_booting = 0,
-};
-
-#define IPOH_WORKAROUND_RDMA_UNDERFLOW      (&ipoh_workaround_rdma_underflow)
-#endif /* CONFIG_MTK_CLKMGR */
-
-/* All IPO-H workaround solution */
-#ifndef IPOH_WORKAROUND_RDMA_UNDERFLOW
-#define IPOH_WORKAROUND_RDMA_UNDERFLOW      0
-#endif
-/*****************************************************************************/
-#endif
-
 /* PM resume */
 static int mtkfb_resume(struct device *pdev)
 {
@@ -2549,11 +2462,6 @@ static void mtkfb_blank_resume(void)
 		DISPERR("primary display resume failed\n");
 		return;
 	}
-
-#ifdef DISP_IPOH_BOOT
-	/* workaround (2015/5/18) */
-	ipoh_wkarnd_on_late_resume_done(IPOH_WORKAROUND_RDMA_UNDERFLOW);
-#endif
 
 	pr_debug("[FB Driver] leave late_resume\n");
 }
@@ -2589,16 +2497,13 @@ int mtkfb_pm_freeze(struct device *device)
 
 int mtkfb_pm_restore_noirq(struct device *device)
 {
-	/* disphal_pm_restore_noirq(device); */
+	DISPCHECK("%s: %d\n", __func__, __LINE__);
+
 	is_ipoh_bootup = true;
-
-#ifdef DISP_IPOH_BOOT
-	/* workaround (2015/5/18) */
-	ipoh_wkarnd_on_restore_noirq(IPOH_WORKAROUND_RDMA_UNDERFLOW, device);
+#ifndef CONFIG_MTK_CLKMGR
+	dpmgr_path_power_on(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 #endif
-
 	return 0;
-
 }
 
 /*---------------------------------------------------------------------------*/

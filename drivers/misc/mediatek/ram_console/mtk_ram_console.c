@@ -60,6 +60,9 @@ struct last_reboot_reason {
 	uint32_t clk_data[8];
 	uint32_t suspend_debug_flag;
 
+	uint32_t vcore_dvfs_opp;
+	uint32_t vcore_dvfs_status;
+
 	uint8_t cpu_dvfs_vproc_big;
 	uint8_t cpu_dvfs_vproc_little;
 	uint8_t cpu_dvfs_oppidx;
@@ -549,8 +552,8 @@ static void *remap_lowmem(phys_addr_t start, phys_addr_t size)
 #endif
 
 struct mem_desc_t {
-	unsigned int start;
-	unsigned int size;
+	unsigned long start;
+	unsigned long size;
 };
 
 #if defined(CONFIG_MTK_RAM_CONSOLE_USING_SRAM)
@@ -562,10 +565,10 @@ static int __init dt_get_ram_console(unsigned long node, const char *uname, int 
 	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
 		return 0;
 
-	sram = (mem_desc_t *) of_get_flat_dt_prop(node, "non_secure_sram", NULL);
+	sram = (struct mem_desc_t *) of_get_flat_dt_prop(node, "non_secure_sram", NULL);
 	if (sram) {
-		pr_notice("ram_console:[DT] 0x%x@0x%x\n", sram->size, sram->start);
-		*(mem_desc_t *) data = *sram;
+		pr_notice("ram_console:[DT] 0x%lx@0x%lx\n", sram->size, sram->start);
+		*(struct mem_desc_t *) data = *sram;
 	}
 
 	return 1;
@@ -591,7 +594,7 @@ static int __init ram_console_early_init(void)
 		if (bufp)
 			buffer_size = sram.size;
 		else {
-			pr_err("ram_console: ioremap failed, [0x%x, 0x%x]\n", sram.start,
+			pr_err("ram_console: ioremap failed, [0x%lx, 0x%lx]\n", sram.start,
 			       sram.size);
 			return 0;
 		}
@@ -599,8 +602,14 @@ static int __init ram_console_early_init(void)
 		return 0;
 	}
 #else
-	bufp = (struct ram_console_buffer *)CONFIG_MTK_RAM_CONSOLE_ADDR;
-	buffer_size = CONFIG_MTK_RAM_CONSOLE_SIZE;
+	bufp = ioremap(CONFIG_MTK_RAM_CONSOLE_ADDR, CONFIG_MTK_RAM_CONSOLE_SIZE);
+	if (bufp)
+		buffer_size = CONFIG_MTK_RAM_CONSOLE_SIZE;
+		ram_console_buffer_pa = CONFIG_MTK_RAM_CONSOLE_ADDR;
+	else {
+		pr_err("ram_console: ioremap failed, [0x%x, 0x%x]\n", sram.start, sram.size);
+		return 0;
+	}
 #endif
 #elif defined(CONFIG_MTK_RAM_CONSOLE_USING_DRAM)
 	bufp = remap_lowmem(CONFIG_MTK_RAM_CONSOLE_DRAM_ADDR, CONFIG_MTK_RAM_CONSOLE_DRAM_SIZE);
@@ -897,6 +906,30 @@ unsigned long *aee_rr_rec_cpu_dormant_pa(void)
 		return (unsigned long *)&RR_LINUX_PA->cpu_dormant;
 	else
 		return NULL;
+}
+
+void aee_rr_rec_vcore_dvfs_opp(u32 val)
+{
+	if (!ram_console_init_done)
+		return;
+	LAST_RR_SET(vcore_dvfs_opp, val);
+}
+
+u32 aee_rr_curr_vcore_dvfs_opp(void)
+{
+	return LAST_RR_VAL(vcore_dvfs_opp);
+}
+
+void aee_rr_rec_vcore_dvfs_status(u32 val)
+{
+	if (!ram_console_init_done)
+		return;
+	LAST_RR_SET(vcore_dvfs_status, val);
+}
+
+u32 aee_rr_curr_vcore_dvfs_status(void)
+{
+	return LAST_RR_VAL(vcore_dvfs_status);
 }
 
 void aee_rr_rec_cpu_dvfs_vproc_big(u8 val)
@@ -1214,6 +1247,16 @@ void aee_rr_show_clk(struct seq_file *m)
 		seq_printf(m, "clk_data: 0x%x\n", LAST_RRR_VAL(clk_data[i]));
 }
 
+void aee_rr_show_vcore_dvfs_opp(struct seq_file *m)
+{
+	seq_printf(m, "vcore_dvfs_opp: 0x%x\n", LAST_RRR_VAL(vcore_dvfs_opp));
+}
+
+void aee_rr_show_vcore_dvfs_status(struct seq_file *m)
+{
+	seq_printf(m, "vcore_dvfs_status: 0x%x\n", LAST_RRR_VAL(vcore_dvfs_status));
+}
+
 void aee_rr_show_cpu_dvfs_vproc_big(struct seq_file *m)
 {
 	seq_printf(m, "cpu_dvfs_vproc_big: 0x%x\n", LAST_RRR_VAL(cpu_dvfs_vproc_big));
@@ -1324,8 +1367,9 @@ void aee_rr_show_last_pc(struct seq_file *m)
 {
 	char *reg_buf = kmalloc(4096, GFP_KERNEL);
 
-	if (reg_buf && mt_reg_dump(reg_buf) == 0) {
-		seq_printf(m, "%s\n", reg_buf);
+	if (reg_buf) {
+		if (mt_reg_dump(reg_buf) == 0)
+			seq_printf(m, "%s\n", reg_buf);
 		kfree(reg_buf);
 	}
 }
@@ -1341,6 +1385,8 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_deepidle,
 	aee_rr_show_sodi,
 	aee_rr_show_spm_suspend,
+	aee_rr_show_vcore_dvfs_opp,
+	aee_rr_show_vcore_dvfs_status,
 	aee_rr_show_clk,
 	aee_rr_show_cpu_dvfs_vproc_big,
 	aee_rr_show_cpu_dvfs_vproc_little,

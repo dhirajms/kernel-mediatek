@@ -16,6 +16,27 @@
  **************************************/
 #define LOG_BUF_SIZE		256
 
+#if defined(CONFIG_ARCH_MT6797)
+/* CPU_PWR_STATUS */
+/* CPU_PWR_STATUS_2ND */
+#define MP0_CPU0                (1U << 15)
+#define MP0_CPU1                (1U << 14)
+#define MP0_CPU2                (1U << 13)
+#define MP0_CPU3                (1U << 12)
+#define MP1_CPU0                (1U << 11)
+#define MP1_CPU1                (1U << 10)
+#define MP1_CPU2                (1U <<  9)
+#define MP1_CPU3                (1U <<  8)
+#define MP2_CPU0                (1U <<  7)
+#define MP2_CPU1                (1U <<  6)
+#define MP2_CPU2                (1U <<  5)
+#define MP2_CPU3                (1U <<  4)
+#define MP3_CPU0                (1U <<  3)
+#define MP3_CPU1                (1U <<  2)
+#define MP3_CPU2                (1U <<  1)
+#define MP3_CPU3                (1U <<  0)
+#endif
+
 /**************************************
  * Define and Declare
  **************************************/
@@ -60,6 +81,57 @@ const char *wakesrc_str[32] = {
 	[31] = " R12_APSRC_SLEEP",
 };
 
+#if defined(CONFIG_ARCH_MT6755)
+#define SPM_CPU_PWR_STATUS		PWR_STATUS
+#define SPM_CPU_PWR_STATUS_2ND	PWR_STATUS_2ND
+
+unsigned int spm_cpu_bitmask[NR_CPUS] = {
+	CA7_CPU0,
+	CA7_CPU1,
+	CA7_CPU2,
+	CA7_CPU3,
+	CA15_CPU0,
+	CA15_CPU1,
+	CA15_CPU2,
+	CA15_CPU3
+};
+
+unsigned int spm_cpu_bitmask_all = CA15_CPU3 |
+									CA15_CPU2 |
+									CA15_CPU1 |
+									CA15_CPU0 |
+									CA7_CPU3 |
+									CA7_CPU2 |
+									CA7_CPU1 | CA7_CPU0;
+#elif defined(CONFIG_ARCH_MT6797)
+#define SPM_CPU_PWR_STATUS		CPU_PWR_STATUS
+#define SPM_CPU_PWR_STATUS_2ND	CPU_PWR_STATUS_2ND
+
+/* FIXME: use `NR_CPUS` after CONFIG_NR_CPUS workaround fixed */
+unsigned int spm_cpu_bitmask[10] = {
+	MP0_CPU0,
+	MP0_CPU1,
+	MP0_CPU2,
+	MP0_CPU3,
+	MP1_CPU0,
+	MP1_CPU1,
+	MP1_CPU2,
+	MP1_CPU3,
+	MP2_CPU0,
+	MP2_CPU1
+};
+
+unsigned int spm_cpu_bitmask_all = MP0_CPU0 |
+									MP0_CPU1 |
+									MP0_CPU2 |
+									MP0_CPU3 |
+									MP1_CPU0 |
+									MP1_CPU1 |
+									MP1_CPU2 |
+									MP1_CPU3 |
+									MP2_CPU0 | MP2_CPU1;
+#endif
+
 /**************************************
  * Function and API
  **************************************/
@@ -84,7 +156,15 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 							spm_read(PCM_FSM_STA), timeout);
 				pr_err("[VcoreFS] R6: 0x%x, R15: 0x%x\n",
 							spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+#ifdef SPM_VCORE_EN_MT6797
 				BUG();
+#else
+				__check_dvfs_halt_source(__spm_vcore_dvfs.pwrctrl->dvfs_halt_src_chk);
+				pr_err("[VcoreFS] Next R15=0x%x\n", spm_read(PCM_REG15_DATA));
+				pr_err("[VcoreFS] Next R6=0x%x\n", spm_read(PCM_REG6_DATA));
+				pr_err("[VcoreFS] Next PCM_FSM_STA=0x%x\n", spm_read(PCM_FSM_STA));
+				pr_err("[VcoreFs] Next IRQ_STA=0x%x\n", spm_read(SPM_IRQ_STA));
+#endif
 			}
 			udelay(1);
 			retry++;
@@ -104,13 +184,13 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 
 		/* [Vcorefs] disable pcm timer after leaving FW */
 		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-	}
 
 #ifdef SPM_VCORE_EN_MT6797
-	/* backup vcore state from REG6[24:23] to RSV_5[1:0] */
-	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) |
-				((spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG) >> 23));
+		/* backup vcore state from REG6[24:23] to RSV_5[1:0] */
+		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) |
+					((spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG) >> 23));
 #endif
+	}
 
 	/* reset PCM */
 	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | PCM_SW_RESET_LSB);
@@ -133,10 +213,13 @@ void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 	u32 ptr, len, con0;
 
 	/* tell IM where is PCM code (use slave mode if code existed) */
-	if (pcmdesc->base_dma)
+	if (pcmdesc->base_dma) {
 		ptr = pcmdesc->base_dma;
-	else
+		/* for 4GB mode */
+		MAPPING_DRAM_ACCESS_ADDR(ptr);
+	} else {
 		ptr = base_va_to_pa(pcmdesc->base);
+	}
 	len = pcmdesc->size - 1;
 	if (spm_read(PCM_IM_PTR) != ptr || spm_read(PCM_IM_LEN) != len || pcmdesc->sess > 2) {
 		spm_write(PCM_IM_PTR, ptr);
@@ -498,16 +581,19 @@ unsigned int spm_get_cpu_pwr_status(void)
 {
 	unsigned int pwr_stat[2] = { 0 };
 	unsigned int stat = 0;
-	unsigned int cpu_mask = (CA15_CPU3 |
-				 CA15_CPU2 |
-				 CA15_CPU1 | CA15_CPU0 | CA7_CPU3 | CA7_CPU2 | CA7_CPU1 | CA7_CPU0);
+	unsigned int ret_stat = 0;
+	int i;
 
-	pwr_stat[0] = spm_read(PWR_STATUS);
-	pwr_stat[1] = spm_read(PWR_STATUS_2ND);
+	pwr_stat[0] = spm_read(SPM_CPU_PWR_STATUS);
+	pwr_stat[1] = spm_read(SPM_CPU_PWR_STATUS_2ND);
 
-	stat = (pwr_stat[0] & cpu_mask) & (pwr_stat[1] & cpu_mask);
+	stat = (pwr_stat[0] & spm_cpu_bitmask_all) & (pwr_stat[1] & spm_cpu_bitmask_all);
 
-	return stat;
+	for (i = 0; i < nr_cpu_ids; i++)
+		if (stat & spm_cpu_bitmask[i])
+			ret_stat |= (1 << i);
+
+	return ret_stat;
 }
 
 long int spm_get_current_time_ms(void)
@@ -545,6 +631,9 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	dest_pwr_ctrl->spm_dvfs_req			= src_pwr_ctrl->spm_dvfs_req;
 	dest_pwr_ctrl->spm_dvfs_force_down		= src_pwr_ctrl->spm_dvfs_force_down;
 	dest_pwr_ctrl->cpu_md_dvfs_sop_force_on		= src_pwr_ctrl->cpu_md_dvfs_sop_force_on;
+#if defined(SPM_VCORE_EN_MT6755)
+	dest_pwr_ctrl->dvfs_halt_src_chk = src_pwr_ctrl->dvfs_halt_src_chk;
+#endif
 
 	/* pwr_ctrl pcm_flag */
 	if (src_pwr_ctrl->pcm_flags_cust != 0) {
@@ -568,57 +657,73 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	}
 }
 
-#if !defined(CONFIG_ARCH_MT6755)
-#ifdef CONFIG_OF
-static int dt_scan_memory(unsigned long node, const char *uname, int depth, void *data)
+#if defined(SPM_VCORE_EN_MT6755)
+
+#define MM_DVFS_DISP_HALT_MASK 0x3
+#define MM_DVFS_ISP_HALT_MASK  0x4
+#define MM_DVFS_GCE_HALT_MASK  0x10
+
+int __check_dvfs_halt_source(int enable)
 {
-	const char *type = of_get_flat_dt_prop(node, "device_type", NULL);
-	const __be32 *reg;
-	u32 rank0_addr, rank1_addr, dram_rank_num;
-	const struct dram_info *dram_info = NULL;
+	u32 val, orig_val;
 
-	/* We are scanning "memory" nodes only */
-	if (type == NULL) {
-		/*
-		 * The longtrail doesn't have a device_type on the
-		 * /memory node, so look for the node called /memory@0.
-		 */
-		if (depth != 1 || strcmp(uname, "memory@0") != 0)
-			return 0;
-	} else if (strcmp(type, "memory") != 0)
+	val = spm_read(SPM_SRC2_MASK);
+	orig_val = val;
+
+	if (enable == 0) {
+		pr_err("[VcoreFS]dvfs_halt_src_chk is disabled\n");
 		return 0;
-
-	reg = (const __be32 *)of_get_flat_dt_prop(node, "reg", NULL);
-	if (reg == NULL)
-		return 0;
-
-	if (node) {
-		/* orig_dram_info */
-		dram_info = (const struct dram_info *) of_get_flat_dt_prop(node, "orig_dram_info", NULL);
 	}
 
-	dram_rank_num = dram_info->rank_num;
-	rank0_addr = dram_info->rank_info[0].start;
-	if (dram_rank_num == 1)
-		rank1_addr = rank0_addr;
-	else
-		rank1_addr = dram_info->rank_info[1].start;
+	pr_err("[VcoreFS]halt_status(1)=0x%x\n", spm_read(CPU_DVFS_REQ));
+	if (val & MM_DVFS_ISP_HALT_MASK) {
+		pr_err("[VcoreFS]isp_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
+				val, spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+		spm_write(SPM_SRC2_MASK, (val & ~MM_DVFS_ISP_HALT_MASK));
+		udelay(50);
+		pr_err("[VcoreFS]isp_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
+				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+	}
 
-	spm_crit("dram_rank_num: %d\n", dram_rank_num);
-	spm_crit("dummy read addr: rank0: 0x%x, rank1: 0x%x\n", rank0_addr, rank1_addr);
+	pr_err("[VcoreFS]halt_status(2)=0x%x\n", spm_read(CPU_DVFS_REQ));
+	val = spm_read(SPM_SRC2_MASK);
+	if (val & MM_DVFS_DISP_HALT_MASK) {
+		pr_err("[VcoreFS]disp_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
+				 val, spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+		spm_write(SPM_SRC2_MASK, (val & ~MM_DVFS_DISP_HALT_MASK));
+		udelay(50);
+		pr_err("[VcoreFS]disp_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
+				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+		aee_kernel_warning_api(__FILE__, __LINE__,
+			DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
+			"DVFS_HALT_DISP", "DVFS_HALT_DISP");
+		/* primary_display_diagnose(); */ /* todo */
+	}
 
-	spm_write(SPM_PASR_DPD_1, rank0_addr);
-	spm_write(SPM_PASR_DPD_2, rank1_addr);
+	pr_err("[VcoreFS]halt_status(3)=0x%x\n", spm_read(CPU_DVFS_REQ));
+	val = spm_read(SPM_SRC2_MASK);
+	if (val & MM_DVFS_GCE_HALT_MASK) {
+		pr_err("[VcoreFS]gce_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
+				val, spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+		spm_write(SPM_SRC2_MASK, (val & ~MM_DVFS_GCE_HALT_MASK));
+		udelay(50);
+		pr_err("[VcoreFS]gce_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
+				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+	}
 
-	return node;
+	udelay(200);
+	spm_write(SPM_SRC2_MASK, orig_val);
+	pr_err("[VcoreFS]restore src_mask=0x%x, r6=0x%x r15=0x%x\n",
+			spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+
+	/* BUG(); */
+
+	return 0;
 }
-#endif
 #endif
 
 void spm_set_dummy_read_addr(void)
 {
-#if defined(CONFIG_ARCH_MT6755)
-
 	u32 rank0_addr, rank1_addr, dram_rank_num;
 
 	dram_rank_num = g_dram_info_dummy_read->rank_num;
@@ -633,20 +738,6 @@ void spm_set_dummy_read_addr(void)
 
 	spm_write(SPM_PASR_DPD_1, rank0_addr);
 	spm_write(SPM_PASR_DPD_2, rank1_addr);
-
-#else
-
-#ifdef CONFIG_OF
-	int node;
-
-	node = of_scan_flat_dt(dt_scan_memory, NULL);
-#else
-	pr_err("no rank info\n");
-	BUG();
-	/* return false; */
-#endif
-
-#endif
 }
 
 bool is_md_c2k_conn_power_off(void)

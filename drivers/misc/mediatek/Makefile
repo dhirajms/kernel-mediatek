@@ -67,10 +67,12 @@ obj-$(CONFIG_MTK_RTC)	+= rtc/
 obj-$(CONFIG_MTK_PMIC)	+= power/
 obj-$(CONFIG_MTK_PMIC_WRAP) += pmic_wrap/
 obj-$(CONFIG_USB_MTK_HDRC) += usb20/
-obj-$(CONFIG_USB_MU3D_DRV)	+= mu3d/
+obj-$(CONFIG_MTK_USBFSH) += usb11/
 obj-$(CONFIG_MU3_PHY)	+= mu3phy/
+obj-$(CONFIG_USB_MU3D_DRV)	+= mu3d/
 obj-$(CONFIG_SSUSB_DRV) += ssusb/
 obj-$(CONFIG_USB_XHCI_MTK)	+= xhci/
+obj-$(CONFIG_USB_C_SWITCH)	+= usb_c/
 obj-$(CONFIG_MTK_GPIO) += gpio/
 obj-$(CONFIG_SECURITY_SELINUX)	+= selinux_warning/
 obj-$(CONFIG_MTK_MEM) += mem/
@@ -82,14 +84,12 @@ obj-$(CONFIG_MTK_CHIP) += chip/
 obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
 obj-$(CONFIG_MTK_DEVINFO_DRIVER) += devinfo/
 obj-$(CONFIG_MTK_LCM) += lcm/
-ifneq ($(CONFIG_MTK_HDMI_SUPPORT)_$(CONFIG_MTK_EPD_SUPPORT), _)
 obj-y += ext_disp/
-endif
 obj-$(CONFIG_MTK_HDMI_SUPPORT) += hdmi/
 obj-$(CONFIG_MTK_FB) += video/
 obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/
 ifneq ($(CONFIG_MTK_PLATFORM), "mt2701")
-obj-$(CONFIG_MTK_SMI)	+= smi/
+obj-$(CONFIG_MTK_SMI_EXT)	+= smi/
 endif
 obj-$(CONFIG_MTK_CQDMA) += cqdma/
 obj-$(CONFIG_MTK_DRAMC) += dramc/
@@ -143,7 +143,7 @@ ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
 obj-$(CONFIG_TRUSTY) += trustzone/
 endif
 
-ifneq (,$(filter $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT8173) $(CONFIG_ARCH_MT6755), y))
+ifeq (,$(filter $(CONFIG_ARCH_MT8127), y))
 obj-$(CONFIG_THERMAL)   += thermal/
 endif
 
@@ -157,7 +157,9 @@ obj-$(CONFIG_MTK_EMI_MPU)	+= emi_mpu/
 obj-$(CONFIG_MTK_MJC_DRIVER)	+= mjc/
 obj-$(CONFIG_HAVE_XLOG_SUPPORT) += xlog/
 obj-$(CONFIG_MTK_EMI_MBW) += emi_mbw/
+ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/tc1_interface/),)
 obj-$(CONFIG_MTK_TC1_FEATURE)   += tc1_interface/
+endif
 obj-$(CONFIG_MTK_BTCVSD) += btcvsd/
 obj-$(CONFIG_MTK_MTD_NAND) += nand/
 obj-$(CONFIG_MTK_DUM_CHAR) += dum-char/

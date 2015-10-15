@@ -352,7 +352,7 @@ static int check_port(struct sdio_modem_port *port)
 	/*WARN_ON(!port->port.count); */
 	LOGPRT(LOG_INFO, "%s %d: check port OK.(%d)\n",
 			       __func__, __LINE__, port->index);
-	return 0;
+	return ret;
 }
 
 static void modem_sdio_write(struct sdio_modem *modem, int addr,
@@ -2163,7 +2163,7 @@ void exception_data_dump(const char *buf, unsigned int len)
 int dump_c2k_sdio_status(struct sdio_modem *modem)
 {
 	int ret = 0;
-	union sdio_pio_int_sts_reg int_sts;
+	/*union sdio_pio_int_sts_reg int_sts;*/
 	unsigned int con;
 	unsigned int eint_reg[][2] = {
 		/*address, value */
@@ -2216,9 +2216,10 @@ int dump_c2k_sdio_status(struct sdio_modem *modem)
 	   LOGPRT(LOG_ERR,  "%s %d: get interrupt status failed ret=%d\n", __func__, __LINE__, ret);
 	   return ret;
 	   }
-	 */
+
 	LOGPRT(LOG_ERR, "%s %d: orig int(0x%x)\n", __func__, __LINE__,
 	       int_sts.raw_val);
+	*/
 	return ret;
 }
 
@@ -3840,17 +3841,13 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 	/*modem->cbp_data->ipc_enable = 0; */
 	/*if 4-line enabled, do this to make sure md is awake */
 	if (modem->cbp_data->ipc_enable) {
-		if (ch_id == CTRL_CH_ID) {
-			asc_tx_ready_count(modem->cbp_data->tx_handle->name, 1);
-			tx_ready =
-			    asc_tx_auto_ready(modem->cbp_data->tx_handle->name,
-					      1);
-			if (tx_ready != 0)
-				asc_tx_ready_count(modem->cbp_data->
-						   tx_handle->name, 0);
-		} else {
-			asc_tx_auto_ready(modem->cbp_data->tx_handle->name, 1);
-		}
+		asc_tx_ready_count(modem->cbp_data->tx_handle->name, 1);
+		tx_ready =
+		    asc_tx_auto_ready(modem->cbp_data->tx_handle->name,
+				      1);
+		if (tx_ready != 0)
+			asc_tx_ready_count(modem->cbp_data->
+					   tx_handle->name, 0);
 	}
 	if (modem->status == MD_OFF) {
 		LOGPRT(LOG_ERR,
@@ -3966,7 +3963,7 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 		modem_err_indication_usr(1);
 	}
  terminate:
-	if ((ch_id == CTRL_CH_ID) && tx_ready == 0)
+	if (tx_ready == 0)
 		asc_tx_ready_count(modem->cbp_data->tx_handle->name, 0);
 }
 
@@ -5381,11 +5378,38 @@ static const struct sdio_device_id modem_sdio_ids[] = {
 
 MODULE_DEVICE_TABLE(sdio, modem_sdio_ids);
 
+static int c2k_sdio_suspend(struct device *dev)
+{
+	struct sdio_func *func = dev_to_sdio_func(dev);
+	int ret;
+
+	if (func) {
+		LOGPRT(LOG_INFO, "c2k_sdio_suspend\n");
+		ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
+	}
+	return 0;
+}
+
+static int c2k_sdio_resume(struct device *dev)
+{
+	return 0;
+}
+
+static const struct dev_pm_ops c2k_sdio_pm_ops = {
+	.suspend = c2k_sdio_suspend,
+	.resume = c2k_sdio_resume,
+};
+
+
 static struct sdio_driver modem_sdio_driver = {
 	.probe = modem_sdio_probe,
 	.remove = modem_sdio_remove,
 	.name = "modem_sdio",
 	.id_table = modem_sdio_ids,
+	.drv = {
+		.owner = THIS_MODULE,
+		.pm = &c2k_sdio_pm_ops,
+	}
 };
 
 #if ENABLE_CCMNI

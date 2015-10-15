@@ -344,7 +344,7 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 
 static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, int main)
 {
-	char name[8];
+	char name[NOTE_NAME_SHORT];
 	int id;
 
 	if (mrdump_mini_ehdr == NULL)
@@ -354,7 +354,7 @@ static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, int main)
 	id = main ? 0 : cpu + 1;
 	if (strncmp(mrdump_mini_ehdr->prstatus[id].name, "NA", 2))
 		return -1;
-	snprintf(name, NOTE_NAME_SHORT, main ? "ke%d" : "core%d", cpu);
+	snprintf(name, NOTE_NAME_SHORT - 1, main ? "ke%d" : "core%d", cpu);
 	fill_prstatus(&mrdump_mini_ehdr->prstatus[id].data, regs, 0, id ? id : (100 + cpu));
 	fill_note_S(&mrdump_mini_ehdr->prstatus[id].note, name, NT_PRSTATUS,
 		    sizeof(struct elf_prstatus));
@@ -407,7 +407,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 {
 #define MAX_STACK_TRACE_DEPTH 32
 	unsigned long ipanic_stack_entries[MAX_STACK_TRACE_DEPTH];
-	char symbol[128];
+	char symbol[96];
 	int sz;
 	int off, plen;
 	struct stack_trace trace;
@@ -432,7 +432,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 			break;
 		}
 		/* FIXME: Check overflow ? */
-		sz += snprintf(symbol + sz, 128 - sz, "[%s, %d]", tsk->comm, tsk->pid);
+		sz += snprintf(symbol + sz, 96 - sz, "[%s, %d]", tsk->comm, tsk->pid);
 		tsk = tsk->real_parent;
 	} while (tsk && (tsk->pid != 0) && (tsk->pid != 1));
 	if (strncmp(cur_proc->process_path, symbol, sz) == 0)
@@ -452,7 +452,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 		off = strlen(cur_proc->backtrace);
 		plen = AEE_BACKTRACE_LENGTH - ALIGN(off, 8);
 		if (plen > 16) {
-			sz = snprintf(symbol, 128, "[<%p>] %pS\n",
+			sz = snprintf(symbol, 96, "[<%p>] %pS\n",
 				      (void *)ipanic_stack_entries[i],
 				      (void *)ipanic_stack_entries[i]);
 			if (ALIGN(sz, 8) - sz) {
@@ -562,9 +562,11 @@ static void mrdump_mini_add_loads(void)
 			cpu = prstatus->pr_pid - 100;
 			mrdump_mini_add_tsk_ti(cpu, &regs, 1);
 			mrdump_mini_add_entry((unsigned long)cpu_rq(cpu), MRDUMP_MINI_SECTION_SIZE);
-		} else {
+		} else if (prstatus->pr_pid < NR_CPUS) {
 			cpu = prstatus->pr_pid - 1;
 			mrdump_mini_add_tsk_ti(cpu, &regs, 0);
+		} else {
+			LOGE("mrdump: wrong pr_pid: %d\n", prstatus->pr_pid);
 		}
 	}
 

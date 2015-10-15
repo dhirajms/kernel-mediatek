@@ -9,8 +9,10 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 #include <linux/clk.h>
-/* #include <ddp_clkmgr.h> */
+#include <ddp_clkmgr.h>
+#endif
 #endif
 
 /* #include <mach/mt_gpio.h> */
@@ -385,17 +387,13 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6752)
 		enable_clock(MT_CG_DISP1_DISP_PWM_26M, "PWM");
 		enable_clock(MT_CG_DISP1_DISP_PWM_MM, "PWM");
-#else
-#if defined(CONFIG_ARCH_MT6580) /* Not ready yet */
+#elif defined(CONFIG_ARCH_MT6580)
 		enable_clock(MT_CG_PWM_MM_SW_CG, "PWM");
-#endif
+#else
+		enable_clock(MT_CG_PERI_DISP_PWM, "DISP_PWM");
 #endif
 #else /* Common Clock Framework */
-#if defined(CONFIG_ARCH_MT6755)
-		/* ddp_clk_enable(DISP_PWM); */
-#else
 		ddp_clk_enable(DISP_PWM);
-#endif
 #endif
 	}
 #endif
@@ -413,17 +411,13 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6752)
 		disable_clock(MT_CG_DISP1_DISP_PWM_26M, "PWM");
 		disable_clock(MT_CG_DISP1_DISP_PWM_MM, "PWM");
-#else
-#if defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6580)
 		disable_clock(MT_CG_PWM_MM_SW_CG, "PWM");
-#endif
+#else
+		disable_clock(MT_CG_PERI_DISP_PWM, "DISP_PWM");
 #endif
 #else /* Common Clock Framework */
-#if defined(CONFIG_ARCH_MT6755)
-		/* ddp_clk_disable(DISP_PWM); */
-#else
 		ddp_clk_disable(DISP_PWM);
-#endif
 #endif
 	}
 #endif

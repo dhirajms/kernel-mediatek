@@ -187,7 +187,6 @@ extern int mmc_set_blocklen(struct mmc_card *card, unsigned int blocklen);
 extern int mmc_set_blockcount(struct mmc_card *card, unsigned int blockcount,
 			      bool is_rel_write);
 extern int mmc_hw_reset(struct mmc_host *host);
-extern int mmc_hw_reset_check(struct mmc_host *host);
 extern int mmc_can_reset(struct mmc_card *card);
 
 extern void mmc_set_data_timeout(struct mmc_data *, const struct mmc_card *);
@@ -202,6 +201,10 @@ extern void mmc_put_card(struct mmc_card *card);
 extern int mmc_flush_cache(struct mmc_card *);
 
 extern int mmc_detect_card_removed(struct mmc_host *host);
+
+#if defined(CONFIG_MMC_FFU)
+extern int mmc_reinit_oldcard(struct mmc_host *host);
+#endif
 
 /**
  *	mmc_claim_host - exclusively claim a host

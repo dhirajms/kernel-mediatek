@@ -17,7 +17,6 @@
 #include <linux/met_drv.h>
 #endif
 #include <linux/seq_file.h>
-#include "cmdq_fs.h"
 #include "cmdq_core.h"
 #include "cmdq_reg.h"
 #include "cmdq_struct.h"
@@ -2227,7 +2226,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable, const uint64
 		}
 		atomic_inc(&gCmdqThreadUsage);
 		/* SMI related threads common clock enable, excluding display scenario on his own */
-		if (!cmdq_core_is_disp_scenario(scenario)) {
+		if (!cmdq_core_is_disp_scenario(scenario) && (scenario != CMDQ_SCENARIO_TRIGGER_LOOP)) {
 			if (0 == atomic_read(&gSMIThreadUsage)) {
 				CMDQ_VERBOSE("[CLOCK] SMI clock enable %d\n", scenario);
 				cmdq_core_enable_common_clock_locked_impl(enable);
@@ -2244,7 +2243,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable, const uint64
 
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
-		if (!cmdq_core_is_disp_scenario(scenario)) {
+		if (!cmdq_core_is_disp_scenario(scenario) && (scenario != CMDQ_SCENARIO_TRIGGER_LOOP)) {
 			atomic_dec(&gSMIThreadUsage);
 
 			if (0 >= atomic_read(&gSMIThreadUsage)) {
@@ -3491,29 +3490,6 @@ void cmdq_core_dump_instructions(uint64_t *pInstrBuffer, uint32_t bufferSize)
 		CMDQ_LOG("index:%05d,INST:0x%016llx    ----->      %s\n", i, *pBuffer, textBuffer);
 		pBuffer++;
 	}
-}
-
-
-void cmdq_core_dump_instructions_to_file(uint64_t *pInstrBuffer, uint32_t bufferSize,
-					 const char *fileName)
-{
-	uint64_t *pBuffer = pInstrBuffer;
-	char textBuffer[100];
-	int i = 0;
-	struct fs_struct fs;
-
-	init_fs_struct(&fs);
-	fs.fs_create(&fs, fileName);
-
-	while (pBuffer <= (uint64_t *) ((uint8_t *) (pInstrBuffer) + bufferSize)) {
-		memset(textBuffer, 0, 100);
-		cmdq_core_parse_instruction((uint32_t *) pBuffer, textBuffer, 99);
-		fs_printf(fs, "index:%05d,INST:0x%016llx    ----->      %s\n", i, *pBuffer,
-			  textBuffer);
-		pBuffer++;
-	}
-
-	fs.fs_close(&fs);
 }
 
 
@@ -6951,6 +6927,7 @@ int cmdq_core_disable_ccf_clk(CMDQ_CLK_ENUM clk_enum)
 	return ret;
 }
 
+/*
 int cmdq_core_enable_mtcmos_clock(bool enable)
 {
 	int status = 0;
@@ -6970,6 +6947,7 @@ int cmdq_core_enable_mtcmos_clock(bool enable)
 
 	return status;
 }
+*/
 
 bool cmdq_core_clock_is_on(CMDQ_CLK_ENUM clk_enum)
 {

@@ -14,16 +14,13 @@
 #include "ddp_path.h"
 #include "primary_display.h"
 #include "disp_drv_platform.h"
+#include "mt_smi.h"
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-#ifdef CONFIG_PM_RUNTIME
-#include <linux/pm_runtime.h>
-#endif
-
 #pragma GCC optimize("O0")
 
 typedef struct module_map_s {
@@ -1026,12 +1023,6 @@ struct clk *ddp_clk_map[MM_CLK_NUM];
 const char *ddp_get_clk_name(MM_CLK_ENUM clk_enum)
 {
 	switch (clk_enum) {
-	case MM_CLK_MTCMOS:
-		return "MMSYS_CLK_MTCMOS";
-	case MM_CLK_SMI_COMMON:
-		return "MMSYS_CLK_SMI_COMMON";
-	case MM_CLK_SMI_LARB0:
-		return "MMSYS_CLK_SMI_LARB0";
 	case MM_CLK_CAM_MDP:
 		return "MMSYS_CLK_CAM_MDP";
 	case MM_CLK_MDP_RDMA0:
@@ -1118,8 +1109,6 @@ const char *ddp_get_clk_name(MM_CLK_ENUM clk_enum)
 		return "MMSYS_CLK_LVDS_PIXEL";
 	case MM_CLK_LVDS_CTS:
 		return "MMSYS_CLK_LVDS_CTS";
-	case MM_CLK_SMI_LARB4:
-		return "MMSYS_CLK_SMI_LARB4";
 	case MM_CLK_MUX_DPI0_SEL:
 		return "MMSYS_CLK_MUX_DPI0_SEL";
 	case APMIXED_TVDPLL:
@@ -1154,14 +1143,7 @@ int ddp_module_clock_enable(MM_CLK_ENUM module, bool enable)
 {
 	int ret;
 	/*For debug */
-#if 1
 	static int module_clock_status[MM_CLK_NUM];
-#endif
-
-	if (module == MM_CLK_MTCMOS) {
-		DDPDBG("clk is MM_CLK_MTCMOS , return.\n");
-		return 0;
-	}
 
 	if (DISP_REG_CONFIG_MMSYS_CG_CON0 != 0x100) {
 		DDPDBG("MMSYS CLOCK before config %s->%s: 0x14000100:0x%x 0x14000110:0x%x\n",
@@ -1204,29 +1186,6 @@ int ddp_module_clock_enable(MM_CLK_ENUM module, bool enable)
 }
 #endif
 
-int ddp_path_mtcmos_enable(bool enable)
-{
-	int ret = 0;
-
-	DDPDBG("ddp_path_mtcmos_enable enable: %d\n", enable);
-
-	if ((mtkfb_fbdev == NULL) || (&mtkfb_fbdev->dev == NULL)) {
-		DDPERR("ddp_path_mtcmos_enable dev node is NULL.\n");
-		return -1;
-	}
-
-	if (enable) {
-		if (mtkfb_fbdev != NULL)
-			ret = pm_runtime_get_sync(&mtkfb_fbdev->dev);
-	} else {
-		if (mtkfb_fbdev != NULL)
-			ret = pm_runtime_put_sync(&mtkfb_fbdev->dev);
-	}
-	DDPDBG("ddp_path_mtcmos_enable ret= %d\n", ret);
-	return ret;
-}
-
-
 int ddp_path_top_clock_on(void)
 {
 	DDPDBG("ddp path top clock on\n");
@@ -1234,13 +1193,8 @@ int ddp_path_top_clock_on(void)
 	vcorefs_clkmgr_notify_mm_on();
 	DDPDBG("ddp path vcore notify on\n");
 #endif
-	/*ddp_module_clock_enable(MM_CLK_MTCMOS, true); */
-#ifdef CONFIG_PM_RUNTIME
-	ddp_path_mtcmos_enable(true);
-#endif
-	ddp_module_clock_enable(MM_CLK_SMI_COMMON, true);
-	ddp_module_clock_enable(MM_CLK_SMI_LARB0, true);
-	ddp_module_clock_enable(MM_CLK_SMI_LARB4, true);
+	mtk_smi_larb_clock_on(0, true);
+	mtk_smi_larb_clock_on(4, true);
 	ddp_module_clock_enable(MM_CLK_MUTEX_32K, true);
 
 	DDPMSG("ddp CG100:0x%x CG110:0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
@@ -1253,13 +1207,8 @@ int ddp_path_top_clock_off(void)
 	DDPMSG("ddp path top clock off\n");
 
 	ddp_module_clock_enable(MM_CLK_MUTEX_32K, false);
-	ddp_module_clock_enable(MM_CLK_SMI_LARB0, false);
-	ddp_module_clock_enable(MM_CLK_SMI_LARB4, false);
-	ddp_module_clock_enable(MM_CLK_SMI_COMMON, false);
-	/*ddp_module_clock_enable(MM_CLK_MTCMOS, false); */
-#ifdef CONFIG_PM_RUNTIME
-	ddp_path_mtcmos_enable(false);
-#endif
+	mtk_smi_larb_clock_off(4, true);
+	mtk_smi_larb_clock_off(0, true);
 #ifdef CONFIG_DISPLAY_VCORE_DVFS
 	vcorefs_clkmgr_notify_mm_off();
 	DDPMSG("ddp path vcore notify off\n");
@@ -1269,16 +1218,14 @@ int ddp_path_top_clock_off(void)
 
 int ddp_path_lp_top_clock_on(void)
 {
-	ddp_module_clock_enable(MM_CLK_SMI_COMMON, true);
-	ddp_module_clock_enable(MM_CLK_SMI_LARB0, true);
+	mtk_smi_larb_clock_on(0, true);
 
 	return 0;
 }
 
 int ddp_path_lp_top_clock_off(void)
 {
-	ddp_module_clock_enable(MM_CLK_SMI_LARB0, true);
-	ddp_module_clock_enable(MM_CLK_SMI_COMMON, true);
+	mtk_smi_larb_clock_off(0, true);
 
 	return 0;
 }

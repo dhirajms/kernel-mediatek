@@ -1396,13 +1396,12 @@ static int set_primary_buffer(disp_session_input_config session_input)
 	return 0;
 }
 
-disp_session_input_config session_input;
 int _ioctl_set_input_buffer(unsigned long arg)
 {
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
 	unsigned int session_id = 0;
-	/*disp_session_input_config session_input; */
+	disp_session_input_config session_input;
 	disp_session_sync_info *session_info;
 
 	if (copy_from_user(&session_input, argp, sizeof(session_input))) {

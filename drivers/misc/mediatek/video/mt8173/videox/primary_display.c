@@ -38,6 +38,7 @@
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
 #include "cmdq_core.h"
+#include "mt_smi.h"
 
 #include "ddp_manager.h"
 #include "mtkfb_fence.h"
@@ -48,7 +49,7 @@
 /* for sodi reg addr define */
 #ifdef DISP_ENABLE_SODI
 #include "mt_spm.h"
-#include <mach/mt_spm_idle.h>
+#include "mt_spm_idle.h"
 #endif
 #include "ddp_irq.h"
 /*#include "mach/eint.h" */
@@ -2460,7 +2461,7 @@ unsigned int cmdqDdpClockOff(uint64_t engineFlag)
 
 unsigned int cmdqDdpDumpInfo(uint64_t engineFlag, char *pOutBuf, unsigned int bufSize)
 {
-	DISPERR("cmdq timeout:%llu\n", engineFlag);
+	DDPDUMP("cmdq timeout:%llu\n", engineFlag);
 	primary_display_diagnose();
 	/* DISP_LOG_I("cmdqDdpDumpInfo\n"); */
 	if (primary_display_is_decouple_mode()) {
@@ -2832,7 +2833,7 @@ static int _present_fence_release_worker_thread(void *data)
 					       fence_increment);
 			}
 			_primary_path_unlock(__func__);
-			DISPPR_FENCE("RPF/%d/%d\n", gPresentFenceIndex,
+			DISP_PRINTF(DDP_FENCE1_LOG, "RPF/%d/%d\n", gPresentFenceIndex,
 				     gPresentFenceIndex - layer_info->timeline->value);
 		}
 	}
@@ -3501,14 +3502,6 @@ int primary_display_resume(void)
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("dpmanager path power on[end]\n");
 
-	/* reconfig used module m4u port after resume*/
-	config_display_m4u_port(M4U_PORT_DISP_OVL0, DISP_MODULE_OVL0);
-	config_display_m4u_port(M4U_PORT_DISP_RDMA0, DISP_MODULE_RDMA0);
-	config_display_m4u_port(M4U_PORT_DISP_WDMA0, DISP_MODULE_WDMA0);
-	config_display_m4u_port(M4U_PORT_DISP_OVL1, DISP_MODULE_OVL1);
-	config_display_m4u_port(M4U_PORT_DISP_RDMA1, DISP_MODULE_RDMA1);
-	config_display_m4u_port(M4U_PORT_DISP_WDMA1, DISP_MODULE_WDMA1);
-
 	if (_is_decouple_mode(pgc->session_mode))
 		dpmgr_path_power_on(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
@@ -3706,6 +3699,8 @@ done:
 void primary_display_update_present_fence(unsigned int fence_idx)
 {
 	gPresentFenceIndex = fence_idx;
+	DISP_PRINTF(DDP_FENCE1_LOG, "primary_display_update_present_fence %d\n",
+				gPresentFenceIndex);
 }
 
 static int _ovl_fence_release_callback(uint32_t userdata)
@@ -5330,52 +5325,13 @@ int primary_display_enable_path_cg(int enable)
 
 		clk_disable(ddp_clk_map[MM_CLK_MUTEX_32K]);
 		clk_unprepare(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		clk_disable(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		clk_unprepare(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		clk_disable(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		clk_unprepare(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		/* clk_disable(ddp_clk_map[MM_CLK_MTCMOS]);
-		clk_unprepare(ddp_clk_map[MM_CLK_MTCMOS]); */
-		#ifdef CONFIG_PM_RUNTIME
-			ddp_path_mtcmos_enable(false);
-		#endif
-
-		clk_disable(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		clk_unprepare(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		clk_disable(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		clk_unprepare(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		clk_disable(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		clk_unprepare(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		/* clk_disable(ddp_clk_map[MM_CLK_MTCMOS]);
-		clk_unprepare(ddp_clk_map[MM_CLK_MTCMOS]); */
-		#ifdef CONFIG_PM_RUNTIME
-			ddp_path_mtcmos_enable(false);
-		#endif
-
+		mtk_smi_larb_clock_off(4, true);
+		mtk_smi_larb_clock_off(0, true);
 	} else {
 		ret += clk_prepare(ddp_clk_map[MM_CLK_MUTEX_32K]);
 		ret += clk_enable(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		ret += clk_prepare(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		ret += clk_prepare(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		/* ret += clk_prepare(ddp_clk_map[MM_CLK_MTCMOS]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_MTCMOS]); */
-		#ifdef CONFIG_PM_RUNTIME
-			ddp_path_mtcmos_enable(true);
-		#endif
-
-		ret += clk_prepare(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_MUTEX_32K]);
-		ret += clk_prepare(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_SMI_LARB0]);
-		ret += clk_prepare(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_SMI_COMMON]);
-		/* ret += clk_prepare(ddp_clk_map[MM_CLK_MTCMOS]);
-		ret += clk_enable(ddp_clk_map[MM_CLK_MTCMOS]); */
-		#ifdef CONFIG_PM_RUNTIME
-			ddp_path_mtcmos_enable(true);
-		#endif
+		mtk_smi_larb_clock_on(0, true);
+		mtk_smi_larb_clock_on(4, true);
 
 		ret += clk_prepare(ddp_clk_map[MM_CLK_DSI0_ENGINE]);
 		ret += clk_enable(ddp_clk_map[MM_CLK_DSI0_ENGINE]);
@@ -6356,42 +6312,3 @@ done:
 	return ret;
 }
 
-/* for dump decouple internal buffer */
-#define COPY_SIZE 512
-void primary_display_dump_decouple_buffer(void)
-{
-	char *file_name = "dcbuf.bin";
-	char fileName[20];
-	mm_segment_t fs;
-	struct file *fp = NULL;
-	char buffer[COPY_SIZE];
-	unsigned char *pBuffer = (unsigned char *)dc_vAddr[pgc->dc_buf_id];
-	unsigned int bufferSize = 800 * 1280 * 4;
-	int i = 0;
-
-	if (!_is_decouple_mode(pgc->session_mode)) {
-		DISPERR("primary_display_dump_decouple_buffer : is not DECOUPLE mode, return\n");
-		return;
-	}
-
-	memset(fileName, 0, 20);
-	if (NULL != file_name && *file_name != '\0')
-		sprintf(fileName, "/sdcard/%s", file_name);
-
-	fs = get_fs();
-	set_fs(KERNEL_DS);
-	fp = filp_open(fileName, O_RDWR | O_CREAT | O_TRUNC, 0x644);
-
-	/* write date */
-	for (i = 0; i < bufferSize / COPY_SIZE; i++) {
-		/* DISPMSG("[%4d] memcpy pBuffer(%p)\n", i+1, pBuffer); */
-		memcpy(buffer, pBuffer, COPY_SIZE);
-		fp->f_op->write(fp, buffer, COPY_SIZE, &fp->f_pos);
-		pBuffer += COPY_SIZE;
-	}
-
-	filp_close(fp, NULL);
-	set_fs(fs);
-
-	DISPMSG("primary_display_dump_decouple_buffer end\n");
-}

@@ -63,8 +63,8 @@ extern "C" {
 #define hps_crit(fmt, args...)		pr_crit("[HPS] " fmt, ##args)
 #define hps_error(fmt, args...)		pr_err("[HPS] " fmt, ##args)
 #define hps_warn(fmt, args...)		pr_warn("[HPS] " fmt, ##args)
-#define hps_notice(fmt, args...)	pr_notice("[HPS] " fmt, ##args)
-#define hps_info(fmt, args...)		pr_info("[HPS] " fmt, ##args)
+#define hps_notice(fmt, args...)	pr_debug("[HPS] " fmt, ##args)
+#define hps_info(fmt, args...)		pr_debug("[HPS] " fmt, ##args)
 #define hps_debug(fmt, args...)		pr_debug("[HPS] " fmt, ##args)
 
 #if EN_ISR_LOG
@@ -236,6 +236,9 @@ extern int hps_procfs_init(void);
  */
 #define num_possible_little_cpus()	cpumask_weight(&hps_ctxt.little_cpumask)
 #define num_possible_big_cpus()		cpumask_weight(&hps_ctxt.big_cpumask)
+
+extern int hps_cpu_up(unsigned int cpu);
+extern int hps_cpu_down(unsigned int cpu);
 
 extern int hps_cpu_init(void);
 extern int hps_cpu_deinit(void);

@@ -25,18 +25,14 @@
 
 #define CLK_DEBUG		0
 #define DUMMY_REG_TEST		0
-
-#if defined(CONFIG_ARCH_MT6797)
-#define Bring_Up
-#endif
-
+/* #define Bring_Up */
 #ifdef Bring_Up
 #ifdef pr_debug
 #undef pr_debug
-#define pr_debug printk
+#define pr_debug pr_warn
 #endif
 #define MT_CCF_DEBUG	1
-#define MT_CCF_BRINGUP	1 /* 1: only for bring up */
+#define MT_CCF_BRINGUP	0 /* 1: only for bring up */
 #endif /* Bring_Up */
 
 extern spinlock_t *get_mtk_clk_lock(void);
