@@ -23,7 +23,7 @@
 #endif
 
 #ifdef FEATURE_GET_MD_BAT_VOL	/* must be after ccci_config.h */
-#include <mach/battery_common.h>
+#include <mt-plat/battery_common.h>
 #else
 #define BAT_Get_Battery_Voltage(polling_mode)    ({ 0; })
 #endif
@@ -139,7 +139,7 @@ static void port_ch_dump(int md_id, char *str, void *msg_buf, int len)
 	char buf[DUMP_BUF_SIZE];
 	int i, j;
 
-	for (i = 0, j = 0; i < len && i < DUMP_BUF_SIZE && j < DUMP_BUF_SIZE; i++) {
+	for (i = 0, j = 0; i < len && i < DUMP_BUF_SIZE && j + 4 < DUMP_BUF_SIZE; i++) {
 		if (((32 <= char_ptr[i]) && (char_ptr[i] <= 126))) {
 			buf[j++] = char_ptr[i];
 		} else {
@@ -393,7 +393,6 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	struct ccci_header *ccci_h = NULL;
 	size_t actual_count = 0;
 	int ret = 0, header_len = 0;
-	char *dump_buf = NULL;
 
 	if (port->tx_ch == CCCI_MONITOR_CH)
 		return -EPERM;
@@ -421,7 +420,8 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 			return -ENOMEM;
 		}
 	}
-
+	if (count == 0)
+		return -EINVAL;
 	if (port->flags & PORT_F_USER_HEADER)
 		actual_count = count > (CCCI_MTU + header_len) ? (CCCI_MTU + header_len) : count;
 	else
@@ -467,12 +467,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 			port_ch_dump(port->modem->index, "chr_write", req->skb->data + sizeof(struct ccci_header),
 				     actual_count);
 		}
-		if (port->tx_ch == CCCI_UART1_TX && port->modem->index == MD_SYS3) {
-			dump_buf = (char *)(req->skb->data+sizeof(struct ccci_header));
-			CCCI_INF_MSG(port->modem->index, CHAR, "mdlog_ctrl: 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
-				     *dump_buf, *(dump_buf+1), *(dump_buf+2), *(dump_buf+3),
-					 *(dump_buf+4), *(dump_buf+5), *(dump_buf+6), *(dump_buf+7));
-		}
+
 		/* 4. send out */
 		/* for md3, ccci_h->channel will probably change after call send_request,
 		because md3's channel mapping */
@@ -482,9 +477,6 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 			/* CCCI_INF_MSG(port->modem->index, CHAR,
 				"write done on %s, l=%zu r=%d\n", port->name, actual_count, ret); */
 		}
-		if (port->tx_ch == CCCI_UART1_TX && port->modem->index == MD_SYS3)
-			CCCI_INF_MSG(port->modem->index, CHAR, "write done on %s, l=%zu r=%d\n",
-			 port->name, actual_count, ret);
 
 		if (ret) {
 			if (ret == -EBUSY && !req->blocking)
@@ -499,6 +491,8 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		return actual_count;
 
  err_out:
+		CCCI_INF_MSG(port->modem->index, CHAR, "write error done on %s, l=%zu r=%d\n",
+			 port->name, actual_count, ret);
 		ccci_free_req(req);
 		return ret;
 	}
@@ -589,7 +583,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 	case CCCI_IOC_FORCE_MD_ASSERT:
-		CCCI_INF_MSG(md->index, CHAR, "Force MD assert ioctl(%d) called by %s\n", ch, current->comm);
+		CCCI_NOTICE_MSG(md->index, CHAR, "Force MD assert ioctl(%d) called by %s\n", ch, current->comm);
 		if (md->index == MD_SYS3)
 			/* MD3 use interrupt to force assert */
 			ret = md->ops->force_assert(md, CCIF_INTERRUPT);
@@ -645,6 +639,9 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_ENTER_DEEP_FLIGHT:
 		CCCI_INF_MSG(md->index, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
+#ifdef MD_UMOLY_EE_SUPPORT
+		md->flight_mode = MD_FIGHT_MODE_ENTER; /* enter flight mode */
+#endif
 		ret = md->ops->reset(md);
 		if (ret == 0) {
 			md->ops->stop(md, 1000);
@@ -653,6 +650,9 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT:
 		CCCI_INF_MSG(md->index, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);
+#ifdef MD_UMOLY_EE_SUPPORT
+		md->flight_mode = MD_FIGHT_MODE_LEAVE; /* leave flight mode */
+#endif
 		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_LEAVE_FLIGHT_MODE, 0);
 		break;
 

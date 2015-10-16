@@ -7,6 +7,7 @@
 #include <linux/module.h>	/* MODULE_DESCRIPTION, MODULE_LICENSE */
 #include <linux/init.h>		/* module_init, module_exit */
 #include <linux/sched.h>	/* sched_get_* */
+#include <linux/cpu.h>		/* cpu_up */
 
 #include "mt_hotplug_strategy_internal.h"
 
@@ -127,6 +128,28 @@ void hps_cpu_get_big_little_cpumasks(
 			cpumask_set_cpu(cpu, little);
 	}
 #endif /* HP_HAVE_SCHED_TPLG */
+}
+
+int hps_cpu_up(unsigned int cpu)
+{
+	int r;
+
+	lock_device_hotplug();
+	r = device_online(get_cpu_device(cpu));
+	unlock_device_hotplug();
+
+	return r;
+}
+
+int hps_cpu_down(unsigned int cpu)
+{
+	int r;
+
+	lock_device_hotplug();
+	r = device_offline(get_cpu_device(cpu));
+	unlock_device_hotplug();
+
+	return r;
 }
 
 /*

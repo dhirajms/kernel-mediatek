@@ -529,6 +529,14 @@ static void spm_register_init(void)
 #if SPM_MD_DDR_EN_OUT
 	__spm_dbgout_md_ddr_en(true);
 #endif
+
+#if defined(CONFIG_ARCH_MT6755)
+	/* init r7 with POWER_ON_VAL1 */
+	spm_write(PCM_REG_DATA_INI, spm_read(SPM_POWER_ON_VAL1));
+	spm_write(PCM_PWR_IO_EN, PCM_RF_SYNC_R7);
+	spm_write(PCM_PWR_IO_EN, 0);
+#endif
+
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
@@ -538,10 +546,11 @@ int spm_module_init(void)
 #if defined(CONFIG_ARCH_MT6755)
 	u32 reg_val;
 #endif
+#if 0
 #ifdef CONFIG_MTK_WD_KICKER
 	struct wd_api *wd_api;
 #endif
-
+#endif
 	spm_register_init();
 	if (spm_irq_register() != 0)
 		r = -EPERM;
@@ -571,7 +580,9 @@ int spm_module_init(void)
 		/* aee_kernel_warning("SPM Warring", "dram golden setting mismach"); */
 	}
 #endif
+
 	spm_set_dummy_read_addr();
+
 #if defined(CONFIG_ARCH_MT6755)
 	/* debug code */
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
@@ -1173,10 +1184,8 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		return;
 	}
 
-	if (force == 0 && mode == prev_mode) {
-		pr_debug("spm pmic power mode (%d) is not changed\n", mode);
+	if (force == 0 && mode == prev_mode)
 		return;
-	}
 
 	switch (mode) {
 	case PMIC_PWR_NORMAL:
@@ -1238,6 +1247,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 
 void spm_bypass_boost_gpio_set(void)
 {
+#if 0
 	u32 gpio_nf = 0;
 	u32 gpio_dout_nf = 0;
 	u32 gpio_dout_bit = 0;
@@ -1264,6 +1274,7 @@ void spm_bypass_boost_gpio_set(void)
 
 	spm_write(SPM_BSI_EN_SR, gpio_dout_addr);
 	spm_write(SPM_BSI_CLK_SR, gpio_dout_bit);
+#endif
 }
 
 u32 spm_get_register(void __force __iomem *offset)

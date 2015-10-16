@@ -325,7 +325,11 @@ __acquires(musb->lock)
 				/* Maybe start the first request in the queue */
 				request = next_request(musb_ep);
 				if (!musb_ep->busy && request) {
-					DBG(0, "restarting the request\n");
+					/* limit debug mechanism to avoid printk too much */
+					static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+
+					if ((__ratelimit(&ratelimit)))
+						DBG(0, "restarting the request\n");
 					musb_ep_restart(musb, request);
 				} else if (!is_in) { /* Modification for ALPS00451478 */
 					csr  = musb_readw(regs, MUSB_RXCSR);
@@ -657,6 +661,7 @@ musb_read_setup(struct musb *musb, struct usb_ctrlrequest *req)
 {
 	struct musb_request	*r;
 	void __iomem		*regs = musb->control_ep->regs;
+	unsigned long		time_count = 3*1000*1000; /* 3 sec */
 
 	musb_read_fifo(&musb->endpoints[0], sizeof(*req), (u8 *)req);
 
@@ -696,9 +701,12 @@ musb_read_setup(struct musb *musb, struct usb_ctrlrequest *req)
 	} else if (req->bRequestType & USB_DIR_IN) {
 		musb->ep0_state = MUSB_EP0_STAGE_TX;
 		musb_writew(regs, MUSB_CSR0, MUSB_CSR0_P_SVDRXPKTRDY);
+		/* skip if waiting over 3 sec */
 		while ((musb_readw(regs, MUSB_CSR0)
-				& MUSB_CSR0_RXPKTRDY) != 0)
-			cpu_relax();
+				& MUSB_CSR0_RXPKTRDY) != 0 && time_count--)
+			udelay(1);
+		if (!time_count)
+			ERR("%s, timeout\n", __func__);
 		musb->ackpend = 0;
 	} else
 		musb->ep0_state = MUSB_EP0_STAGE_RX;
@@ -746,6 +754,7 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 	void __iomem	*mbase = musb->mregs;
 	void __iomem	*regs = musb->endpoints[0].regs;
 	irqreturn_t	retval = IRQ_NONE;
+	bool setup_end_err = false;
 
 	musb_ep_select(mbase, 0);	/* select ep0 */
 	csr = musb_readw(regs, MUSB_CSR0);
@@ -789,10 +798,13 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 		default:
 			ERR("SetupEnd came in a wrong ep0stage %s\n",
 			    decode_ep0stage(musb->ep0_state));
-			ERR("csr = %x\n", csr);
+			ERR("SetupEnd, csr = %x\n", csr);
+			setup_end_err = true;
 		}
 		csr = musb_readw(regs, MUSB_CSR0);
 		/* NOTE:  request may need completion */
+		if (unlikely(setup_end_err))
+			ERR("SetupEnd, csr2 = %x\n", csr);
 	}
 
 	/* docs from Mentor only describe tx, rx, and idle/setup states.
@@ -847,9 +859,15 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 		{
 			struct musb_request	*req;
 
+			if (unlikely(setup_end_err))
+				ERR("SetupEnd, ep0 giveback\n");
+
 			req = next_ep0_request(musb);
 			if (req)
 				musb_g_ep0_giveback(musb, &req->request);
+
+			if (unlikely(setup_end_err))
+				ERR("SetupEnd, ep0 giveback done\n");
 		}
 
 		/*
@@ -858,6 +876,9 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 		 */
 		if (csr & MUSB_CSR0_RXPKTRDY)
 			goto setup;
+
+		if (unlikely(setup_end_err))
+				ERR("SetupEnd, ep0 idle\n");
 
 		retval = IRQ_HANDLED;
 		musb->ep0_state = MUSB_EP0_STAGE_IDLE;
@@ -985,6 +1006,9 @@ finish:
 		musb->ep0_state = MUSB_EP0_STAGE_IDLE;
 		break;
 	}
+
+	if (unlikely(setup_end_err))
+		ERR("SetupEnd, retval=%d\n", retval);
 
 	return retval;
 }

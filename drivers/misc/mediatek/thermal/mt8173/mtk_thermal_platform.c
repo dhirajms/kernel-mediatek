@@ -20,7 +20,6 @@
 #include <mach/mt_thermal.h>
 #include <mt-plat/aee.h>
 #include <mtk_gpu_utility.h>
-#include <mach/mt_gpufreq.h>
 
 /* ************************************ */
 /* Definition */

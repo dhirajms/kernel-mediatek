@@ -22,7 +22,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys   
              -I$(srctree)/drivers/misc/mediatek/sync/      \
              -I$(srctree)/drivers/misc/mediatek/m4u/       \
              -I$(srctree)/drivers/misc/mediatek/cmdq/hv1/      \
-             -I$(srctree)/drivers/misc/mediatek/base/power/ \
+             -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM) \
              -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)       \
              -I$(srctree)/drivers/misc/mediatek/cmdq/hv1/$(MTK_PLATFORM)      \
              -I$(srctree)/drivers/misc/mediatek/lcm/inc/      \

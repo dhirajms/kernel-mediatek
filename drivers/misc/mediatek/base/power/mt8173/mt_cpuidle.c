@@ -368,23 +368,6 @@ static int mt_cpu_dormant_abort(unsigned long index)
 	return 0;
 }
 
-/* TODO: remove later, only for test */
-int mt_cpu_init_idle(void)
-{
-	int ret = -EOPNOTSUPP;
-	int cpu = smp_processor_id();
-	struct device_node *cpu_node = of_cpu_device_node_get(cpu);
-
-	if (!cpu_node)
-		return -ENODEV;
-
-	if (cpu_ops[cpu] && cpu_ops[cpu]->cpu_init_idle)
-		ret = cpu_ops[cpu]->cpu_init_idle(cpu_node, cpu);
-
-	of_node_put(cpu_node);
-	return ret;
-}
-
 int mt_cpu_dormant(unsigned long flags)
 {
 	int ret;
@@ -420,9 +403,6 @@ int mt_cpu_dormant(unsigned long flags)
 	}
 
 	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x103);
-
-	/* TODO: remove later, only for test */
-	mt_cpu_init_idle();
 
 #ifndef CONFIG_ARM64
 	ret = cpu_suspend(flags, mt_cpu_dormant_psci);

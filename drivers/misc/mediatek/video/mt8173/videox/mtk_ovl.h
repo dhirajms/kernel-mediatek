@@ -79,6 +79,7 @@ typedef struct {
 
 int ovl2mem_get_info(void *info);
 int get_ovl2mem_ticket(void);
+int ovl2mem_is_alive(void);
 int ovl2mem_init(unsigned int session);
 int ovl2mem_input_config(ovl2mem_in_config *input);
 int ovl2mem_output_config(ovl2mem_out_config *out);

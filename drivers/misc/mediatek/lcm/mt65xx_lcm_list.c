@@ -20,7 +20,7 @@
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
-#if defined(MTK_LCM_KS_SUPPORT)
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 	&lcm_common_drv,
 #else
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
@@ -858,6 +858,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&otm1906b_fhd_dsi_cmd_jdi_tps65132_lcm_drv,
 #endif
 
+#if defined(OTM1906B_FHD_DSI_CMD_JDI_TPS65132_MT6797)
+	&otm1906b_fhd_dsi_cmd_jdi_tps65132_mt6797_lcm_drv,
+#endif
+
 #if defined(HX8394C_WXGA_DSI_VDO)
 	&hx8394c_wxga_dsi_vdo_lcm_drv,
 #endif
@@ -908,11 +912,24 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(HX8394C_WXGA_DSI_VDO)
 	&hx8394c_wxga_dsi_vdo_lcm_drv,
 #endif
+
+#if defined(NT35595_TRULY_FHD_DSI_VDO)
+	&nt35595_truly_fhd_dsi_vdo_lcm_drv,
+#endif
+
 #endif
 };
 
-#if defined(MTK_LCM_KS_SUPPORT)
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 unsigned char lcm_name_list[][128] = {
+#if defined(HX8392A_DSI_CMD)
+	"hx8392a_dsi_cmd",
+#endif
+
+#if defined(HX8392A_DSI_VDO)
+	"hx8392a_vdo_cmd",
+#endif
+
 #if defined(OTM9608_QHD_DSI_CMD)
 	"otm9608_qhd_dsi_cmd",
 #endif

@@ -127,7 +127,7 @@ if (1) {	\
 }			\
 }
 #ifdef CMDQ_AEE_READY
-#define CMDQ_AEE(tag, string, args...) \
+#define CMDQ_AEE_EX(DB_OPTs, tag, string, args...) \
 {		\
 do {			\
 	char dispatchedTag[50]; \
@@ -135,10 +135,20 @@ do {			\
 	pr_err("[CMDQ][AEE]"string, ##args); \
 	cmdq_core_save_first_dump("[CMDQ][AEE]"string, ##args); \
 	cmdq_core_turnoff_first_dump(); \
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT | DB_OPT_PROC_CMDQ_INFO | DB_OPT_MMPROFILE_BUFFER, \
+	aee_kernel_warning_api(__FILE__, __LINE__, \
+		DB_OPT_DEFAULT | DB_OPT_PROC_CMDQ_INFO | DB_OPT_MMPROFILE_BUFFER | DB_OPTs, \
 		dispatchedTag, "error: "string, ##args); \
 } while (0);	\
 }
+
+#define CMDQ_AEE(tag, string, args...) \
+{ \
+	if (0 == strncmp(tag, "DISP", 4)) \
+		CMDQ_AEE_EX(DB_OPT_DUMP_DISPLAY, tag, string, ##args) \
+	else \
+		CMDQ_AEE_EX(0, tag, string, ##args) \
+}
+
 #else
 #define CMDQ_AEE(tag, string, args...) \
 {		\
@@ -318,6 +328,15 @@ typedef enum TASK_STATE_ENUM {
 	TASK_STATE_WAITING,	/* allocated but waiting for available thread */
 } TASK_STATE_ENUM;
 
+#define CMDQ_FEATURE_OFF_VALUE (0)
+#define FOREACH_FEATURE(FEATURE) \
+FEATURE(CMDQ_FEATURE_SRAM_SHARE, "SRAM Share") \
+
+typedef enum CMDQ_FEATURE_TYPE_ENUM {
+	FOREACH_FEATURE(GENERATE_ENUM)
+	CMDQ_FEATURE_TYPE_MAX,	 /* ALWAYS keep at the end */
+} CMDQ_FEATURE_TYPE_ENUM;
+
 #ifdef CMDQ_INSTRUCTION_COUNT
 /* GCE instructions count information */
 typedef enum CMDQ_STAT_ENUM {
@@ -463,8 +482,7 @@ typedef struct ThreadStruct {
 	uint64_t engineFlag;	/* keep used engine to look up while dispatch thread */
 	CmdqInterruptCB loopCallback;	/* LOOP execution */
 	unsigned long loopData;	/* LOOP execution */
-	TaskStruct *pCurTask[CMDQ_MAX_TASK_IN_THREAD];
-	struct workqueue_struct *taskThreadAutoReleaseWQ;	/* auto-release workqueue */
+	TaskStruct * pCurTask[CMDQ_MAX_TASK_IN_THREAD];
 
 	/* 1 to describe thread is available to dispatch a task. 0: not available */
 	/* .note thread's taskCount increase when attatch a task to it. */
@@ -583,6 +601,9 @@ typedef struct ContextStruct {
 	EngineStruct engine[CMDQ_MAX_ENGINE_COUNT];
 	ThreadStruct thread[CMDQ_MAX_THREAD_COUNT];
 
+	/* auto-release workqueue per thread */
+	struct workqueue_struct *taskThreadAutoReleaseWQ[CMDQ_MAX_THREAD_COUNT];
+
 	/* Secure path shared information */
 	cmdqSecSharedMemoryHandle hSecSharedMem;
 	void *hNotifyLoop;
@@ -597,6 +618,9 @@ typedef struct ContextStruct {
 	int32_t logLevel;
 	int32_t errNum;
 	ErrorStruct error[CMDQ_MAX_ERROR_COUNT];
+
+	/* feature option information */
+	uint32_t features[CMDQ_FEATURE_TYPE_MAX];
 
 	/* Resource manager information */
 	struct list_head resourceList;	/* all resource list */
@@ -917,6 +941,13 @@ extern "C" {
 								CmdqResourceAvailableCB resourceAvailable,
 								CmdqResourceReleaseCB resourceRelease);
 
+	void cmdq_core_dump_dts_setting(void);
+	uint32_t cmdq_core_thread_prefetch_size(const int32_t thread);
+
+	void cmdq_core_dump_feature(void);
+	void cmdq_core_set_feature(CMDQ_FEATURE_TYPE_ENUM featureOption, uint32_t value);
+	uint32_t cmdq_core_get_feature(CMDQ_FEATURE_TYPE_ENUM featureOption);
+	bool cmdq_core_is_feature_off(CMDQ_FEATURE_TYPE_ENUM featureOption);
 
 #ifdef __cplusplus
 }

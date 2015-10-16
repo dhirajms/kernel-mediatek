@@ -584,6 +584,10 @@ int mtkts_bts_get_hw_temp(void)
 
 	mutex_unlock(&BTS_lock);
 
+#if 0 /*def THERMAL_CATM_USER*/
+	wakeup_ta_algo(TA_CATMPLUS_TTJ);
+#endif
+
 	bts_cur_temp = t_ret;
 
 	if (t_ret > 40000)	/* abnormal high temp */
@@ -790,7 +794,6 @@ static ssize_t mtkts_bts_write(struct file *file, const char __user *buffer, siz
 	struct mtktsbts_data *ptr_mtktsbts_data = kmalloc(sizeof(*ptr_mtktsbts_data), GFP_KERNEL);
 
 	if (ptr_mtktsbts_data == NULL) {
-		/* pr_warn("[%s] kmalloc fail\n\n", __func__); */
 		return -ENOMEM;
 	}
 
@@ -970,10 +973,9 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 
 	ptr_mtktsbts_parm_data = kmalloc(sizeof(*ptr_mtktsbts_parm_data), GFP_KERNEL);
 
-	if (ptr_mtktsbts_parm_data == NULL) {
-		/* pr_warn("[%s] kmalloc fail\n\n", __func__); */
+	if (ptr_mtktsbts_parm_data == NULL)
 		return -ENOMEM;
-	}
+
 	/* external pin: 0/1/12/13/14/15, can't use pin:2/3/4/5/6/7/8/9/10/11,
 	choose "adc_channel=11" to check if there is any param input */
 	ptr_mtktsbts_parm_data->adc_channel = 11;
@@ -1001,6 +1003,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			mtkts_bts_dprintk("g_RAP_pull_up_R=%d\n", g_RAP_pull_up_R);
 		} else {
 			pr_debug("[mtkts_bts_write] bad PUP_R argument\n");
+			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
 
@@ -1009,6 +1012,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			mtkts_bts_dprintk("g_Rat_pull_up_voltage=%d\n", g_RAP_pull_up_voltage);
 		} else {
 			pr_debug("[mtkts_bts_write] bad PUP_VOLT argument\n");
+			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
 
@@ -1017,6 +1021,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			mtkts_bts_dprintk("g_TAP_over_critical_low=%d\n", g_TAP_over_critical_low);
 		} else {
 			pr_debug("[mtkts_bts_write] bad OVERCRIT_L argument\n");
+			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
 
@@ -1025,6 +1030,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			mtkts_bts_dprintk("g_RAP_ntc_table=%d\n", g_RAP_ntc_table);
 		} else {
 			pr_debug("[mtkts_bts_write] bad NTC_TABLE argument\n");
+			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
 

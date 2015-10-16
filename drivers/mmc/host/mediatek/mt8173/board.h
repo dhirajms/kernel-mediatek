@@ -3,6 +3,7 @@
 
 #include <generated/autoconf.h>
 #include <linux/pm.h>
+
 /* weiping fix */
 #if 0
 #include <board-custom.h>
@@ -10,7 +11,7 @@
 #include "board-custom.h"
 #endif
 
-typedef void (*sdio_irq_handler_t) (void *);	/* external irq handler */
+typedef void (*msdc_sdio_irq_handler_t) (void *);	/* external irq handler */
 typedef void (*pm_callback_t) (pm_message_t state, void *data);
 
 #define MSDC_CD_PIN_EN      (1 << 0)	/* card detection pin is wired   */
@@ -156,12 +157,12 @@ struct msdc_hw {
 	void (*ext_power_off)(void);
 
 	/* external sdio irq operations */
-	void (*request_sdio_eirq)(sdio_irq_handler_t sdio_irq_handler, void *data);
+	void (*request_sdio_eirq)(msdc_sdio_irq_handler_t sdio_irq_handler, void *data);
 	void (*enable_sdio_eirq)(void);
 	void (*disable_sdio_eirq)(void);
 
 	/* external cd irq operations */
-	void (*request_cd_eirq)(sdio_irq_handler_t cd_irq_handler, void *data);
+	void (*request_cd_eirq)(msdc_sdio_irq_handler_t cd_irq_handler, void *data);
 	void (*enable_cd_eirq)(void);
 	void (*disable_cd_eirq)(void);
 	int (*get_cd_status)(void);

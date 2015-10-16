@@ -317,51 +317,6 @@ unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
 	return curr;
 }
 
-static void __init parse_dt_cpu_capacity(void)
-{
-	const struct cpu_efficiency *cpu_eff;
-	struct device_node *cn = NULL;
-	int cpu = 0, i = 0;
-
-	__cpu_capacity = kcalloc(nr_cpu_ids, sizeof(*__cpu_capacity),
-				 GFP_NOWAIT);
-
-	for_each_possible_cpu(cpu) {
-		const u32 *rate;
-		int len;
-		unsigned long cpu_perf;
-
-		/* too early to use cpu->of_node */
-		cn = of_get_cpu_node(cpu, NULL);
-		if (!cn) {
-			pr_err("missing device node for CPU %d\n", cpu);
-			continue;
-		}
-
-		for (cpu_eff = table_efficiency; cpu_eff->compatible; cpu_eff++)
-			if (of_device_is_compatible(cn, cpu_eff->compatible))
-				break;
-
-		if (cpu_eff->compatible == NULL)
-			continue;
-
-		rate = of_get_property(cn, "clock-frequency", &len);
-		if (!rate || len != 4) {
-			pr_err("%s missing clock-frequency property\n",
-				cn->full_name);
-			continue;
-		}
-
-		cpu_perf = ((be32_to_cpup(rate)) >> 20) * cpu_eff->efficiency;
-		cpu_capacity(cpu) = cpu_perf;
-		max_cpu_perf = max(max_cpu_perf, cpu_perf);
-		i++;
-	}
-
-	if (i < num_possible_cpus())
-		max_cpu_perf = 0;
-}
-
 /*
  * cpu topology table
  */
@@ -466,7 +421,9 @@ void __init init_cpu_topology(void)
 	if (parse_dt_topology())
 		reset_cpu_topology();
 
-	parse_dt_cpu_capacity();
+	reset_cpu_capacity();
+
+	init_sched_energy_costs();
 }
 
 /*
@@ -483,6 +440,11 @@ int arch_cpu_is_big(unsigned int cpu)
 	default:
 		return 0;
 	}
+}
+
+int arch_cpu_is_little(unsigned int cpu)
+{
+	return !arch_cpu_is_big(cpu);
 }
 
 int arch_cpu_is_little(unsigned int cpu)

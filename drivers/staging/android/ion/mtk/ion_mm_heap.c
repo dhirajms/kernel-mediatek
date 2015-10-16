@@ -47,7 +47,7 @@ static unsigned int high_order_gfp_flags = (GFP_HIGHUSER | __GFP_ZERO
 		| __GFP_NOWARN | __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_WAIT;
 static unsigned int low_order_gfp_flags = (GFP_HIGHUSER | __GFP_ZERO
 		| __GFP_NOWARN);
-static const unsigned int orders[] = { 2, 0 };
+static const unsigned int orders[] = { 1, 0 };
 /* static const unsigned int orders[] = {8, 4, 0}; */
 static const int num_orders = ARRAY_SIZE(orders);
 static int order_to_index(unsigned int order)
@@ -542,7 +542,7 @@ int ion_mm_heap_for_each_pool(int (*fn)(int high, int order, int cache,
 	return 0;
 }
 
-static int write_mm_page_pool(int high, int order, int cache, size_t size)
+/*static int write_mm_page_pool(int high, int order, int cache, size_t size)
 {
 	if (cache)
 		IONMSG("%s order_%u in cached_pool = %zu total\n", high ? "high" : "low", order, size);
@@ -550,7 +550,7 @@ static int write_mm_page_pool(int high, int order, int cache, size_t size)
 		IONMSG("%s order_%u in pool = %zu total\n", high ? "high" : "low", order, size);
 
 	return 0;
-}
+}*/
 
 static size_t ion_debug_mm_heap_total(struct ion_client *client, unsigned int id)
 {

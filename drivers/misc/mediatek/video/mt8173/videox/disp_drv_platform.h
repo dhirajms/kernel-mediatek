@@ -35,7 +35,6 @@
 #define MTK_FB_DFO_DISABLE
 #define DFO_USE_NEW_API
 #define MTKFB_FPGA_ONLY
-#define DISP_KERNEL_318_BRINGUP
 #define DISP_SUPPORT_CMDQ
 /* new macro definition for display driver platform dependency options */
 
@@ -121,6 +120,11 @@ extern bool boot_up_with_facotry_mode(void);
 #define HDMI_DISP_WIDTH 4096
 #define HDMI_DISP_HEIGHT 2160
 #define BOX_FIX_RES 0x19
+#endif
+
+#if defined(MTK_ALPS_BOX_SUPPORT)
+#else
+#define DISP_ENABLE_SODI
 #endif
 
 #endif				/* __DISP_DRV_PLATFORM_H__ */

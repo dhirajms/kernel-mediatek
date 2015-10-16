@@ -195,6 +195,7 @@ extern enum top_ckmuxsel mt_cpufreq_get_clock_switch(enum mt_cpu_dvfs_id id);
 extern void mt_cpufreq_setvolt_registerCB(cpuVoltsampler_func pCB);
 extern struct mt_cpu_tlp_power_info *get_cpu_tlp_power_tbl(void);
 extern bool mt_cpufreq_earlysuspend_status_get(void);
+void interactive_boost_cpu(int boost);
 
 
 #ifndef __KERNEL__

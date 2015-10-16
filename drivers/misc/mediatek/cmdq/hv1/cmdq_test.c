@@ -19,7 +19,6 @@
 #include "cmdq_mdp.h"
 #include "cmdq_test.h"
 #include "cmdq_def.h"
-#include "cmdq_fs.h"
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 #include "cmdq_sec.h"
 #include "cmdq_iwc_sec.h"
@@ -1607,58 +1606,6 @@ static void testcase_cmdqRecFlushAsyncCallback(void)
 	cmdqRecDestroy(handle);
 }
 
-static void testcase_dump_error_task_to_file(void)
-{
-	int i = 0;
-	struct fs_struct fs;
-
-	init_fs_struct(&fs);
-	CMDQ_ERR("start to dump error task\n");
-	if (0 == gCmdqContext.errorTask.errTaskCount) {
-		CMDQ_ERR("no error task exist\n");
-		return;
-	}
-
-	for (i = 0; i < gCmdqContext.errorTask.errTaskCount; i++) {
-		if (NULL != gCmdqContext.errorTask.errorTaskBuffer[i].pVABase) {
-			CMDQ_LOG("SLOT[%d] pTask[%p] trigger[%lld] pVABase[%p] commandSize[%d]\n",
-				 i,
-				 gCmdqContext.errorTask.errorTaskBuffer[i].pTask,
-				 gCmdqContext.errorTask.errorTaskBuffer[i].trigger,
-				 gCmdqContext.errorTask.errorTaskBuffer[i].pVABase,
-				 gCmdqContext.errorTask.errorTaskBuffer[i].commandSize);
-#if 1
-			switch (i) {
-			case 0:
-				cmdq_core_dump_instructions_to_file((uint64_t *) gCmdqContext.
-								    errorTask.errorTaskBuffer[i].
-								    pVABase,
-								    gCmdqContext.errorTask.
-								    errorTaskBuffer[i].commandSize,
-								    "/sdcard/cmdq_error_task_0");
-				break;
-			case 1:
-				cmdq_core_dump_instructions_to_file((uint64_t *) gCmdqContext.
-								    errorTask.errorTaskBuffer[i].
-								    pVABase,
-								    gCmdqContext.errorTask.
-								    errorTaskBuffer[i].commandSize,
-								    "/sdcard/cmdq_error_task_1");
-				break;
-			default:
-				CMDQ_ERR("error task index error[%d]\n", i);
-			}
-
-#else
-			fs.fs_create(&fs, strName);
-			fs_printf(fs, "hello %s\n", strName);
-			fs.fs_close(&fs);
-#endif
-
-		}
-	}
-}
-
 
 static void testcase_write(void)
 {
@@ -2335,17 +2282,6 @@ void testcase_alloc_path(void)
 #endif
 }
 
-
-void testcase_my_own_func(void)
-{
-	struct fs_struct fs;
-
-	init_fs_struct(&fs);
-	fs.fs_create(&fs, "/sdcard/testfile");
-	fs_printf(fs, "hellow dfsafdsafdsafjklk");
-	fs.fs_close(&fs);
-}
-
 void testcase_write_stress_test(void)
 {
 	int32_t loop;
@@ -2362,6 +2298,34 @@ void testcase_write_stress_test(void)
 
 	CMDQ_LOG("%s END\n", __func__);
 }
+
+void testcase_read_smi_larb(void)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	uint32_t larb = 0;
+
+	struct transmitBufferStruct secureData;
+
+	CMDQ_LOG("harry >>> read smi larb0 & larb4 register\n");
+
+	memset(&secureData, 0, sizeof(secureData));
+	secureData.pBuffer = &larb;
+	secureData.size = sizeof(larb);
+
+	/* 2	register secure buffer */
+	if (0 !=  cmdqSecRegisterSecureBuffer(&secureData))
+		return;
+
+	/* 3	service call */
+	cmdqSecServiceCall(&secureData, CMD_CMDQ_TL_DUMP_SMI_LARB);
+
+	/* 4	unregister secure buffer */
+	cmdqSecUnRegisterSecureBuffer(&secureData);
+#else
+	CMDQ_ERR("sorry, SVP config is not enabled\n");
+#endif
+}
+
 
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_ALL = 0,
@@ -2427,9 +2391,12 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 */
 
 	case 112:
+#if 0
 		CMDQ_MSG("CMDQ_MSG log\n");
 		CMDQ_LOG("CMDQ_LOG log\n");
 		CMDQ_ERR("CMDQ_ERR log\n");
+#endif
+		testcase_read_smi_larb();
 		break;
 	case 111:
 		CMDQ_LOG("enter testcase 111\n");
@@ -2651,12 +2618,6 @@ static ssize_t cmdq_write_test_proc_config(struct file *file,
 		return 0;
 	}
 	desc[len] = '\0';
-
-	/* process and update config */
-	if (0 == strcmp(desc, "dump_error_task\n")) {
-		testcase_dump_error_task_to_file();
-		return count;
-	}
 
 	if (0 >= sscanf(desc, "%d %d %d", &testType, &newTestSuit, &paramData)) {
 		/* sscanf returns the number of items in argument list successfully filled. */

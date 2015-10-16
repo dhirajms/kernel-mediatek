@@ -50,6 +50,7 @@ extern unsigned int soidle_profile[4];
 #endif
 
 extern bool mtk_gpu_sodi_entry(void);
+extern bool mtk_gpu_sodi_exit(void);
 extern int hps_del_timer(void);
 extern int hps_restart_timer(void);
 extern int vcorefs_get_curr_ddr(void);
@@ -90,5 +91,8 @@ extern int configure_mrw_pasr(u32 segment_rank0, u32 segment_rank1);
 extern int pasr_enter(u32 *sr, u32 *dpd);
 extern int pasr_exit(void);
 extern unsigned long mtkpasr_enable_sr;
+
+/* eint */
+extern void mt_eint_print_status(void);
 
 #endif  /* _MT_SPM_MISC_H */

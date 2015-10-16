@@ -58,6 +58,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(__QNXNTO__)
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #endif
 
 #include "img_types.h"
@@ -170,13 +171,24 @@ PVRSRV_ERROR OSThreadCreatePriority(IMG_HANDLE *phThread,
 */ /**************************************************************************/
 PVRSRV_ERROR OSThreadDestroy(IMG_HANDLE hThread);
 
-void OSCachedMemCopy(void *pvDst, const void *pvSrc, size_t ui32Size);
-void OSDeviceMemCopy(void *pvDst, const void *pvSrc, size_t ui32Size);
+void PVRSRVDeviceMemSet(void *pvDest, IMG_UINT8 ui8Value, size_t ui32Size);
+void PVRSRVDeviceMemCopy(void *pvDst, const void *pvSrc, size_t ui32Size);
+
 #if defined(__arm64__) || defined(__aarch64__) || defined (PVRSRV_DEVMEM_SAFE_MEMSETCPY)
-#define OSMemCopy OSDeviceMemCopy
+#define OSDeviceMemSet(a,b,c) PVRSRVDeviceMemSet((a), (b), (c))
+#define OSDeviceMemCopy(a,b,c) PVRSRVDeviceMemCopy((a), (b), (c))
+#define OSMemSet(a,b,c)  PVRSRVDeviceMemSet((a), (b), (c))
+#define OSMemCopy(a,b,c)  PVRSRVDeviceMemCopy((a), (b), (c))
 #else
-#define OSMemCopy OSCachedMemCopy
+#define OSDeviceMemSet(a,b,c) memset((a), (b), (c))
+#define OSDeviceMemCopy(a,b,c) memcpy((a), (b), (c))
+#define OSMemSet(a,b,c)  memset((a), (b), (c))
+#define OSMemCopy(a,b,c)  memcpy((a), (b), (c))
 #endif
+
+#define OSCachedMemSet(a,b,c) memset((a), (b), (c))
+#define OSCachedMemCopy(a,b,c) memcpy((a), (b), (c))
+
 void *OSMapPhysToLin(IMG_CPU_PHYADDR BasePAddr, size_t ui32Bytes, IMG_UINT32 ui32Flags);
 IMG_BOOL OSUnMapPhysToLin(void *pvLinAddr, size_t ui32Bytes, IMG_UINT32 ui32Flags);
 
@@ -215,13 +227,9 @@ IMG_PID OSGetCurrentClientProcessIDKM(void);
 IMG_CHAR *OSGetCurrentClientProcessNameKM(void);
 uintptr_t OSGetCurrentClientThreadIDKM(void);
 
-void OSCachedMemSet(void *pvDest, IMG_UINT8 ui8Value, size_t ui32Size);
-void OSDeviceMemSet(void *pvDest, IMG_UINT8 ui8Value, size_t ui32Size);
-#if defined(__arm64__) || defined(__aarch64__) || defined (PVRSRV_DEVMEM_SAFE_MEMSETCPY)
-#define OSMemSet OSDeviceMemSet
-#else
-#define OSMemSet OSCachedMemSet
-#endif
+
+
+
 IMG_INT OSMemCmp(void *pvBufA, void *pvBufB, size_t uiLen);
 
 PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,
@@ -366,6 +374,9 @@ PVRSRV_ERROR OSGetGlobalBridgeBuffers (void **ppvBridgeInBuffer,
 							void **ppvBridgeOutBuffer,
 							IMG_UINT32 *pui32BridgeOutBufferSize);
 
+IMG_BOOL OSSetDriverSuspended(void);
+IMG_BOOL OSClearDriverSuspended(void);
+IMG_BOOL OSGetDriverSuspended(void);
 
 void OSWriteMemoryBarrier(void);
 void OSMemoryBarrier(void);

@@ -244,6 +244,25 @@ void mt_afe_set_channels(uint32_t memory_interface, uint32_t channel)
 	}
 }
 
+void mt_afe_set_mono_type(uint32_t memory_interface, uint32_t mono_type)
+{
+	switch (memory_interface) {
+	case MT_AFE_DIGITAL_BLOCK_MEM_AWB:
+		mt_afe_set_reg(AFE_DAC_CON1, mono_type << 25, 1 << 25);
+		break;
+	case MT_AFE_DIGITAL_BLOCK_MEM_VUL:
+		mt_afe_set_reg(AFE_DAC_CON1, mono_type << 28, 1 << 28);
+		break;
+	case MT_AFE_DIGITAL_BLOCK_MEM_VUL_DATA2:
+		mt_afe_set_reg(AFE_DAC_CON0, mono_type << 11, 1 << 11);
+		break;
+	default:
+		pr_warn("%s unexpected memory interface = %u\n",
+			__func__, memory_interface);
+		break;
+	}
+}
+
 void mt_afe_set_irq_counter(uint32_t irq_mode, uint32_t counter)
 {
 	switch (irq_mode) {
@@ -1305,11 +1324,6 @@ void mt_afe_suspend(void)
 
 	mt_afe_suspend_clk_off();
 
-	if (audio_power_status) {
-		pm_runtime_put_sync(mach_dev);
-		audio_power_status = false;
-	}
-
 	aud_drv_suspend_status = true;
 
 	pr_debug("-%s\n", __func__);
@@ -1321,16 +1335,6 @@ void mt_afe_resume(void)
 		return;
 
 	pr_debug("+%s\n", __func__);
-
-	if (!audio_power_status) {
-		int ret = pm_runtime_get_sync(mach_dev);
-
-		if (ret < 0)
-			pr_warn("%s pm_runtime_get_sync fail %d\n", __func__, ret);
-		else
-			audio_power_status = true;
-
-	}
 
 	mt_afe_suspend_clk_on();
 

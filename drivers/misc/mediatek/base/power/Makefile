@@ -1,3 +1,5 @@
+obj-$(CONFIG_ARCH_MT6755) += ppm_v1/
+obj-$(CONFIG_ARCH_MT6797) += ppm_v1/
 obj-$(CONFIG_ARCH_MT6735) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT6735M) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT6580) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
@@ -7,6 +9,8 @@ obj-$(CONFIG_ARCH_MT6797) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT8163) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT8173) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT8163) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-$(CONFIG_ARCH_MT8127) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-$(CONFIG_MACH_MT2701) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT6735) += spm_v1/
 obj-$(CONFIG_ARCH_MT6735M) += spm_v1/
 obj-$(CONFIG_ARCH_MT6753) += spm_v1/
@@ -15,5 +19,10 @@ obj-$(CONFIG_ARCH_MT6755) += spm_v2/
 obj-$(CONFIG_ARCH_MT6797) += spm_v2/
 obj-$(CONFIG_ARCH_MT6755) += pbm_v1/
 obj-$(CONFIG_ARCH_MT6797) += pbm_v1/
-obj-$(CONFIG_ARCH_MT6755) += ppm_v1/
-obj-$(CONFIG_ARCH_MT6797) += ppm_v1/
+obj-$(CONFIG_ARCH_MT6735) += cpuidle_v1/
+obj-$(CONFIG_ARCH_MT6735M) += cpuidle_v1/
+obj-$(CONFIG_ARCH_MT6753) += cpuidle_v1/
+obj-$(CONFIG_ARCH_MT6580) += cpuidle_v1/
+obj-$(CONFIG_ARCH_MT6755) += cpuidle_v1/
+# obj-$(CONFIG_ARCH_MT6797) += cpuidle_v1/
+

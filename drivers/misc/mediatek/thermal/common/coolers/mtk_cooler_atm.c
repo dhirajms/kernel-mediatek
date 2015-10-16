@@ -30,6 +30,10 @@
 /*=============================================================
  *Local variable definition
  *=============================================================*/
+
+static int print_cunt;
+static int adaptive_limit[5][2];
+
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 unsigned int adaptive_cpu_power_limit = 0x7FFFFFFF;
@@ -240,9 +244,23 @@ static void set_adaptive_cpu_power_limit(unsigned int limit)
 	final_limit = MIN(adaptive_cpu_power_limit, static_cpu_power_limit);
 
 	if (prv_adp_cpu_pwr_lim != adaptive_cpu_power_limit) {
-		tscpu_printk("set_adaptive_cpu_power_limit %d, T=",
-			     (final_limit != 0x7FFFFFFF) ? final_limit : 0);
-		/*tscpu_print_all_temperature(0);*/
+		if (print_cunt < 5) {
+			adaptive_limit[print_cunt][0] = (final_limit != 0x7FFFFFFF) ? final_limit : 0;
+			adaptive_limit[print_cunt][1] = tscpu_get_curr_temp();
+		} else {
+			tscpu_warn("set_adaptive_cpu_power_limit %d T=%d,%d T=%d,%d T=%d,%d T=%d,%d T=%d\n",
+			adaptive_limit[0][0] , adaptive_limit[0][1],
+			adaptive_limit[1][0] , adaptive_limit[1][1],
+			adaptive_limit[2][0] , adaptive_limit[2][1],
+			adaptive_limit[3][0] , adaptive_limit[3][1],
+			adaptive_limit[4][0] , adaptive_limit[4][1]
+			);
+
+			print_cunt = 0;
+			adaptive_limit[0][0] = (final_limit != 0x7FFFFFFF) ? final_limit : 0;
+			adaptive_limit[0][1] = tscpu_get_curr_temp();
+		}
+		print_cunt++;
 
 #ifdef ATM_USES_PPM
 		gv_cpu_power_limit = final_limit;
@@ -319,8 +337,13 @@ EXPORT_SYMBOL(tscpu_get_min_gpu_pwr);
  * from thermal config: MAX_TARGET_TJ, STEADY_TARGET_TJ, MIN_TTJ, TRIP_TPCB...etc
  * cATM+'s parameters: K_SUM_TT_HIGH, K_SUM_TT_LOW
  */
+#if 0/*def THERMAL_CATM_USER*/
+struct CATM_T thermal_atm_t;
+#endif
+
 static void catmplus_update_params(void)
 {
+#if 1/*ndef THERMAL_CATM_USER*/
 	/* temp solution: use 1st target Tj also the trip point of 1st ATM cooler as MIN_TTJ */
 	/* MIN_TTJ = TARGET_TJS[0]; */
 	/* Avoid updated from mtk_ts_cpu.c, abandon above temp solution */
@@ -338,8 +361,31 @@ static void catmplus_update_params(void)
 		MIN_SUM_TT = ((MIN_TTJ - STEADY_TARGET_TJ)<<10) / K_SUM_TT_HIGH;
 	else
 		MIN_SUM_TT = 0;
+#else
+	int ret = 0;
+
+	thermal_atm_t.t_catm_par.CATM_ON = ctm_on;
+	thermal_atm_t.t_catm_par.K_TT = K_TT;
+	thermal_atm_t.t_catm_par.K_SUM_TT_LOW = K_SUM_TT_LOW;
+	thermal_atm_t.t_catm_par.K_SUM_TT_HIGH = K_SUM_TT_HIGH;
+	thermal_atm_t.t_catm_par.MIN_SUM_TT = MIN_SUM_TT;
+	thermal_atm_t.t_catm_par.MAX_SUM_TT = MAX_SUM_TT;
+	thermal_atm_t.t_catm_par.MIN_TTJ = MIN_TTJ;
+	thermal_atm_t.t_catm_par.CATMP_STEADY_TTJ_DELTA = CATMP_STEADY_TTJ_DELTA;
+
+
+	thermal_atm_t.t_continuetm_par.STEADY_TARGET_TJ = STEADY_TARGET_TJ;
+	thermal_atm_t.t_continuetm_par.MAX_TARGET_TJ = MAX_TARGET_TJ;
+	thermal_atm_t.t_continuetm_par.TRIP_TPCB  =  TRIP_TPCB;
+	thermal_atm_t.t_continuetm_par.STEADY_TARGET_TPCB  =  STEADY_TARGET_TPCB;
+
+	ret = wakeup_ta_algo(TA_CATMPLUS);
+	/*tscpu_warn("catmplus_update_params : ret %d\n" , ret);*/
+#endif
 }
 
+
+#if 1/*ndef THERMAL_CATM_USER*/
 static int catmplus_decide_ttj(int cur_tpcb)
 {
 	static int sum_tt;
@@ -369,6 +415,7 @@ static int catmplus_decide_ttj(int cur_tpcb)
 
 	return new_ttj;
 }
+#endif
 #endif
 
 #if PRECISE_HYBRID_POWER_BUDGET
@@ -930,7 +977,13 @@ static int decide_ttj(void)
 				MAX(STEADY_TARGET_TJ, (COEF_AE - COEF_BE * curr_tpcb / 1000)));
 		} else if (ctm_on == 2) {
 			/* +++ cATM+ +++ */
-		    TARGET_TJ = catmplus_decide_ttj(curr_tpcb);
+#if 0 /*def THERMAL_CATM_USER*/
+				/*tscpu_warn("last_tpcb=%d,last_tpcb =%d,TARGET_TJ=%d\n",
+					curr_tpcb, last_tpcb, TARGET_TJ);*/
+				TARGET_TJ = ta_get_ttj();
+#else
+				TARGET_TJ = catmplus_decide_ttj(curr_tpcb);
+#endif
 			/* --- cATM+ --- */
 		}
 		current_ETJ =

@@ -24,9 +24,6 @@
 #include <mt-plat/mt_gpio.h>
 
 
-#ifdef CONFIG_MTK_LEGACY
-#include <cust_gpio_usage.h>
-#endif
 
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -44,8 +41,8 @@
 #include <linux/usb/hcd.h>
 /*#include <mach/mt_chip.h>*/
 
-#ifdef CONFIG_MTK_TYPEC_SWITCH
-#include <linux/usb/typec.h>
+#ifdef CONFIG_USB_C_SWITCH
+#include <typec.h>
 #endif
 
 #ifdef CONFIG_MTK_FPGA
@@ -100,6 +97,19 @@ static struct delayed_work mtk_xhci_delaywork;
 int mtk_iddig_debounce = 10;
 module_param(mtk_iddig_debounce, int, 0644);
 
+void switch_int_to_host_and_mask(void)
+{
+	irq_set_irq_type(mtk_idpin_irqnum, IRQF_TRIGGER_LOW);
+	disable_irq(mtk_idpin_irqnum);
+}
+
+void switch_int_to_host(void)
+{
+	irq_set_irq_type(mtk_idpin_irqnum, IRQF_TRIGGER_LOW);
+	enable_irq(mtk_idpin_irqnum);
+}
+
+
 static void mtk_set_iddig_out_detect(void)
 {
 	irq_set_irq_type(mtk_idpin_irqnum, IRQF_TRIGGER_HIGH);
@@ -114,7 +124,6 @@ static void mtk_set_iddig_in_detect(void)
 
 static bool mtk_is_charger_4_vol(void)
 {
-#if 0
 	int vol = battery_meter_get_charger_voltage();
 
 	mtk_xhci_mtk_log("voltage(%d)\n", vol);
@@ -123,9 +132,6 @@ static bool mtk_is_charger_4_vol(void)
 	return false;
 #else
 	return (vol > 4000) ? true : false;
-#endif
-#else
-	return 0;
 #endif
 }
 
@@ -188,12 +194,7 @@ void mtk_enable_pmic_otg_mode(void)
 
 #endif
 
-#ifdef CONFIG_MTK_LEGACY
-	mt_set_gpio_mode(GPIO_OTG_DRVVBUS_PIN, GPIO_MODE_GPIO);
-	mt_set_gpio_pull_select(GPIO_OTG_DRVVBUS_PIN, GPIO_PULL_DOWN);
-	mt_set_gpio_pull_enable(GPIO_OTG_DRVVBUS_PIN, GPIO_PULL_ENABLE);
-#else
-#endif
+
 	/* save PMIC related registers */
 	pmic_save_regs();
 
@@ -374,14 +375,8 @@ int mtk_is_hub_active(void)
 static void mtk_enable_otg_mode(void)
 {
 #if defined(CONFIG_MTK_BQ25896_SUPPORT)
-#ifdef CONFIG_MTK_LEGACY
-	mt_set_gpio_mode(GPIO_OTG_DRVVBUS_PIN, GPIO_OTG_DRVVBUS_PIN_M_GPIO);
-	mt_set_gpio_out(GPIO_OTG_DRVVBUS_PIN, GPIO_OUT_ONE);
-#else
-	mt_set_gpio_mode(0x80000043, 1);
-#endif
 	bq25890_otg_en(0x01);
-	bq25890_set_boost_ilim(0x01);
+	bq25890_set_boost_ilim(0x03);	/* 1.3A */
 #elif defined(CONFIG_MTK_OTG_PMIC_BOOST_5V)
 	mtk_enable_pmic_otg_mode();
 #endif
@@ -391,12 +386,6 @@ static void mtk_disable_otg_mode(void)
 {
 #if defined(CONFIG_MTK_BQ25896_SUPPORT)
 	bq25890_otg_en(0x0);
-#ifdef CONFIG_MTK_LEGACY
-	mt_set_gpio_mode(GPIO_OTG_DRVVBUS_PIN, GPIO_OTG_DRVVBUS_PIN_M_GPIO);
-	mt_set_gpio_out(GPIO_OTG_DRVVBUS_PIN, GPIO_OUT_ZERO);
-#else
-	mt_set_gpio_mode(0x80000043, 1);
-#endif
 #elif defined(CONFIG_MTK_OTG_PMIC_BOOST_5V)
 	mtk_disable_pmic_otg_mode();
 #endif
@@ -497,9 +486,7 @@ static int mtk_xhci_driver_load(void)
 	mtk_xhci_imod_set(0x30);
 
 	mtk_enable_otg_mode();
-	/* USB PLL Force settings */
 	enableXhciAllPortPower(mtk_xhci);
-
 
 	return 0;
 
@@ -548,6 +535,11 @@ void mtk_xhci_mode_switch(struct work_struct *work)
 	int ret = 0;
 
 	mtk_xhci_mtk_log("mtk_xhci_mode_switch\n");
+
+	if (musb_check_ipo_state() == true) {
+		enable_irq(mtk_idpin_irqnum); /* prevent from disable irq twice*/
+		return;
+	}
 
 	if (mtk_idpin_cur_stat == IDPIN_OUT) {
 		is_load = false;
@@ -615,13 +607,6 @@ static irqreturn_t xhci_eint_iddig_isr(int irqnum, void *data)
 		schedule_delayed_work_on(0, &mtk_xhci_delaywork, msecs_to_jiffies(mtk_iddig_debounce));
 	*/
 	mtk_xhci_mtk_log("xhci_eint_iddig_isr\n");
-#ifdef CONFIG_MTK_LEGACY
-	mtk_xhci_mtk_log
-		("schedule to delayed work, ret(%d), gpio_mode(%d), gpio_pull_enable(%d), gpio_pull_select(%d)\n",
-		 ret, mt_get_gpio_mode(GPIO_OTG_IDDIG_EINT_PIN),
-		 mt_get_gpio_pull_enable(GPIO_OTG_IDDIG_EINT_PIN),
-		 mt_get_gpio_pull_select(GPIO_OTG_IDDIG_EINT_PIN));
-#endif
 	disable_irq_nosync(irqnum);
 	return IRQ_HANDLED;
 }
@@ -633,18 +618,8 @@ int mtk_xhci_eint_iddig_init(void)
 	int iddig_gpio, iddig_debounce;
 	u32 ints[2] = {0, 0};
 
-#ifdef CONFIG_MTK_LEGACY
-	mt_set_gpio_mode(GPIO_OTG_IDDIG_EINT_PIN, GPIO_OTG_IDDIG_EINT_PIN_M_IDDIG);
-	mt_set_gpio_dir(GPIO_OTG_IDDIG_EINT_PIN, GPIO_DIR_IN);
-	mt_set_gpio_pull_enable(GPIO_OTG_IDDIG_EINT_PIN, GPIO_PULL_ENABLE);
-	mt_set_gpio_pull_select(GPIO_OTG_IDDIG_EINT_PIN, GPIO_PULL_UP);
-#else
-	mt_set_gpio_mode(0x80000042, 1);
-	mt_set_gpio_dir(0x80000042, GPIO_DIR_IN);
-	mt_set_gpio_pull_enable(0x80000042, GPIO_PULL_ENABLE);
-	mt_set_gpio_pull_select(0x80000042, GPIO_PULL_UP);
-#endif
-	node = of_find_compatible_node(NULL, NULL, "mediatek,USB3_XHCI");
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,usb3_xhci");
 	if (node) {
 		node = of_find_compatible_node(NULL, NULL, "mediatek,usb_iddig_bi_eint");
 		if (node) {
@@ -679,13 +654,7 @@ int mtk_xhci_eint_iddig_init(void)
 				 mtk_idpin_irqnum);
 		return retval;
 	}
-#ifdef CONFIG_MTK_LEGACY
-	mtk_xhci_mtk_log(
-		"iddig register done, irqnum = %d, gpio_mode(%d), gpio_pull_enable(%d), gpio_pull_select(%d)\n",
-		 mtk_idpin_irqnum, mt_get_gpio_mode(GPIO_OTG_IDDIG_EINT_PIN),
-		 mt_get_gpio_pull_enable(GPIO_OTG_IDDIG_EINT_PIN),
-		 mt_get_gpio_pull_select(GPIO_OTG_IDDIG_EINT_PIN));
-#endif
+
 	/* set in-detect and umask the iddig interrupt */
 	/* enable_irq(mtk_idpin_irqnum); */
 	return retval;
@@ -725,9 +694,21 @@ bool mtk_is_host_mode(void)
 	return (vbus_on > 0 || mtk_idpin_cur_stat == IDPIN_IN_HOST) ? true : false;
 }
 
+void mtk_unload_xhci_on_ipo(void)
+{
+	mtk_xhci_disPortPower();
+	/* USB PLL Force settings */
+	usb20_pll_settings(true, false);
+	mtk_xhci_driver_unload();
+	switch_set_state(&mtk_otg_state, 0);
+	mtk_xhci_wakelock_unlock();
+	mtk_idpin_cur_stat = IDPIN_OUT;
+}
+
+
 #endif
 
-#ifdef CONFIG_MTK_TYPEC_SWITCH
+#ifdef CONFIG_USB_C_SWITCH
 static void typec_otg_enable(void)
 {
 	mtk_idpin_cur_stat = IDPIN_IN_HOST;
@@ -762,7 +743,7 @@ static struct typec_switch_data typec_host_driver = {
 void mtk_xhci_wakelock_init(void)
 {
 	wake_lock_init(&mtk_xhci_wakelock, WAKE_LOCK_SUSPEND, "xhci.wakelock");
-#ifdef CONFIG_MTK_TYPEC_SWITCH
+#ifdef CONFIG_USB_C_SWITCH
 	typec_host_driver.priv_data = NULL;
 	register_typec_switch_callback(&typec_host_driver);
 #endif

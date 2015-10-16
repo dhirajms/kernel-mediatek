@@ -78,6 +78,7 @@ static int global_layer_id = -1;
 struct dentry *ConfigPara_dbgfs = NULL;
 CONFIG_RECORD_LIST head_list;
 LCM_REG_READ reg_read;
+
 /* int esd_check_addr; */
 /* int esd_check_para_num; */
 /* int esd_check_type; */
@@ -241,6 +242,9 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	uint32_t dsi_id = pm->dsi_id;
 	LCM_DSI_PARAMS *pParams = get_dsi_params_handle(dsi_id);
 
+#ifdef FBCONFIG_SHOULD_KICK_IDLEMGR
+	primary_display_idlemgr_kick(__func__, 1);
+#endif
 	switch (cmd) {
 	case GET_DSI_ID:
 	{
@@ -285,6 +289,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 		if (copy_from_user(&record_tmp_list->record, (void __user *)arg, sizeof(CONFIG_RECORD))) {
 			pr_debug("list_add: copy_from_user failed! line:%d\n", __LINE__);
+			kfree(record_tmp_list);
+			record_tmp_list = NULL;
 			return -EFAULT;
 		}
 		list_add(&record_tmp_list->list, &head_list.list);
@@ -411,6 +417,15 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		PM_LAYER_EN layers;
 		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 
+#ifdef PRIMARY_THREE_OVL_CASCADE
+		int i;
+
+		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
+		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
+		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[6]);
+		for (i = 0; i < TOTAL_OVL_LAYER_NUM; ++i)
+			layers.layer_en[i] = (ovl_all[i].layer_en ? 1 : 0);
+#else
 		ovl_get_info(DISP_MODULE_OVL0, ovl_all);
 		layers.layer_en[0] = (ovl_all[0].layer_en ? 1 : 0);
 		layers.layer_en[1] = (ovl_all[1].layer_en ? 1 : 0);
@@ -421,6 +436,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		layers.layer_en[5] = (ovl_all[5].layer_en ? 1 : 0);
 		layers.layer_en[6] = (ovl_all[6].layer_en ? 1 : 0);
 		layers.layer_en[7] = (ovl_all[7].layer_en ? 1 : 0);
+#endif
 #endif
 		pr_debug("[LAYER_GET_EN]:L0:%d L1:%d L2:%d L3:%d\n", ovl_all[0].layer_en,
 			 ovl_all[1].layer_en, ovl_all[2].layer_en, ovl_all[3].layer_en);
@@ -437,7 +453,13 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			return -EFAULT;
 		}
 		global_layer_id = layer_info.index;
+#ifdef PRIMARY_THREE_OVL_CASCADE
+		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
+		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
+		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[6]);
+#else
 		ovl_get_info(DISP_MODULE_OVL0, ovl_all);
+#endif
 		layer_info.height = ovl_all[layer_info.index].src_h;
 		layer_info.width = ovl_all[layer_info.index].src_w;
 		layer_info.fmt = DP_COLOR_BITS_PER_PIXEL(ovl_all[layer_info.index].fmt);
@@ -469,7 +491,13 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		unsigned int real_size = 0;
 		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 
+#ifdef PRIMARY_THREE_OVL_CASCADE
+		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
+		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
+		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[6]);
+#else
 		ovl_get_info(DISP_MODULE_OVL0, ovl_all);
+#endif
 		layer_size =
 			ovl_all[global_layer_id].src_pitch * ovl_all[global_layer_id].src_h;
 		mva = ovl_all[global_layer_id].addr;
@@ -553,6 +581,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 		if (pm->pLcm_params->lcm_if == LCM_INTERFACE_DSI_DUAL)
 			misc.dual_port = 1;
+		misc.overall_layer_num = TOTAL_OVL_LAYER_NUM;
 		ret = copy_to_user(argp, &misc,  sizeof(misc));
 		return 0;
 	}
@@ -835,7 +864,7 @@ static int compat_put_esd_para(struct compat_esd_para *data32,
 
 static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	long ret;
+	long ret = 0;
 
 	if (!file->f_op || !file->f_op->unlocked_ioctl)
 		return -ENOTTY;

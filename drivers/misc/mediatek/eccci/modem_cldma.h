@@ -21,7 +21,7 @@
 #define NET_RXQ_NUM 3
 #define NORMAL_TXQ_NUM 6
 #define NORMAL_RXQ_NUM 6
-#define MAX_BD_NUM 64
+#define MAX_BD_NUM (MAX_SKB_FRAGS + 1)
 #define TRAFFIC_MONITOR_INTERVAL 10	/* seconds */
 #define SKB_RX_QUEUE_MAX_LEN 200000
 
@@ -33,9 +33,9 @@
  * CLDMA_NET_TX_BD: use BD to support scatter/gather IO for net device
  */
 #define CHECKSUM_SIZE 0		/* 12 */
-#define CLDMA_NO_TX_IRQ
+/* #define CLDMA_NO_TX_IRQ */
 #ifndef CLDMA_NO_TX_IRQ
-#define ENABLE_CLDMA_TIMER
+/* #define ENABLE_CLDMA_TIMER */
 #endif
 #define CLDMA_NET_TX_BD
 

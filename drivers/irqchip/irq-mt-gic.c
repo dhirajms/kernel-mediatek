@@ -269,12 +269,33 @@ static int gic_retrigger(struct irq_data *d)
 	return 0;
 }
 
+/* set the priority mask to 0x00 for masking all irqs to this cpu */
+void gic_set_primask(void)
+{
+	struct gic_chip_data *gic = &gic_data[0];
+	void __iomem *base = gic_data_cpu_base(gic);
+
+	writel_relaxed(0x00, base + GIC_CPU_PRIMASK);
+}
+
+/* restore the priority mask value */
+void gic_clear_primask(void)
+{
+	struct gic_chip_data *gic = &gic_data[0];
+	void __iomem *base = gic_data_cpu_base(gic);
+
+	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+}
+
 #ifdef CONFIG_SMP
 static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val, bool force)
 {
 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
 	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
-	u32 val, mask, bit = 0;
+	u32 val, bit = 0;
+#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
+	u32 mask;
+#endif
 
 #ifndef CONFIG_MTK_IRQ_NEW_DESIGN
 	if (!force)
@@ -1124,10 +1145,10 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 		return NULL;
 
 	ptr += sprintf(ptr, "[mt gic dump] irq = %d\n", irq);
-#ifndef CONFIG_MTK_PSCI
-	rc = -1;
-#else
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0);
+#else
+	rc = -1;
 #endif
 	if (rc < 0) {
 		ptr += sprintf(ptr, "[mt gic dump] not allowed to dump!\n");
@@ -1171,10 +1192,15 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 
 void mt_irq_dump_status(int irq)
 {
-	char buf[1024];
+	char *buf = kmalloc(2048, GFP_KERNEL);
 
-	if (mt_irq_dump_status_buf(irq, &buf[0]))
+	if (!buf)
+		return;
+
+	if (mt_irq_dump_status_buf(irq, buf))
 		pr_debug("%s", buf);
+
+	kfree(buf);
 }
 EXPORT_SYMBOL(mt_irq_dump_status);
 
@@ -1227,12 +1253,14 @@ EXPORT_SYMBOL(mt_get_irq_gic_targets);
 
 #include <linux/platform_device.h>
 
-static int dump_irq;
+static unsigned long dump_irq;
 
-static struct device_driver gic_debug_drv = {
-	.name = "gic_debug",
-	.bus = &platform_bus_type,
-	.owner = THIS_MODULE,
+static struct platform_driver gic_debug_drv = {
+	.driver = {
+		.name = "gic_debug",
+		.bus = &platform_bus_type,
+		.owner = THIS_MODULE,
+	}
 };
 
 static ssize_t dump_irq_show(struct device_driver *driver, char *buf)
@@ -1261,13 +1289,13 @@ int __init gic_debug_drv_init(void)
 {
 	int ret;
 
-	ret = driver_register(&gic_debug_drv);
+	ret = driver_register(&gic_debug_drv.driver);
 	if (ret)
 		pr_err("fail to create gic debug driver\n");
 	else
 		pr_err("success to create gic debug driver\n");
 
-	ret = driver_create_file(&gic_debug_drv, &driver_attr_dump_irq);
+	ret = driver_create_file(&gic_debug_drv.driver, &driver_attr_dump_irq);
 	if (ret)
 		pr_err("fail to create dump_irq sysfs files\n");
 	else
@@ -1403,6 +1431,9 @@ int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 	u32 percpu_offset;
 	int irq;
 	struct resource res;
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+	int i;
+#endif
 
 	if (WARN_ON(!node))
 		return -ENODEV;
@@ -1437,8 +1468,6 @@ int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 	gic_cnt++;
 
 #ifdef CONFIG_MTK_IRQ_NEW_DESIGN
-	int i;
-
 	for (i = 0; i <= CONFIG_NR_CPUS-1; ++i) {
 		INIT_LIST_HEAD(&(irq_need_migrate_list[i].list));
 		spin_lock_init(&(irq_need_migrate_list[i].lock));
@@ -1447,16 +1476,6 @@ int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 	if (of_property_read_u32(node, "mediatek,wdt_irq", &wdt_irq))
 		wdt_irq = 0;
 #endif
-
-	/* FIXME: just used to test dump API
-		mt_irq_dump_status(160);
-	*/
-	/* UT for gic functions
-		mt_gic_test(284, IRQF_TRIGGER_RISING);
-		mt_gic_test(285, IRQF_TRIGGER_HIGH);
-		mt_gic_test(286, IRQF_TRIGGER_LOW);
-		mt_gic_test(287, IRQF_TRIGGER_FALLING);
-	*/
 
 	return 0;
 }

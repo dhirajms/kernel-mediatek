@@ -2,8 +2,6 @@
 @File           pvr_dvfs.h
 @Title          System level interface for DVFS
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    This file defined the API between services and system layer
-                required for Ion integration.
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -86,17 +84,17 @@ typedef struct _IMG_DVFS_DEVICE_CFG_
 #if defined(CONFIG_DEVFREQ_THERMAL)
 	/*
 	 * Call back function for getting static power.
-	 * Input voltage and temperature specified in mV and celcius respectively.
+	 * Input voltage and temperature specified in mV and Celsius respectively.
 	 * If temperature is set to INT_MAX, system (platform) layer needs to 
 	 * retrieve the temperature from thermal zone that the device belongs to.
-	 * Ouput static power in mW.
+	 * Output static power in mW.
 	 */
 	PFN_GET_STATIC_POWER		pfnGetStaticPower;
 
 	/*
 	 * Call back function for getting maximum dynamic power for 100% utilization.
 	 * Input voltage in mV. Frequency specified in same unit as OPP table.
-	 * Ouput dynamic power in mW.
+	 * Output dynamic power in mW.
 	 */
 	PFN_GET_MAX_DYNAMIC_POWER	pfnGetMaxDynamicPower;
 #endif

@@ -2,6 +2,4 @@
 config MTK_GPT_COMMON
 	bool "General Purpose Timer Support Common"
 	---help---
-	MTK General_Purpose_Timer driver support common code between different Socs.
-
-
+	TK General_Purpose_Timer driver support common code between different Socs.

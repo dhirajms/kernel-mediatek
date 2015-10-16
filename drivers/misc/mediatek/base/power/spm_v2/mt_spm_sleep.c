@@ -12,7 +12,9 @@
 #else
 #include <linux/irqchip/mt-gic.h>
 #endif
+#if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mt_cirq.h>
+#endif
 #include <mach/mt_clkmgr.h>
 #include "mt_cpuidle.h"
 #ifdef CONFIG_MTK_WD_KICKER
@@ -28,6 +30,8 @@
 
 #include "mt_spm_internal.h"
 #include "mt_spm_pmic_wrap.h"
+
+#include <mt-plat/mt_ccci_common.h>
 
 /**************************************
  * only for internal debug
@@ -147,7 +151,11 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_srcclkena_1_infra_mask_b = 0,
 	.conn_srcclkena_infra_mask_b = 0,
 	.md32_srcclkena_infra_mask_b = 0,
+#if defined(CONFIG_ARCH_MT6755)
+	.srcclkeni_infra_mask_b = 1,
+#else
 	.srcclkeni_infra_mask_b = 0,
+#endif
 	.md_apsrcreq_0_infra_mask_b = 1,
 	.md_apsrcreq_1_infra_mask_b = 0,
 	.conn_apsrcreq_infra_mask_b = 1,
@@ -283,7 +291,7 @@ static void spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl)
 {
 	/* enable PCM WDT (normal mode) to start count if needed */
 #if SPM_PCMWDT_EN
-	{
+	if (!pwrctrl->wdt_disable) {
 		u32 con1;
 
 		con1 = spm_read(PCM_CON1) & ~(PCM_WDT_WAKE_MODE_LSB | PCM_WDT_EN_LSB);
@@ -380,10 +388,8 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
 
-#if 0
 	if (wakesta->r12 & WAKE_SRC_R12_EINT_EVENT_B)
 		mt_eint_print_status();
-#endif
 
 #if 0
 	if (wakesta->debug_flag & (1 << 18)) {
@@ -397,7 +403,6 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	}
 #endif
 
-#if 0
 #ifdef CONFIG_MTK_CCCI_DEVICES
 	/* if (wakesta->r13 & 0x18) { */
 		spm_crit2("dump ID_DUMP_MD_SLEEP_MODE");
@@ -409,7 +414,8 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 #ifdef CONFIG_MTK_ECCCI_DRIVER
 	if (wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
-#endif
+	if (wakesta->r12 & WAKE_SRC_R12_CCIF1_EVENT_B)
+		exec_ccci_kern_func_by_md_id(2, ID_GET_MD_WAKEUP_SRC, NULL, 0);
 #endif
 #endif
 	return wr;
@@ -567,8 +573,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
 
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
+#endif
 
 	spm_set_sysclk_settle();
 
@@ -620,8 +628,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	last_wr = spm_output_wake_reason(&spm_wakesta, pcmdesc);
 
 RESTORE_IRQ:
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
+#endif
 
 	mt_irq_mask_restore(&mask);
 

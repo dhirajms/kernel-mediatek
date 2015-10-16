@@ -258,7 +258,6 @@ extern int fbconfig_get_esd_check(DSI_INDEX dsi_id, uint32_t cmd, uint8_t *buffe
 extern void _cmdq_insert_wait_frame_done_token_mira(void *handle);	/* svp */
 
 extern unsigned int gEnableOVLStatusCheck;
-void primary_display_dump_decouple_buffer(void);
 extern int dfo_query(const char *s, unsigned long *v);
 void disp_clear_current_fb_buffer(void);
 

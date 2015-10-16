@@ -542,6 +542,11 @@ typedef struct {
 	unsigned int pll_div1;
 	unsigned int pll_div2;
 	unsigned int fbk_div;
+
+	unsigned int pll_prediv;
+	unsigned int pll_posdiv;
+	unsigned int pll_s2qdiv;
+
 	unsigned int fbk_sel;
 	unsigned int rg_bir;
 	unsigned int rg_bic;
@@ -773,7 +778,7 @@ typedef struct {
 	void (*set_backlight_mode)(unsigned int mode);
 	/* ///////////////////////// */
 
-	int (*adjust_fps)(void *cmdq, int fps);
+	int (*adjust_fps)(void *cmdq, int fps, LCM_PARAMS *params);
 
 	/* ///////////ESD_RECOVERY////////////////////// */
 	unsigned int (*esd_check)(void);

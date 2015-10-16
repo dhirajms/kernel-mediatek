@@ -35,9 +35,12 @@
 #include <mtk_rtc.h>
 #endif
 
+static void deferred_restart(struct work_struct *dummy);
+
 static DEFINE_MUTEX(pmic_lock_mutex);
 static DEFINE_MUTEX(pmic_access_mutex);
 static DEFINE_SPINLOCK(pmic_smp_spinlock);
+static DECLARE_WORK(restart_work, deferred_restart);
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 static bool long_pwrkey_press;
@@ -45,6 +48,10 @@ static unsigned long timer_pre;
 static unsigned long timer_pos;
 #define LONG_PWRKEY_PRESS_TIME		(500*1000000)	/* 500ms */
 #endif
+
+static struct hrtimer check_pwrkey_release_timer;
+#define LONG_PRESS_PWRKEY_SHUTDOWN_TIME		(3)	/* 3sec */
+#define PWRKEY_INITIAL_STATE (0)
 
 static struct mt6397_chip_priv *mt6397_chip;
 
@@ -218,7 +225,7 @@ void upmu_set_reg_value(unsigned int reg, unsigned int reg_val)
 unsigned int g_reg_value = 0;
 static ssize_t show_pmic_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	pr_info("[Power/PMIC][show_pmic_access] 0x%x\n", g_reg_value);
+	pr_warn("[Power/PMIC][show_pmic_access] 0x%x\n", g_reg_value);
 	return sprintf(buf, "%04X\n", g_reg_value);
 }
 
@@ -232,9 +239,9 @@ static ssize_t store_pmic_access(struct device *dev, struct device_attribute *at
 	unsigned long reg_address = 0;
 
 	strcpy(pvalue, buf);
-	pr_info("[Power/PMIC][store_pmic_access]\n");
+	pr_warn("[Power/PMIC][store_pmic_access]\n");
 	if (buf != NULL && size != 0) {
-		pr_info("[Power/PMIC]" "[store_pmic_access] buf is %s and size is %lu\n", buf, size);
+		pr_warn("[Power/PMIC]" "[store_pmic_access] buf is %s and size is %lu\n", buf, size);
 		addr = strsep(&pvalue, " ");
 
 		if (kstrtoul(addr, 16, &reg_address))
@@ -242,27 +249,41 @@ static ssize_t store_pmic_access(struct device *dev, struct device_attribute *at
 
 #ifdef CONFIG_PM_DEBUG
 		if ((size >= 10) && (strncmp(buf, "hard_reset", 10) == 0)) {
-			pr_info("[Power/PMIC]" "[store_pmic_access] Simulate long press Power Key\n");
+			pr_warn("[Power/PMIC]" "[store_pmic_access] Simulate long press Power Key\n");
 			arch_reset(0, NULL);
 		} else
 #endif
 		if (size > 7) {
 			if (kstrtoul(pvalue, 16, &reg_value))
 				return -EINVAL;
-			pr_info("[Power/PMIC]" "[store_pmic_access] write PMU reg 0x%lx with value 0x%lx !\n",
+			pr_warn("[Power/PMIC]" "[store_pmic_access] write PMU reg 0x%lx with value 0x%lx !\n",
 				reg_address, reg_value);
 			ret = pmic_config_interface(reg_address, reg_value, 0xFFFF, 0x0);
 		} else {
 			ret = pmic_read_interface(reg_address, &g_reg_value, 0xFFFF, 0x0);
-			pr_info("[Power/PMIC]" "[store_pmic_access] read PMU reg 0x%lx with value 0x%x !\n",
+			pr_warn("[Power/PMIC]" "[store_pmic_access] read PMU reg 0x%lx with value 0x%x !\n",
 				reg_address, g_reg_value);
-			pr_info("[Power/PMIC]" "[store_pmic_access] Please use \"cat pmic_access\" to get value\r\n");
+			pr_warn("[Power/PMIC]" "[store_pmic_access] Please use \"cat pmic_access\" to get value\r\n");
 		}
 	}
 	return size;
 }
 
 static DEVICE_ATTR(pmic_access, 0664, show_pmic_access, store_pmic_access);	/* 664 */
+
+static void deferred_restart(struct work_struct *dummy)
+{
+	unsigned int pwrkey_deb = 0;
+
+	/* Double check if pwrkey is still pressed */
+	pwrkey_deb = upmu_get_pwrkey_deb();
+	if (pwrkey_deb == 1) {
+		pr_warn("[check_pwrkey_release_timer] Release pwrkey\n");
+		kpd_pwrkey_pmic_handler(0x0);
+	} else
+		pr_warn("[check_pwrkey_release_timer] Still press pwrkey, do nothing\n");
+
+}
 
 /* mt6397 irq chip clear event status for given event mask. */
 static void mt6397_ack_events_locked(struct mt6397_chip_priv *chip, unsigned int event_mask)
@@ -383,7 +404,7 @@ static void mt6397_irq_ack_locked(struct irq_data *d)
 #ifdef CONFIG_PMIC_IMPLEMENT_UNUSED_EVENT_HANDLERS
 static irqreturn_t pwrkey_rstb_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_int_en_pwrkey_rstb(0);
 
 	return IRQ_HANDLED;
@@ -391,7 +412,7 @@ static irqreturn_t pwrkey_rstb_int_handler(int irq, void *dev_id)
 
 static irqreturn_t hdmi_sifm_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_int_en_hdmi_sifm(0);
 
 #ifdef CONFIG_MTK_INTERNAL_MHL_SUPPORT
@@ -403,7 +424,7 @@ static irqreturn_t hdmi_sifm_int_handler(int irq, void *dev_id)
 
 static irqreturn_t hdmi_cec_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_int_en_hdmi_cec(0);
 
 	return IRQ_HANDLED;
@@ -411,7 +432,7 @@ static irqreturn_t hdmi_cec_int_handler(int irq, void *dev_id)
 
 static irqreturn_t vsrmca15_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_pwmoc_ck_pdn(1);
 	upmu_set_rg_int_en_vsrmca15(0);
 
@@ -420,7 +441,7 @@ static irqreturn_t vsrmca15_int_handler(int irq, void *dev_id)
 
 static irqreturn_t vcore_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_pwmoc_ck_pdn(1);
 	upmu_set_rg_int_en_vcore(0);
 
@@ -429,7 +450,7 @@ static irqreturn_t vcore_int_handler(int irq, void *dev_id)
 
 static irqreturn_t vio18_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_pwmoc_ck_pdn(1);
 	upmu_set_rg_int_en_vio18(0);
 
@@ -438,7 +459,7 @@ static irqreturn_t vio18_int_handler(int irq, void *dev_id)
 
 static irqreturn_t vpca7_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_pwmoc_ck_pdn(1);
 	upmu_set_rg_int_en_vpca7(0);
 
@@ -447,7 +468,7 @@ static irqreturn_t vpca7_int_handler(int irq, void *dev_id)
 
 static irqreturn_t vsrmca7_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_pwmoc_ck_pdn(1);
 	upmu_set_rg_int_en_vsrmca7(0);
 
@@ -456,7 +477,7 @@ static irqreturn_t vsrmca7_int_handler(int irq, void *dev_id)
 
 static irqreturn_t vdrm_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_pwmoc_ck_pdn(1);
 	upmu_set_rg_int_en_vdrm(0);
 
@@ -465,7 +486,7 @@ static irqreturn_t vdrm_int_handler(int irq, void *dev_id)
 
 static irqreturn_t vca15_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_pwmoc_ck_pdn(1);
 	upmu_set_rg_int_en_vca15(0);
 
@@ -474,7 +495,7 @@ static irqreturn_t vca15_int_handler(int irq, void *dev_id)
 
 static irqreturn_t vgpu_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 	upmu_set_rg_pwmoc_ck_pdn(1);
 	upmu_set_rg_int_en_vgpu(0);
 
@@ -483,38 +504,59 @@ static irqreturn_t vgpu_int_handler(int irq, void *dev_id)
 
 #endif
 
+enum hrtimer_restart check_pwrkey_release_timer_func(struct hrtimer *timer)
+{
+	queue_work(system_highpri_wq, &restart_work);
+	return HRTIMER_NORESTART;
+}
+
 static irqreturn_t pwrkey_int_handler(int irq, void *dev_id)
 {
 	unsigned int pwrkey_deb = 0;
+	static int key_down = PWRKEY_INITIAL_STATE;
+	ktime_t ktime;
 
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 
 	pwrkey_deb = upmu_get_pwrkey_deb();
 
 	if (pwrkey_deb == 1) {
-		pr_info("[Power/PMIC]" "[pwrkey_int_handler] Release pwrkey\n");
+		pr_warn("[Power/PMIC]" "[pwrkey_int_handler] Release pwrkey\n");
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 		if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) {
 			timer_pos = sched_clock();
 			if (timer_pos - timer_pre >= LONG_PWRKEY_PRESS_TIME)
 				long_pwrkey_press = true;
 
-			pr_info("[Power/PMIC]" "pos = %ld, pre = %ld, pos-pre = %ld, long_pwrkey_press = %d\r\n",
+			pr_warn("[Power/PMIC]" "pos = %ld, pre = %ld, pos-pre = %ld, long_pwrkey_press = %d\r\n",
 				timer_pos, timer_pre, timer_pos - timer_pre, long_pwrkey_press);
 			if (long_pwrkey_press) {	/* 500ms */
-				pr_info("[Power/PMIC]" "Pwrkey Pressed during kpoc, reboot OS\r\n");
+				pr_warn("[Power/PMIC]" "Pwrkey Pressed during kpoc, reboot OS\r\n");
 				arch_reset(0, NULL);
 			}
 		}
 #endif
-		kpd_pwrkey_pmic_handler(0x0);
+		hrtimer_cancel(&check_pwrkey_release_timer);
+
+		if (key_down == 0) {
+			kpd_pwrkey_pmic_handler(0x1);
+			kpd_pwrkey_pmic_handler(0x0);
+		} else {
+			kpd_pwrkey_pmic_handler(0x0);
+		}
+
+		key_down = 0;
 	} else {
-		pr_info("[Power/PMIC][pwrkey_int_handler] Press pwrkey\n");
+		key_down = 1;
+		pr_warn("[Power/PMIC][pwrkey_int_handler] Press pwrkey\n");
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 		if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT)
 			timer_pre = sched_clock();
 
 #endif
+		ktime = ktime_set(LONG_PRESS_PWRKEY_SHUTDOWN_TIME, 0);
+		hrtimer_start(&check_pwrkey_release_timer, ktime, HRTIMER_MODE_REL);
+
 		kpd_pwrkey_pmic_handler(0x1);
 	}
 
@@ -523,15 +565,15 @@ static irqreturn_t pwrkey_int_handler(int irq, void *dev_id)
 
 static irqreturn_t homekey_int_handler(int irq, void *dev_id)
 {
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 
 	if (upmu_get_homekey_deb() == 1) {
-		pr_info("[Power/PMIC]" "[homekey_int_handler] Release HomeKey\r\n");
+		pr_warn("[Power/PMIC]" "[homekey_int_handler] Release HomeKey\r\n");
 
 		kpd_pmic_rstkey_handler(0x0);
 
 	} else {
-		pr_info("[Power/PMIC]" "[homekey_int_handler] Press HomeKey\r\n");
+		pr_warn("[Power/PMIC]" "[homekey_int_handler] Press HomeKey\r\n");
 
 		kpd_pmic_rstkey_handler(0x1);
 
@@ -542,8 +584,7 @@ static irqreturn_t homekey_int_handler(int irq, void *dev_id)
 
 static irqreturn_t rtc_int_handler(int irq, void *dev_id)
 {
-	/* TODO: mark rtc_irq_handler before rtc driver is ready */
-/*	rtc_irq_handler(); */
+	rtc_irq_handler();
 	msleep(100);
 
 	return IRQ_HANDLED;
@@ -554,11 +595,11 @@ static irqreturn_t accdet_int_handler(int irq, void *dev_id)
 {
 	int ret = 0;
 
-	pr_info("%s:\n", __func__);
+	pr_warn("%s:\n", __func__);
 
 	ret = accdet_irq_handler();
 	if (0 == ret)
-		pr_info("[Power/PMIC]" "[accdet_int_handler] don't finished\n");
+		pr_debug("[Power/PMIC]" "[accdet_int_handler] don't finished\n");
 	return IRQ_HANDLED;
 }
 #endif
@@ -758,14 +799,18 @@ static void mt6397_irq_chip_resume(struct mt6397_chip_priv *chip)
 {
 	struct mt_wake_event *we = spm_get_wakeup_event();
 	u32 events = mt6397_get_events(chip);
-	int event = __ffs(events);
+	int event = 0;
+
+	if (events)
+		event = __ffs(events);
 
 	mt6397_set_event_mask(chip, chip->saved_mask);
 
-	if (events && we && we->domain && !strcmp(we->domain, "EINT") && we->code == chip->irq_hw_id) {
+	if (events && we && we->domain && !strcmp(we->domain, "EINT") && we->code == chip->irq_hw_id)
 		spm_report_wakeup_event(&mt6397_event, event);
+
+	if (events)
 		chip->wakeup_event = events;
-	}
 }
 
 static int mt6397_irq_set_wake_locked(struct irq_data *d, unsigned int on)
@@ -818,7 +863,7 @@ static int mt6397_irq_init(struct mt6397_chip_priv *chip)
 	ret = request_threaded_irq(chip->irq, NULL, mt6397_irq,
 				    IRQF_ONESHOT, mt6397_irq_chip.name, chip);
 	if (ret < 0) {
-		pr_info("%s: PMIC master irq request err: %d\n", __func__, ret);
+		pr_debug("%s: PMIC master irq request err: %d\n", __func__, ret);
 		goto err_free_domain;
 	}
 
@@ -845,7 +890,7 @@ static int mt6397_irq_handler_init(struct mt6397_chip_priv *chip)
 		ret = request_threaded_irq(irq, NULL, data->action_fn,
 					   IRQF_TRIGGER_HIGH | IRQF_ONESHOT, data->name, chip);
 		if (ret) {
-			pr_info("%s: failed to register irq=%d (%d); name='%s'; err: %d\n",
+			pr_debug("%s: failed to register irq=%d (%d); name='%s'; err: %d\n",
 				__func__, irq, data->irq_id, data->name, ret);
 			continue;
 		}
@@ -853,7 +898,7 @@ static int mt6397_irq_handler_init(struct mt6397_chip_priv *chip)
 			disable_irq(irq);
 		if (data->wake_src)
 			irq_set_irq_wake(irq, 1);
-		pr_info("%s: registered irq=%d (%d); name='%s'; enabled: %d\n",
+		pr_warn("%s: registered irq=%d (%d); name='%s'; enabled: %d\n",
 			__func__, irq, data->irq_id, data->name, data->enabled);
 	}
 	return 0;
@@ -879,6 +924,11 @@ void PMIC_INIT_SETTING_V1(void)
 {
 	unsigned int chip_version = 0;
 	unsigned int ret = 0;
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+	/* [0:0]: RG_VCDT_HV_EN; Disable HV. Only compare LV threshold. */
+	ret = pmic_config_interface(0x0, 0x0, 0x1, 0);
+#endif
 
 	/* put init setting from DE/SA */
 	chip_version = upmu_get_cid();
@@ -1073,7 +1123,7 @@ void pmic_low_power_setting(void)
 {
 	unsigned int ret = 0;
 
-	pr_info("[Power/PMIC]" "[pmic_low_power_setting]\n");
+	pr_warn("[Power/PMIC]" "[pmic_low_power_setting]\n");
 
 	upmu_set_vio18_vsleep_en(1);
 	/* top */
@@ -1109,7 +1159,7 @@ void pmic_setting_depends_rtc(void)
 		ret = pmic_config_interface(ANALDO_CON1, 0, 0x1, 1);	/* [1]=0(VTCXO_LP_SET), */
 		ret = pmic_config_interface(ANALDO_CON1, 0, 0x1, 0);	/* [0]=0(VTCXO_LP_SEL), */
 
-		pr_info("[Power/PMIC]" "[pmic_setting_depends_rtc] With 32K. Reg[0x%x]=0x%x\n", ANALDO_CON1,
+		pr_warn("[Power/PMIC]" "[pmic_setting_depends_rtc] With 32K. Reg[0x%x]=0x%x\n", ANALDO_CON1,
 			upmu_get_reg_value(ANALDO_CON1));
 	} else {
 		/* without 32K */
@@ -1118,7 +1168,7 @@ void pmic_setting_depends_rtc(void)
 		ret = pmic_config_interface(ANALDO_CON1, 3, 0x7, 4);	/* [6:4]=3(VTCXO_SRCLK_MODE_SEL), */
 		ret = pmic_config_interface(ANALDO_CON1, 1, 0x1, 0);	/* [0]=1(VTCXO_LP_SEL), */
 
-		pr_info("[Power/PMIC]" "[pmic_setting_depends_rtc] Without 32K. Reg[0x%x]=0x%x\n", ANALDO_CON1,
+		pr_warn("[Power/PMIC]" "[pmic_setting_depends_rtc] Without 32K. Reg[0x%x]=0x%x\n", ANALDO_CON1,
 			upmu_get_reg_value(ANALDO_CON1));
 	}
 }
@@ -1201,11 +1251,14 @@ static int pmic_mt6397_probe(struct platform_device *pdev)
 #if defined(CONFIG_MTK_BATTERY_PROTECT)
 	low_battery_protect_init(&(pdev->dev));
 #else
-	pr_info("[Power/PMIC][PMIC] no define LOW_BATTERY_PROTECT\n");
+	pr_warn("[Power/PMIC][PMIC] no define LOW_BATTERY_PROTECT\n");
 #endif
 
 	mt6397_chip = chip;
 	register_syscore_ops(&mt6397_syscore_ops);
+
+	hrtimer_init(&check_pwrkey_release_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	check_pwrkey_release_timer.function = check_pwrkey_release_timer_func;
 
 	return 0;
 }
@@ -1228,6 +1281,8 @@ static int pmic_mt6397_suspend(struct platform_device *pdev, pm_message_t state)
 	u32 ret = 0;
 	u32 events;
 
+	hrtimer_cancel(&check_pwrkey_release_timer);
+
 	mt6397_set_suspended(chip, true);
 	disable_irq(chip->irq);
 
@@ -1242,9 +1297,9 @@ static int pmic_mt6397_suspend(struct platform_device *pdev, pm_message_t state)
 	ret =
 	    pmic_config_interface(VPCA7_CON18, 0x0, PMIC_VPCA7_VOSEL_TRANS_EN_MASK,
 				  PMIC_VPCA7_VOSEL_TRANS_EN_SHIFT);
-	pr_info("[Power/PMIC] Suspend: Reg[0x%x]=0x%x\n", VCA15_CON18,
+	pr_warn("[Power/PMIC] Suspend: Reg[0x%x]=0x%x\n", VCA15_CON18,
 		upmu_get_reg_value(VCA15_CON18));
-	pr_info("[Power/PMIC] Suspend: Reg[0x%x]=0x%x\n", VPCA7_CON18,
+	pr_warn("[Power/PMIC] Suspend: Reg[0x%x]=0x%x\n", VPCA7_CON18,
 		upmu_get_reg_value(VPCA7_CON18));
 
 #if defined(CONFIG_MTK_BATTERY_PROTECT)
@@ -1260,7 +1315,7 @@ static int pmic_mt6397_resume(struct platform_device *pdev)
 	u32 ret = 0;
 	int i;
 
-	/* pr_info("[Power/PMIC] ******** MT6397 pmic driver resume!! ********\n" ); */
+	/* pr_warn("[Power/PMIC] ******** MT6397 pmic driver resume!! ********\n" ); */
 
 	/* Set PMIC CA7, CA15 TRANS_EN to falling enable(0x1) after system resume. */
 	ret =
@@ -1269,9 +1324,9 @@ static int pmic_mt6397_resume(struct platform_device *pdev)
 	ret =
 	    pmic_config_interface(VPCA7_CON18, 0x1, PMIC_VPCA7_VOSEL_TRANS_EN_MASK,
 				  PMIC_VPCA7_VOSEL_TRANS_EN_SHIFT);
-	pr_info("[Power/PMIC] Resume: Reg[0x%x]=0x%x\n", VCA15_CON18,
+	pr_warn("[Power/PMIC] Resume: Reg[0x%x]=0x%x\n", VCA15_CON18,
 		upmu_get_reg_value(VCA15_CON18));
-	pr_info("[Power/PMIC] Resume: Reg[0x%x]=0x%x\n", VPCA7_CON18,
+	pr_warn("[Power/PMIC] Resume: Reg[0x%x]=0x%x\n", VPCA7_CON18,
 		upmu_get_reg_value(VPCA7_CON18));
 
 #if defined(CONFIG_MTK_BATTERY_PROTECT)

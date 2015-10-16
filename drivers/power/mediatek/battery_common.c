@@ -85,7 +85,7 @@
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* Battery Logging Entry */
 /* ////////////////////////////////////////////////////////////////////////////// */
-int Enable_BATDRV_LOG = BAT_LOG_FULL;
+int Enable_BATDRV_LOG = BAT_LOG_CRTI;
 /* static struct proc_dir_entry *proc_entry; */
 char proc_bat_data[32];
 
@@ -355,6 +355,11 @@ kal_bool bat_is_ext_power(void)
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // PMIC PCHR Related APIs */
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
+bool __attribute__((weak)) mt_usb_is_device(void)
+{
+	return 1;
+}
+
 kal_bool upmu_is_chr_det(void)
 {
 #if !defined(CONFIG_POWER_EXT)
@@ -1561,7 +1566,8 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 
 	if (KAL_TRUE == ta_check_chr_type &&
 	    STANDARD_CHARGER == BMT_status.charger_type &&
-	    BMT_status.SOC >= TA_START_BATTERY_SOC && BMT_status.SOC < TA_STOP_BATTERY_SOC) {
+	    BMT_status.SOC >= batt_cust_data.ta_start_battery_soc &&
+	    BMT_status.SOC < batt_cust_data.ta_stop_battery_soc) {
 		battery_log(BAT_LOG_CRTI, "[%s]Wait for PE detection\n", __func__);
 		do {
 			icount--;
@@ -3371,7 +3377,11 @@ void check_battery_exist(void)
 				    baton_count);
 
 			battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
+			#ifdef CONFIG_MTK_POWER_PATH_MANAGEMENT_SUPPORT
+			battery_charging_control(CHARGING_CMD_SET_PLATFORM_RESET, NULL);
+			#else
 			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
+			#endif
 		}
 	}
 #endif
@@ -3784,6 +3794,9 @@ int __batt_init_cust_data_from_cust_header(void)
 #if defined(USB_CHARGER_CURRENT)
 	batt_cust_data.usb_charger_current = USB_CHARGER_CURRENT;
 #endif
+#if defined(AC_CHARGER_INPUT_CURRENT)
+	batt_cust_data.ac_charger_input_current = AC_CHARGER_INPUT_CURRENT;
+#endif
 #if defined(AC_CHARGER_CURRENT)
 	batt_cust_data.ac_charger_current = AC_CHARGER_CURRENT;
 #endif
@@ -3848,6 +3861,35 @@ int __batt_init_cust_data_from_cust_header(void)
 #else				/* #if defined(HIGH_BATTERY_VOLTAGE_SUPPORT) */
 	batt_cust_data.high_battery_voltage_support = 0;
 #endif				/* #if defined(HIGH_BATTERY_VOLTAGE_SUPPORT) */
+
+#if	defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+	batt_cust_data.mtk_pump_express_plus_support = 1;
+
+	#if defined(TA_START_BATTERY_SOC)
+	batt_cust_data.ta_start_battery_soc = TA_START_BATTERY_SOC;
+	#endif
+	#if defined(TA_STOP_BATTERY_SOC)
+	batt_cust_data.ta_stop_battery_soc = TA_STOP_BATTERY_SOC;
+	#endif
+	#if defined(TA_AC_12V_INPUT_CURRENT)
+	batt_cust_data.ta_ac_12v_input_current = TA_AC_12V_INPUT_CURRENT;
+	#endif
+	#if defined(TA_AC_9V_INPUT_CURRENT)
+	batt_cust_data.ta_ac_9v_input_current = TA_AC_9V_INPUT_CURRENT;
+	#endif
+	#if defined(TA_AC_7V_INPUT_CURRENT)
+	batt_cust_data.ta_ac_7v_input_current = TA_AC_7V_INPUT_CURRENT;
+	#endif
+	#if defined(TA_AC_CHARGING_CURRENT)
+	batt_cust_data.ta_ac_charging_current = TA_AC_CHARGING_CURRENT;
+	#endif
+	#if defined(TA_9V_SUPPORT)
+	batt_cust_data.ta_9v_support = 1;
+	#endif
+	#if defined(TA_12V_SUPPORT)
+	batt_cust_data.ta_12v_support = 1;
+	#endif
+#endif
 
 	return 0;
 }
@@ -3932,6 +3974,9 @@ static int __batt_init_cust_data_from_dt(void)
 
 	__batt_parse_node(np, "usb_charger_current",
 		&batt_cust_data.usb_charger_current);
+
+	__batt_parse_node(np, "ac_charger_input_current",
+		&batt_cust_data.ac_charger_input_current);
 
 	__batt_parse_node(np, "ac_charger_current",
 		&batt_cust_data.ac_charger_current);
@@ -4029,6 +4074,7 @@ static int __batt_init_cust_data_from_dt(void)
 	__batt_parse_node(np, "jeita_temp_neg_10_to_pos_0_cc2topoff_threshold",
 		&batt_cust_data.jeita_temp_neg_10_to_pos_0_cc2topoff_threshold);
 
+#if	defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 	__batt_parse_node(np, "mtk_pump_express_plus_support",
 		&batt_cust_data.mtk_pump_express_plus_support);
 
@@ -4037,6 +4083,9 @@ static int __batt_init_cust_data_from_dt(void)
 
 	__batt_parse_node(np, "ta_stop_battery_soc",
 		&batt_cust_data.ta_stop_battery_soc);
+
+	__batt_parse_node(np, "ta_ac_12v_input_current",
+		&batt_cust_data.ta_ac_12v_input_current);
 
 	__batt_parse_node(np, "ta_ac_9v_input_current",
 		&batt_cust_data.ta_ac_9v_input_current);
@@ -4049,6 +4098,10 @@ static int __batt_init_cust_data_from_dt(void)
 
 	__batt_parse_node(np, "ta_9v_support",
 		&batt_cust_data.ta_9v_support);
+
+	__batt_parse_node(np, "ta_12v_support",
+		&batt_cust_data.ta_12v_support);
+#endif
 
 	of_node_put(np);
 	return 0;
@@ -4093,6 +4146,10 @@ static int battery_probe(struct platform_device *dev)
 	get_charging_control();
 
 	batt_init_cust_data();
+#if defined(BATTERY_SW_INIT)
+		battery_charging_control(CHARGING_CMD_SW_INIT, NULL);
+#endif
+
 
 	battery_charging_control(CHARGING_CMD_GET_PLATFORM_BOOT_MODE, &g_platform_boot_mode);
 	battery_log(BAT_LOG_CRTI, "[BAT_probe] g_platform_boot_mode = %d\n ", g_platform_boot_mode);

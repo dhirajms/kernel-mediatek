@@ -67,12 +67,8 @@
 #include "AudDrv_Ana.h"
 #include "AudDrv_Clk.h"
 #include "mt_soc_analog_type.h"
-#ifdef _GIT318_READY
 #include "mt_clkbuf_ctl.h"
-#endif
-#ifdef _GIT318_PMIC_READY
 #include <mach/mt_pmic.h>
-#endif
 #include <mt-plat/mt_chip.h>
 #ifdef _VOW_ENABLE
 #include <mt-plat/vow_api.h>
@@ -96,11 +92,11 @@
 #include "AudDrv_Common_func.h"
 #include "AudDrv_Gpio.h"
 
-/* #define MT6755_AW8736_REWORK	*/ /* use different GPIO for rework version */
+#define MT6755_AW8736_REWORK	/* use different GPIO for rework version */
 #define AW8736_MODE_CTRL /* AW8736 PA output power mode control*/
 
 #ifdef MT6755_AW8736_REWORK
-#include "../../../../drivers/misc/mediatek/auxadc/mt6755/mt_auxadc_sw.h"
+#include "../../../../drivers/misc/mediatek/auxadc/mt_auxadc.h"
 #endif
 
 /* static function declaration */
@@ -159,9 +155,6 @@ static unsigned int dAuxAdcChannel = 16;
 static const int mDcOffsetTrimChannel = 9;
 static bool mInitCodec;
 static uint32 MicbiasRef, GetMicbias;
-#ifdef MT6755_AW8736_REWORK
-static bool mHPDePop;
-#endif
 
 static int reg_AFE_VOW_CFG0 = 0x0000;	/* VOW AMPREF Setting */
 static int reg_AFE_VOW_CFG1 = 0x0000;	/* VOW A,B timeout initial value (timer) */
@@ -221,7 +214,7 @@ void SetAnalogSuspend(bool bEnable)
 {
 	pr_warn("%s bEnable ==%d mAnaSuspend = %d\n", __func__, bEnable, mAnaSuspend);
 	if ((bEnable == true) && (mAnaSuspend == false)) {
-		Ana_Log_Print();
+		/* Ana_Log_Print(); */
 		SavePowerState();
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == true) {
 			mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] =
@@ -243,10 +236,10 @@ void SetAnalogSuspend(bool bEnable)
 			    false;
 			Speaker_Amp_Change(false);
 		}
-		Ana_Log_Print();
+		/* Ana_Log_Print(); */
 		mAnaSuspend = true;
 	} else if ((bEnable == false) && (mAnaSuspend == true)) {
-		Ana_Log_Print();
+		/* Ana_Log_Print(); */
 		if (mCodec_data->mAudio_BackUpAna_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] ==
 		    true) {
 			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);
@@ -272,7 +265,7 @@ void SetAnalogSuspend(bool bEnable)
 			    false;
 		}
 		RestorePowerState();
-		Ana_Log_Print();
+		/* Ana_Log_Print(); */
 		mAnaSuspend = false;
 	}
 }
@@ -284,11 +277,9 @@ void audckbufEnable(bool enable)
 	mutex_lock(&Ana_buf_Ctrl_Mutex);
 	if (enable) {
 		if (audck_buf_Count == 0) {
-			pr_warn("+clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
+			/* pr_warn("+clk_buf_ctrl(CLK_BUF_AUDIO,true)\n"); */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#ifdef _GIT318_READY
 			clk_buf_ctrl(CLK_BUF_AUDIO, true);
-#endif
 #endif
 			pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
 		}
@@ -296,11 +287,9 @@ void audckbufEnable(bool enable)
 	} else {
 		audck_buf_Count--;
 		if (audck_buf_Count == 0) {
-			pr_warn("+clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
+			/*pr_warn("+clk_buf_ctrl(CLK_BUF_AUDIO,false)\n"); */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#ifdef _GIT318_READY
 			clk_buf_ctrl(CLK_BUF_AUDIO, false);
-#endif
 #endif
 			pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
 		}
@@ -395,6 +384,49 @@ static void NvregEnable(bool enable)
 		}
 	}
 	mutex_unlock(&Ana_Clk_Mutex);
+}
+
+static void HP_Switch_to_Ground(void)
+{
+#if defined(CONFIG_MTK_LEGACY)
+	int ret;
+
+	ret = GetGPIO_Info(12, &pin_hpswitchtoground, &pin_mode_hpswitchtoground);
+	if (ret < 0) {
+		pr_debug("Headphone swtich to ground GetGPIO_Info FAIL!!!\n");
+		return;
+	}
+
+	mt_set_gpio_mode(pin_hpswitchtoground, GPIO_MODE_00);	/* GPIO24:  mode 0 */
+	mt_set_gpio_dir(pin_hpswitchtoground, GPIO_DIR_OUT);	/* output */
+	mt_set_gpio_out(pin_hpswitchtoground, GPIO_OUT_ZERO);	/* low to ground */
+#else
+	AudDrv_GPIO_HPDEPOP_Select(true);
+#endif
+
+	udelay(500);
+}
+
+static void HP_Switch_to_Release(void)
+{
+	udelay(500);
+
+#if defined(CONFIG_MTK_LEGACY)
+	int ret;
+
+	ret = GetGPIO_Info(12, &pin_hpswitchtoground, &pin_mode_hpswitchtoground);
+	if (ret < 0) {
+		pr_debug("Headphone swtich to ground GetGPIO_Info FAIL!!!\n");
+		return;
+	}
+
+	mt_set_gpio_mode(pin_hpswitchtoground, GPIO_MODE_00);	/* GPIO24:  mode 0 */
+	mt_set_gpio_dir(pin_hpswitchtoground, GPIO_DIR_OUT);
+	mt_set_gpio_out(pin_hpswitchtoground, GPIO_OUT_ONE);	/* high to release */
+#else
+	AudDrv_GPIO_HPDEPOP_Select(false);
+#endif
+
 }
 
 #ifdef _VOW_ENABLE
@@ -595,6 +627,10 @@ void OpenTrimBufferHardware(bool enable)
 	if (enable) {
 		pr_warn("%s true\n", __func__);
 		TurnOnDacPower();
+
+		/* AUXADC large scale - AUXADC_CON2(AUXADC ADC AVG SELECTION[9]) */
+		Ana_Set_Reg(0x0EAA, 0x0200, 0x0200);
+
 		/* set analog part (HP playback) */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
 		/* Enable cap-less LDOs (1.6V) */
@@ -771,6 +807,8 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AFE_DL_DC_COMP_CFG2, 0x0001, 0xffff);
 #endif
 
+		HP_Switch_to_Ground();
+
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
 		/* Enable cap-less LDOs (1.6V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0100, 0x0100);
@@ -792,7 +830,13 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable LCH Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON5, 0x0009, 0xffff);
 		/* Select HPR as HPDET output and select DACLP as HPDET circuit input */
+
+		/* HP output swtich release to normal output */
+		HP_Switch_to_Release();
+
 	} else {
+		HP_Switch_to_Ground();
+
 		Ana_Set_Reg(AUDDEC_ANA_CON5, 0x0000, 0xffff);
 		/* Disable headphone speaker detection */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
@@ -809,6 +853,10 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Disable cap-less LDOs (1.6V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2000, 0x2000);
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE000, 0xffff);
+
+		/* HP output swtich release to normal output */
+		HP_Switch_to_Release();
+
 		TurnOffDacPower();
 	}
 	return true;
@@ -832,15 +880,11 @@ static void SetHprOffset(int OffsetTrimming)
 	int DCoffsetValue = 0;
 	unsigned short RegValue = 0;
 
-	pr_warn("%s OffsetTrimming = %d\n", __func__, OffsetTrimming);
-	DCoffsetValue = OffsetTrimming * 1000000;
-	DCoffsetValue = (DCoffsetValue / DC1devider);	/* in uv */
-	pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);
-	DCoffsetValue = (DCoffsetValue / DC1unit_in_uv);
-	pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);
+	DCoffsetValue = (OffsetTrimming * 11250 + 2048) / 4096;
+	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	pr_warn("%s RegValue = 0x%x\n", __func__, RegValue);
+	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, RegValue, 0xffff);
 }
 
@@ -850,15 +894,11 @@ static void SetHplOffset(int OffsetTrimming)
 	int DCoffsetValue = 0;
 	unsigned short RegValue = 0;
 
-	pr_warn("%s OffsetTrimming = %d\n", __func__, OffsetTrimming);
-	DCoffsetValue = OffsetTrimming * 1000000;
-	DCoffsetValue = (DCoffsetValue / DC1devider);	/* in uv */
-	pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);
-	DCoffsetValue = (DCoffsetValue / DC1unit_in_uv);
-	pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);
+	DCoffsetValue = (OffsetTrimming * 11250 + 2048) / 4096;
+	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	pr_warn("%s RegValue = 0x%x\n", __func__, RegValue);
+	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, RegValue, 0xffff);
 }
 
@@ -873,7 +913,8 @@ static void SetHprOffsetTrim(void)
 {
 	int OffsetTrimming = mHprTrimOffset - TrimOffset;
 
-	pr_warn("%s mHprTrimOffset = %d TrimOffset = %d\n", __func__, mHprTrimOffset, TrimOffset);
+	pr_warn("%s OffsetTrimming = %d (mHprTrimOffset(%d)- TrimOffset(%d))\n", __func__,
+		OffsetTrimming, mHprTrimOffset, TrimOffset);
 	SetHprOffset(OffsetTrimming);
 }
 
@@ -881,7 +922,8 @@ static void SetHpLOffsetTrim(void)
 {
 	int OffsetTrimming = mHplTrimOffset - TrimOffset;
 
-	pr_warn("%s mHprTrimOffset = %d TrimOffset = %d\n", __func__, mHplTrimOffset, TrimOffset);
+	pr_warn("%s OffsetTrimming = %d (mHplTrimOffset(%d)- TrimOffset(%d))\n", __func__,
+		OffsetTrimming, mHplTrimOffset, TrimOffset);
 	SetHplOffset(OffsetTrimming);
 }
 
@@ -1014,13 +1056,13 @@ static int mt63xx_codec_startup(struct snd_pcm_substream *substream, struct snd_
 static int mt63xx_codec_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_warn("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
-			substream->runtime->rate);
+		/* pr_warn("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
+			substream->runtime->rate); */
 		mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC] = substream->runtime->rate;
 
 	} else if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_warn("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
-			substream->runtime->rate);
+		/* pr_warn("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
+			substream->runtime->rate); */
 		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = substream->runtime->rate;
 	}
 	return 0;
@@ -1253,6 +1295,17 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
 	 },
+	{
+	 .name = MT_SOC_CODEC_TXDAI2_NAME,
+	 .ops = &mt6323_aif1_dai_ops,
+	 .playback = {
+		      .stream_name = MT_SOC_DL2_STREAM_NAME,
+		      .channels_min = 1,
+		      .channels_max = 2,
+		      .rates = SNDRV_PCM_RATE_8000_192000,
+		      .formats = SND_SOC_ADV_MT_FMTS,
+		      },
+	 },
 };
 
 
@@ -1295,7 +1348,7 @@ uint32 GetDLNewIFFrequency(unsigned int frequency)
 
 static void TurnOnDacPower(void)
 {
-	pr_warn("TurnOnDacPower\n");
+	/* pr_warn("TurnOnDacPower\n"); */
 	audckbufEnable(true);
 	NvregEnable(true);	/* Enable AUDGLB */
 	ClsqEnable(true);	/* Turn on 26MHz source clock */
@@ -1373,25 +1426,25 @@ static void HeadsetVoloumeRestore(void)
 {
 	int index = 0, oldindex = 0, offset = 0, count = 1;
 
-	pr_warn("%s\n", __func__);
+	/* pr_warn("%s\n", __func__); */
 	index = 8;
 
 	oldindex = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	if (index > oldindex) {
-		pr_warn("index = %d oldindex = %d\n", index, oldindex);
+		pr_warn("%s index = %d oldindex = %d\n", __func__, index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
-			Ana_Set_Reg(ZCD_CON2, ((oldindex + count) << 7) | (oldindex + count),
+			Ana_Set_Reg(ZCD_CON2, (((oldindex + count) << 7) | (oldindex + count)),
 				    0xf9f);
 			offset--;
 			count++;
 			udelay(100);
 		}
 	} else {
-		pr_warn("index = %d oldindex = %d\n", index, oldindex);
+		pr_warn("%s index = %d oldindex = %d\n", __func__, index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
-			Ana_Set_Reg(ZCD_CON2, ((oldindex - count) << 7) | (oldindex - count),
+			Ana_Set_Reg(ZCD_CON2, (((oldindex - count) << 7) | (oldindex - count)),
 				    0xf9f);
 			offset--;
 			count++;
@@ -1409,20 +1462,20 @@ static void HeadsetVoloumeSet(void)
 	index = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	oldindex = 8;
 	if (index > oldindex) {
-		pr_warn("index = %d oldindex = %d\n", index, oldindex);
+		/* pr_warn("index = %d oldindex = %d\n", index, oldindex); */
 		offset = index - oldindex;
 		while (offset > 0) {
-			Ana_Set_Reg(ZCD_CON2, ((oldindex + count) << 7) | (oldindex + count),
+			Ana_Set_Reg(ZCD_CON2, (((oldindex + count) << 7) | (oldindex + count)),
 				    0xf9f);
 			offset--;
 			count++;
 			udelay(200);
 		}
 	} else {
-		pr_warn("index = %d oldindex = %d\n", index, oldindex);
+		/* pr_warn("index = %d oldindex = %d\n", index, oldindex); */
 		offset = oldindex - index;
 		while (offset > 0) {
-			Ana_Set_Reg(ZCD_CON2, ((oldindex - count) << 7) | (oldindex - count),
+			Ana_Set_Reg(ZCD_CON2, (((oldindex - count) << 7) | (oldindex - count)),
 				    0xf9f);
 			offset--;
 			count++;
@@ -1430,42 +1483,6 @@ static void HeadsetVoloumeSet(void)
 		}
 	}
 	Ana_Set_Reg(ZCD_CON2, (index << 7) | (index), 0xf9f);
-}
-
-static void HP_Switch_to_Ground(void)
-{
-#if defined(CONFIG_MTK_LEGACY)
-	int ret;
-
-	ret = GetGPIO_Info(12, &pin_hpswitchtoground, &pin_mode_hpswitchtoground);
-	if (ret < 0) {
-		pr_err("Headphone swtich to ground GetGPIO_Info FAIL!!!\n");
-		return;
-	}
-
-	if (mHPDePop) {
-		mt_set_gpio_mode(pin_hpswitchtoground, GPIO_MODE_00);	/* GPIO24:  mode 0 */
-		mt_set_gpio_dir(pin_hpswitchtoground, GPIO_DIR_OUT);	/* output */
-		mt_set_gpio_out(pin_hpswitchtoground, GPIO_OUT_ZERO);	/* low to ground */
-	}
-#else
-	AudDrv_GPIO_HPDEPOP_Select(true);
-#endif
-
-	udelay(10);
-}
-
-static void HP_Switch_to_Release(void)
-{
-#if defined(CONFIG_MTK_LEGACY)
-	if (mHPDePop) {
-		mt_set_gpio_mode(pin_hpswitchtoground, GPIO_MODE_00);	/* GPIO24:  mode 0 */
-		mt_set_gpio_dir(pin_hpswitchtoground, GPIO_DIR_OUT);
-		mt_set_gpio_out(pin_hpswitchtoground, GPIO_OUT_ONE);	/* high to release */
-	}
-#else
-	AudDrv_GPIO_HPDEPOP_Select(false);
-#endif
 }
 
 static void Audio_Amp_Change(int channels, bool enable)
@@ -1535,17 +1552,14 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0300, 0xffff);
 			/* from yoyo HQA script */
 
-			/* apply volume setting */
-			HeadsetVoloumeSet();
-
 			/* HP output swtich release to normal output */
 			HP_Switch_to_Release();
+
+			/* apply volume setting */
+			HeadsetVoloumeSet();
 		}
 
 	} else {
-
-		/* switch to ground to de pop-noise */
-		HP_Switch_to_Ground();
 
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false
 		    && mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] ==
@@ -1558,10 +1572,19 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Ana_Set_Reg(ZCD_CON2, 0x0F9F, 0xffff); */
 			/* Set HPR/HPL gain as minimum (~ -40dB) */
 			setHpGainZero();
+
+			/* switch to ground to de pop-noise */
+			HP_Switch_to_Ground();
+
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF40F, 0xffff);
 			/* Disable HPR/HPL */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE00F, 0xffff);
 			/* HPR/HPL mux to open */
+
+			EnableDcCompensation(false);
+
+			/* HP output swtich release to normal output */
+			HP_Switch_to_Release();
 		}
 
 		if (GetDLStatus() == false) {
@@ -1581,11 +1604,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* De_OSC of HP */
 
 			TurnOffDacPower();
-
-			/* HP output swtich release to normal output */
-			HP_Switch_to_Release();
 		}
-		EnableDcCompensation(false);
 	}
 }
 
@@ -1602,7 +1621,7 @@ static int Audio_AmpL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
 
-	pr_warn("%s() gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	/* pr_warn("%s() gain = %ld\n ", __func__, ucontrol->value.integer.value[0]); */
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false)) {
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);
@@ -1632,7 +1651,7 @@ static int Audio_AmpR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
 
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false)) {
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true);
@@ -1873,9 +1892,6 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 }
 
 
-
-#ifdef CONFIG_OF
-
 #define GAP (2)			/* unit: us */
 #if defined(CONFIG_MTK_LEGACY)
 #define AW8736_MODE3 /*0.8w*/ \
@@ -1914,7 +1930,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #if defined(CONFIG_MTK_LEGACY)
 
 		ret = GetGPIO_Info(10, &pin_extspkamp_2, &pin_mode_extspkamp_2);
-		pr_warn("Ext_Speaker_Amp_Change ON set GPIO\n");
+		/* pr_warn("Ext_Speaker_Amp_Change ON set GPIO\n"); */
 		mt_set_gpio_mode(pin_extspkamp, GPIO_MODE_00);	/* GPIO117: DPI_D3, mode 0 */
 		mt_set_gpio_pull_enable(pin_extspkamp, GPIO_PULL_ENABLE);
 		mt_set_gpio_dir(pin_extspkamp, GPIO_DIR_OUT);	/* output */
@@ -1929,7 +1945,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #ifndef MT6755_AW8736_REWORK
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 #else
-		if (pin_extspkamp != 54)
+		if (pin_extspkamp != (54 | 0x80000000))
 			AudDrv_GPIO_EXTAMP_Select(false, 3);
 		else
 			AudDrv_GPIO_EXTAMP2_Select(false, 3);
@@ -1954,7 +1970,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #ifndef MT6755_AW8736_REWORK
 		AudDrv_GPIO_EXTAMP_Select(true, 3);
 #else
-		if (pin_extspkamp != 54)
+		if (pin_extspkamp != (54 | 0x80000000))
 			AudDrv_GPIO_EXTAMP_Select(true, 3);
 		else
 			AudDrv_GPIO_EXTAMP2_Select(true, 3);
@@ -1979,7 +1995,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #ifndef MT6755_AW8736_REWORK
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 #else
-		if (pin_extspkamp != 54)
+		if (pin_extspkamp != (54 | 0x80000000))
 			AudDrv_GPIO_EXTAMP_Select(false, 3);
 		else
 			AudDrv_GPIO_EXTAMP2_Select(false, 3);
@@ -1992,103 +2008,6 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif
 }
 
-#else /*CONFIG_OF*/
-#ifndef CONFIG_MTK_SPEAKER
-#ifdef AW8736_MODE_CTRL
-/* 0.75us<TL<10us; 0.75us<TH<10us */
-#define GAP (2)			/* unit: us */
-/*1.2w*/
-static void AW8736_MODE1(void)
-{
-	mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-}
-/*1.0w*/
-static void AW8736_MODE2(void)
-{
-	do {
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-	} while (0)
-}
-/*0.8w*/
-static void AW8736_MODE3(void)
-{
-	do {
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-	} while (0)
-}
-
-/*it depends on THD, range: 1.5 ~ 2.0w*/
-static void AW8736_MODE4(void)
-{
-	do {
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-	} while (0)
-}
-#endif
-#endif
-
-static void Ext_Speaker_Amp_Change(bool enable)
-{
-#define SPK_WARM_UP_TIME        (25)	/* unit is ms */
-#ifndef CONFIG_FPGA_EARLY_PORTING
-
-	if (enable) {
-		pr_debug("Ext_Speaker_Amp_Change ON+\n");
-#ifndef CONFIG_MTK_SPEAKER
-		pr_warn("Ext_Speaker_Amp_Change ON set GPIO\n");
-		mt_set_gpio_mode(GPIO_EXT_SPKAMP_EN_PIN, GPIO_MODE_00);	/* GPIO117: DPI_D3, mode 0 */
-		mt_set_gpio_pull_enable(GPIO_EXT_SPKAMP_EN_PIN, GPIO_PULL_ENABLE);
-		mt_set_gpio_dir(GPIO_EXT_SPKAMP_EN_PIN, GPIO_DIR_OUT);	/* output */
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);	/* low disable */
-		udelay(1000);
-		mt_set_gpio_dir(GPIO_EXT_SPKAMP_EN_PIN, GPIO_DIR_OUT);	/* output */
-
-#ifdef AW8736_MODE_CTRL
-		AW8736_MODE3();
-#else
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);	/* high enable */
-#endif
-
-		msleep(SPK_WARM_UP_TIME);
-#endif
-		pr_debug("Ext_Speaker_Amp_Change ON-\n");
-	} else {
-		pr_debug("Ext_Speaker_Amp_Change OFF+\n");
-#ifndef CONFIG_MTK_SPEAKER
-		/* mt_set_gpio_mode(GPIO_EXT_SPKAMP_EN_PIN, GPIO_MODE_00); //GPIO117: DPI_D3, mode 0 */
-		mt_set_gpio_dir(GPIO_EXT_SPKAMP_EN_PIN, GPIO_DIR_OUT);	/* output */
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);	/* low disbale */
-		udelay(500);
-#endif
-		pr_debug("Ext_Speaker_Amp_Change OFF-\n");
-	}
-#endif
-}
-#endif
 
 static int Ext_Speaker_Amp_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
@@ -2265,21 +2184,26 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0B00, 0xffff);
 		/* from yoyo HQA script */
 
+		/* HP output swtich release to normal output */
+		HP_Switch_to_Release();
+
 		/* apply volume setting */
 		HeadsetVoloumeSet();
 		Apply_Speaker_Gain();
-
-		/* HP output swtich release to normal output */
-		HP_Switch_to_Release();
 	} else {
-
 		HeadsetVoloumeRestore();
 		/* Set HPR/HPL gain as 0dB, step by step */
 		setHpGainZero();
+
+		HP_Switch_to_Ground();
+		/* switch to ground to de pop-noise */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xEA0F, 0xffff);
 		/* Disable HPR/HPL */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE00F, 0xffff);
 		/* HPR/HPL mux to open */
+		HP_Switch_to_Release();
+		/* HP output swtich release to normal output */
+
 		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4230, 0xffff);
 		/* Disable LOL */
 		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4228, 0xffff);
@@ -2717,7 +2641,7 @@ static int Aud_Clk_Buf_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 
 static int Aud_Clk_Buf_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s(), value = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	/* pr_warn("%s(), value = %d\n", __func__, ucontrol->value.enumerated.item[0]); */
 
 	if (ucontrol->value.integer.value[0])
 		audckbufEnable(true);
@@ -3129,7 +3053,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			/* UL sample rate and mode configure */
 			Ana_Set_Reg(AFE_UL_SRC0_CON0_H, 0x00E0, 0xfff0);
 			/* 2-wire dmic mode, ch1 and ch2 digital mic ON */
-			Ana_Set_Reg(AFE_UL_SRC0_CON0_L, 0x0001, 0xffff);
+			Ana_Set_Reg(AFE_UL_SRC0_CON0_L, 0x0003, 0xffff);
 			/* digmic input mode 3.25MHz, select SDM 3-level mode, UL turn on */
 		}
 	} else {
@@ -4539,6 +4463,8 @@ static const struct snd_soc_dapm_route mtk_audio_map[] = {
 static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 {
 	pr_warn("%s\n", __func__);
+
+	audckbufEnable(true);
 	Ana_Set_Reg(TOP_CLKSQ, 0x0, 0x0001);
 	/* Disable CLKSQ 26MHz */
 	Ana_Set_Reg(AUDDEC_ANA_CON9, 0x1000, 0x1000);
@@ -4547,8 +4473,9 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* Turn off AUDNCP_CLKDIV engine clock,Turn off AUD 26M */
 	Ana_Set_Reg(AUDDEC_ANA_CON0, 0xe000, 0xe000);
 	/* Disable HeadphoneL/HeadphoneR/voice short circuit protection */
-	/* Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0x0010); */
-	/* power off mic bias1 */
+	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x8000, 0x8000);
+	/* Reverse the PMIC clock*/
+	audckbufEnable(false);
 }
 
 void InitCodecDefault(void)
@@ -4593,18 +4520,17 @@ static void InitGlobalVarDefault(void)
 
 static int mt6331_codec_probe(struct snd_soc_codec *codec)
 {
+#ifdef MT6755_AW8736_REWORK
+	int data[4];
+	int rawdata;
+	int ret;
+#endif
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
 
 	pr_warn("%s()\n", __func__);
 
 	if (mInitCodec == true)
 		return 0;
-
-#ifdef MT6755_AW8736_REWORK
-	int data[4];
-	int rawdata;
-	int ret;
-#endif
 
 	pin_extspkamp = pin_extspkamp_2 = pin_vowclk = pin_audmiso = pin_rcvspkswitch = 0;
 	pin_mode_extspkamp = pin_mode_extspkamp_2 = pin_mode_vowclk =
@@ -4644,31 +4570,24 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 	InitCodecDefault();
 	mInitCodec = true;
 
-#ifdef CONFIG_MTK_LEGACY
 #ifdef MT6755_AW8736_REWORK
 	/* Get PCB ID : Channel 12 */
-	IMM_auxadc_GetOneChannelValue(12, data, &rawdata);
+	IMM_GetOneChannelValue(12, data, &rawdata);
 	pr_warn("PCB_ID: voltage: %d.%d\n", data[0], data[1]);
-
-	if ((data[0] == 0) && (data[1] < 25))
-		mHPDePop = false;	/* EVB don't use hp de pop circuit */
-	else
-		mHPDePop = true;
 
 	if ((data[0] == 0) && (data[1] > 40 && data[1] < 54)) {
 		/* 0.505v : rework version -- use GPIO 54 */
-		pin_extspkamp = 54;
+		pin_extspkamp = (54 | 0x80000000);
 		pin_mode_extspkamp = 0;
 		pr_warn("AW8736 rework version WS3000 -- use GPIO %u as SHDN\n", pin_extspkamp);
 	} else {
 		ret = GetGPIO_Info(5, &pin_extspkamp, &pin_mode_extspkamp);
 		if (ret < 0) {
 			pr_err("Ext_Speaker_Amp_Change GetGPIO_Info FAIL!!!\n");
-			return;
+			return -1;
 		}
 		pr_warn("Get AW8736 SHDN IO %u from DTS\n", (pin_extspkamp - 0x80000000));
 	}
-#endif
 #endif
 	return 0;
 }

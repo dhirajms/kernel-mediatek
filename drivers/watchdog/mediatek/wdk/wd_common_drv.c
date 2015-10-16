@@ -199,7 +199,7 @@ static ssize_t mrdump_proc_cmd_write(struct file *file, const char *buf, size_t 
 	int ret = 0;
 	int mrdump_rst_source;
 	int en, mode;		/* enable or disable ext wdt 1<-->enable 0<-->disable */
-	char mrdump_cmd_buf[128];
+	char mrdump_cmd_buf[256];
 	struct wd_api *my_wd_api = NULL;
 
 	ret = get_wd_api(&my_wd_api);
@@ -649,7 +649,7 @@ static int __cpuinit wk_cpu_callback(struct notifier_block *nfb, unsigned long a
 		mpcore_wdt_restart(WD_TYPE_NORMAL);
 #endif
 
-		pr_alert("[WDK]cpu %d plug on kick wdt\n", hotcpu);
+		/* pr_alert("[WDK]cpu %d plug on kick wdt\n", hotcpu); */
 		break;
 #ifdef CONFIG_HOTPLUG_CPU
 #ifdef CONFIG_LOCAL_WDT
@@ -673,7 +673,7 @@ static int __cpuinit wk_cpu_callback(struct notifier_block *nfb, unsigned long a
 		mpcore_wk_wdt_stop();
 #endif
 		wk_cpu_update_bit_flag(hotcpu, 0);
-		pr_alert("[WDK]cpu %d plug off, kick wdt\n", hotcpu);
+		/* pr_alert("[WDK]cpu %d plug off, kick wdt\n", hotcpu); */
 		break;
 #endif				/* CONFIG_HOTPLUG_CPU */
 	default:

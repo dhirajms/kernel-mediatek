@@ -1340,7 +1340,7 @@ static void mt_fh_hal_init(void)
 		return;
 
 #ifdef CONFIG_OF
-	fh_node = of_find_compatible_node(NULL, NULL, "mediatek,FHCTL");
+	fh_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-fhctl");
 	if (fh_node) {
 		/* Setup IO addresses */
 		freqhopping_base = of_iomap(fh_node, 0);
@@ -1492,5 +1492,15 @@ struct mt_fh_hal_driver *mt_get_fh_hal_drv(void)
 {
 	return &g_fh_hal_drv;
 }
+
+static int __init mt_freqhopping_drv_init(void)
+{
+	mt_freqhopping_init();
+
+	return 0;
+}
+
+
+subsys_initcall(mt_freqhopping_drv_init);
 
 /* TODO: module_exit(cpufreq_exit); */

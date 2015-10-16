@@ -664,7 +664,7 @@ void soidle_after_wfi(int cpu)
 	}
 #endif
 #if SODI_DVT_APxGPT
-	pr_info("soidle_cnt:%d\n", soidle_cnt[cpu]);
+	idle_info("soidle_cnt:%d\n", soidle_cnt[cpu]);
 #endif
 	soidle_cnt[cpu]++;
 }
@@ -768,7 +768,7 @@ static bool go_to_mcidle(int cpu)
 		mcidle_cnt[cpu] += 1;
 		#if MCDI_DVT_CPUxGPT || MCDI_DVT_IPI
 		mdelay(1);
-		pr_info("CPU %d awake %d\n", cpu, mcidle_cnt[cpu]);
+		idle_info("CPU %d awake %d\n", cpu, mcidle_cnt[cpu]);
 		#endif
 		ret = 1;
 	}
@@ -1146,7 +1146,7 @@ static void empty_function(void *info)
 	mcdi_enter &= ~(1 << cpu);
 	spin_unlock_irqrestore(&__mcdi_lock, flags);
 	mdelay(1);
-	pr_info(
+	idle_info(
 		"core %x ipi received, WFI count %d, core IPI command count: %d\n",
 		cpu, mcidle_cnt[cpu], core0_IPI_issue_count);
 }
@@ -1164,7 +1164,7 @@ static inline void mcidle_DVT_IPI_handler(int cpu)
 			if ((spm_read(SPM_SLEEP_TIMER_STA) & 0xfe)) {
 				mdelay(1);
 				smp_call_function(empty_function, NULL, 0);
-				pr_info("core0 IPI\n");
+				idle_info("core0 IPI\n");
 				core0_IPI_issue_count++;
 			}
 		} else {
@@ -1232,11 +1232,11 @@ static inline int soidle_handler(int cpu)
 		return 0;
 
 	#if SODI_DVT_APxGPT
-	pr_info("SPM-Enter SODI+\n");
+	idle_info("SPM-Enter SODI+\n");
 	#endif
 	spm_go_to_sodi(slp_spm_SODI_flags, 0);
 	#if SODI_DVT_APxGPT
-	pr_info("SPM-Enter SODI-\n");
+	idle_info("SPM-Enter SODI-\n");
 	#endif
 #ifdef CONFIG_SMP
 	idle_ver("SO:timer_left=%u, timer_left2=%u, delta=%u\n",

@@ -3,7 +3,7 @@
 
 #include <lcm_drv.h>
 
-#if defined(MTK_LCM_KS_SUPPORT)
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 extern LCM_DRIVER lcm_common_drv;
 #else
 extern LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
@@ -212,6 +212,7 @@ extern LCM_DRIVER otm1906a_fhd_dsi_cmd_auto_lcm_drv;
 extern LCM_DRIVER clap070wp03xg_lvds_8163_lcm_drv;
 extern LCM_DRIVER nt35523_wxga_dsi_vdo_boe_lcm_drv;
 extern LCM_DRIVER otm1906b_fhd_dsi_cmd_jdi_tps65132_lcm_drv;
+extern LCM_DRIVER otm1906b_fhd_dsi_cmd_jdi_tps65132_mt6797_lcm_drv;
 extern LCM_DRIVER s6e3fa2_fhd1080_dsi_vdo_lcm_drv;
 extern LCM_DRIVER nt35523_wsvga_dsi_vdo_boe_lcm_drv;
 extern LCM_DRIVER ek79023_dsi_wsvga_vdo_lcm_drv;
@@ -232,6 +233,7 @@ extern LCM_DRIVER cm_n070ice_dsi_vdo_mt8173_lcm_drv;
 extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_extern_lcm_drv;
 extern LCM_DRIVER r69429_wqxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER hx8394c_wxga_dsi_vdo_lcm_drv;
+extern LCM_DRIVER nt35595_truly_fhd_dsi_vdo_lcm_drv;
 #endif
 
 #ifdef BUILD_LK

@@ -264,6 +264,14 @@ static int config_display_m4u_port(M4U_PORT_ID id, DISP_MODULE_ENUM module)
 	return 0;
 }
 
+int ovl2mem_is_alive(void)
+{
+	if (pgc->state > 0)
+		return 1;
+	else
+		return 0;
+}
+
 int ovl2mem_init(unsigned int session)
 {
 	int ret = -1;

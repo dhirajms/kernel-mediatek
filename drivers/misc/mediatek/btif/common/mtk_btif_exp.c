@@ -58,7 +58,7 @@ p_mtk_btif btif_exp_srh_id(unsigned long u_id)
 *       including read/write/dpidle_ctrl/rx_cb_retister
 *       this user id is only an identifier used for owner identification
 *****************************************************************************/
-const int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id)
+int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id)
 {
 	int i_ret = -1;
 	unsigned int index = 0;
@@ -104,7 +104,8 @@ const int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id)
 		p_new_user->enable = false;
 		p_new_user->p_btif = p_btif;
 		p_new_user->u_id = (unsigned long)p_new_user;
-		strncpy(p_new_user->u_name, p_owner, BTIF_USER_NAME_MAX_LEN);
+		strncpy(p_new_user->u_name, p_owner, sizeof(p_new_user->u_name) - 1);
+		p_new_user->u_name[sizeof(p_new_user->u_name) - 1] = '\0';
 		BTIF_INFO_FUNC("owner name:%s, recorded name:%s\n",
 			       p_owner, p_new_user->u_name);
 
@@ -494,7 +495,7 @@ bool mtk_wcn_btif_parser_wmt_evt(unsigned long u_id,
 
 /**********End of Debug Purpose API declearation**********/
 
-const int btif_open_no_id(void)
+int btif_open_no_id(void)
 {
 	int i_ret = 0;
 	p_mtk_btif p_btif = &g_btif[0];
@@ -509,7 +510,7 @@ const int btif_open_no_id(void)
 	return i_ret;
 }
 
-const int btif_close_no_id(void)
+int btif_close_no_id(void)
 {
 	int i_ret = 0;
 	p_mtk_btif p_btif = &g_btif[0];
@@ -676,31 +677,37 @@ int mtk_btif_exp_write_stress_test(unsigned int length, unsigned int max_loop)
 {
 #define BUF_LEN 1024
 	int i_ret = 0;
-	char p_buf[BUF_LEN];
 	int idx = 0;
 	int buf_len = length > BUF_LEN ? BUF_LEN : length;
 	int loop = max_loop > 1000000 ? 1000000 : max_loop;
+	unsigned char *buffer;
+
+	buffer = kmalloc(BUF_LEN, GFP_KERNEL);
+	if (!buffer) {
+		BTIF_ERR_FUNC("btif tester kmalloc failed\n");
+		return -1;
+	}
 
 	for (idx = 0; idx < buf_len; idx++)
-		/*      p_buf[idx] = BUF_LEN -idx; */
-		p_buf[idx] = idx % 255;
-
+		/* btif_stress_test_buf[idx] = BUF_LEN -idx; */
+		*(buffer + idx) = idx % 255;
 	i_ret = btif_loopback_ctrl_no_id(BTIF_LPBK_ENABLE);
 	BTIF_INFO_FUNC("mtk_wcn_btif_loopback_ctrl returned %d\n", i_ret);
 	while (loop--) {
-		i_ret = btif_write_no_id(p_buf, buf_len);
+		i_ret = btif_write_no_id(buffer, buf_len);
 		BTIF_INFO_FUNC("mtk_wcn_btif_write left loop:%d, i_ret:%d\n",
-			       loop, i_ret);
+				   loop, i_ret);
 		if (i_ret != buf_len) {
 			BTIF_INFO_FUNC
-			    ("mtk_wcn_btif_write failed, target len %d, sent len: %d\n",
-			     buf_len, i_ret);
+				("mtk_wcn_btif_write failed, target len %d, sent len: %d\n",
+				 buf_len, i_ret);
 			break;
 		}
 		buf_len--;
 		if (0 >= buf_len)
 			buf_len = length > BUF_LEN ? BUF_LEN : length;
 	}
+	kfree(buffer);
 	return i_ret;
 }
 

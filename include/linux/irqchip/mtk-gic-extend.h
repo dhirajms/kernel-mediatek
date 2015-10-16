@@ -36,6 +36,10 @@ struct mtk_irq_mask {
 	__u32 mask6;
 	__u32 mask7;
 	__u32 mask8;
+	__u32 mask9;
+	__u32 mask10;
+	__u32 mask11;
+	__u32 mask12;
 	unsigned int footer;	/* for error checking */
 };
 
@@ -46,5 +50,10 @@ int mt_irq_mask_restore(struct mtk_irq_mask *mask);
 void mt_irq_set_pending_for_sleep(unsigned int irq);
 extern void mt_irq_set_pending(unsigned int irq);
 extern unsigned int mt_irq_get_pending(unsigned int irq);
+
+/* set the priority mask to 0x00 for masking all irqs to this cpu */
+void gic_set_primask(void);
+/* restore the priority mask value */
+void gic_clear_primask(void);
 #endif
 

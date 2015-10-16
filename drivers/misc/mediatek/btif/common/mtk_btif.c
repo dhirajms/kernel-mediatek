@@ -11,6 +11,9 @@
 
 /*#include <mach/eint.h>*/
 /*-----------driver own header files----------------*/
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
 #ifdef DFT_TAG
 #undef DFT_TAG
 #endif
@@ -283,6 +286,7 @@ int _btif_suspend(p_mtk_btif p_btif)
 	return i_ret;
 }
 
+
 static int mtk_btif_drv_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -388,8 +392,8 @@ int _btif_resume(p_mtk_btif p_btif)
 				("BTIF state: %s before resume, do nothing\n", g_state[state]);
 	} else
 		i_ret = -1;
-
 	BTIF_STATE_RELEASE(p_btif);
+
 	return i_ret;
 }
 
@@ -427,7 +431,9 @@ static ssize_t btif_file_write(struct file *filp,
 			const char __user *buf, size_t count, loff_t *f_pos);
 static long btif_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			 unsigned long arg);
-
+#ifdef CONFIG_COMPAT
+static long btif_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
+#endif
 static struct cdev btif_dev_c;
 static wait_queue_head_t btif_read_inq;	/* read queues */
 
@@ -438,6 +444,9 @@ const struct file_operations mtk_btif_fops = {
 	.read = btif_file_read,
 	.write = btif_file_write,
 	.unlocked_ioctl = btif_unlocked_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = btif_compat_ioctl,
+#endif
 	.poll = btif_poll,
 };
 
@@ -640,7 +649,16 @@ ssize_t btif_file_write(struct file *filp,
 
 	return i_ret;
 }
+#ifdef CONFIG_COMPAT
+long btif_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	long ret;
 
+	BTIF_INFO_FUNC("cmd[0x%x]\n", cmd);
+	ret = btif_unlocked_ioctl(filp, cmd, arg);
+	return ret;
+}
+#endif
 long btif_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 #define BTIF_IOC_MAGIC        0xb0
@@ -2004,7 +2022,6 @@ static int _btif_state_set(p_mtk_btif p_btif, ENUM_BTIF_STATE state)
 		if (B_S_ON != state)
 			_btif_dpidle_notify_ctrl(p_btif, BTIF_DPIDLE_ENABLE);
 
-		i_ret = 0;
 	} else {
 		i_ret = E_BTIF_INVAL_PARAM;
 		BTIF_ERR_FUNC("invalid state:%d, do nothing\n", state);
@@ -2167,7 +2184,8 @@ static int mtk_btif_rxd_be_blocked_by_data(void)
 		while (dump_size--) {
 			p_log_buf = p_log_que->p_queue[0] + out_index;
 			len = p_log_buf->len;
-			len = len > BTIF_LOG_SZ ? BTIF_LOG_SZ : len;
+			if (len > BTIF_LOG_SZ)
+				len = BTIF_LOG_SZ;
 			if ((0x7f == *(p_log_buf->buffer)) && (0x7f == *(p_log_buf->buffer + 1))) {
 				sync_pkt_n++;
 				BTIF_INFO_FUNC("tx pkt_count:%d is sync pkt\n", out_index);
@@ -2251,7 +2269,7 @@ static void btif_tx_worker(struct work_struct *p_work)
 	int leng_sent = 0;
 /*tx fifo out*/
 	int how_much_get = 0;
-	unsigned char local_buf[512];
+	unsigned char local_buf[384];
 
 /*get mtk_btif's pointer*/
 	p_mtk_btif p_btif = container_of(p_work, mtk_btif, tx_work);
@@ -2822,7 +2840,7 @@ int btif_dump_reg(p_mtk_btif p_btif)
 		goto dmp_reg_err;
 	}
 
-	if (B_S_ON != ori_state) {
+	if ((B_S_ON != ori_state) && (B_S_MAX > ori_state)) {
 		BTIF_ERR_FUNC("BTIF's original state is %s, not B_S_ON\n", g_state[ori_state]);
 		BTIF_ERR_FUNC("!!!!---<<<This should never happen in normal mode>>>---!!!");
 		i_ret = _btif_exit_dpidle(p_btif);
@@ -2850,9 +2868,6 @@ int btif_dump_reg(p_mtk_btif p_btif)
 		BTIF_INFO_FUNC("BTIF Rx in PIO mode,no need to dump Rx DMA's register\n");
 
 	switch (ori_state) {
-	case B_S_OFF:
-/*this case is error, should never happen*/
-		break;
 	case B_S_SUSPEND:
 /*return to dpidle state*/
 /* break; */
@@ -2862,6 +2877,8 @@ int btif_dump_reg(p_mtk_btif p_btif)
 		break;
 	case B_S_ON:
 /*nothing needs to be done*/
+		break;
+	default:
 		break;
 	}
 
@@ -2903,11 +2920,7 @@ int btif_log_buf_dmp_in(P_BTIF_LOG_QUEUE_T p_log_que, const char *p_buf,
 	char *dir = NULL;
 	struct timeval *p_timer = NULL;
 	unsigned long flags;
-
 	bool output_flag = false;
-
-	if (!(p_log_que->enable))
-		return 0;
 
 	BTIF_DBG_FUNC("++\n");
 
@@ -2916,6 +2929,8 @@ int btif_log_buf_dmp_in(P_BTIF_LOG_QUEUE_T p_log_que, const char *p_buf,
 			"len(%d)\n", p_log_que, p_buf, len);
 		return 0;
 	}
+	if (!(p_log_que->enable))
+		return 0;
 
 	dir = p_log_que->dir == BTIF_TX ? "Tx" : "Rx";
 	output_flag = p_log_que->output_flag;
@@ -3002,8 +3017,7 @@ int btif_log_buf_dmp_out(P_BTIF_LOG_QUEUE_T p_log_que)
 			       (int)p_timer->tv_sec,
 			       (int)p_timer->tv_usec, len);
 /*output buffer content*/
-			btif_dump_data(p_log_buf->buffer,
-				       len > BTIF_LOG_SZ ? BTIF_LOG_SZ : len);
+			btif_dump_data(p_log_buf->buffer, len);
 			out_index++;
 			out_index %= BTIF_LOG_ENTRY_NUM;
 		}
@@ -3158,19 +3172,22 @@ static int BTIF_init(void)
 		p_btif_buffer = kmalloc(BTIF_RX_BUFFER_SIZE, GFP_ATOMIC);
 		if (!p_btif_buffer) {
 			BTIF_ERR_FUNC("p_btif_buffer kmalloc memory fail\n");
-			return false;
+			return -1;
 		}
 		BTIF_INFO_FUNC("p_btif_buffer get memory 0x%p\n", p_btif_buffer);
 		p_tx_queue = kmalloc_array(BTIF_LOG_ENTRY_NUM, sizeof(BTIF_LOG_BUF_T), GFP_ATOMIC);
 		if (!p_tx_queue) {
 			BTIF_ERR_FUNC("p_tx_queue kmalloc memory fail\n");
-			return false;
+			kfree(p_btif_buffer);
+			return -1;
 		}
 		BTIF_INFO_FUNC("p_tx_queue get memory 0x%p\n", p_tx_queue);
 		p_rx_queue = kmalloc_array(BTIF_LOG_ENTRY_NUM, sizeof(BTIF_LOG_BUF_T), GFP_ATOMIC);
 		if (!p_rx_queue) {
 			BTIF_ERR_FUNC("p_rx_queue kmalloc memory fail\n");
-			return false;
+			kfree(p_btif_buffer);
+			kfree(p_tx_queue);
+			return -1;
 		}
 		BTIF_INFO_FUNC("p_rx_queue get memory 0x%p\n", p_rx_queue);
 

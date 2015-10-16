@@ -82,7 +82,5 @@ const char *ddp_get_clk_name(MM_CLK_ENUM clk_enum);
 /* include by pwm and color driver to exit path idle*/
 void disp_exit_idle_ex(const char *caller);
 int ddp_path_init(void);
-int ddp_path_mtcmos_enable(bool enable);
-
 
 #endif

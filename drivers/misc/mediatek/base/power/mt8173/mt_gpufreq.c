@@ -23,9 +23,6 @@
 #include <linux/kthread.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
-#if 0
-#include <linux/xlog.h>
-#endif
 #include <linux/jiffies.h>
 #include <linux/fs.h>
 #include <linux/seq_file.h>
@@ -33,6 +30,7 @@
 #include <linux/sched.h>
 #include <linux/sched/rt.h>
 #include <linux/kthread.h>
+#include <linux/types.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -42,9 +40,8 @@
 
 #include <asm/uaccess.h>
 
-#include "mt-plat/mt_typedefs.h"
 #include "mt_cpufreq.h"
-#include "mach/mt_gpufreq.h"
+#include "mt_gpufreq.h"
 #include "mt-plat/sync_write.h"
 #ifdef CONFIG_MTK_FREQ_HOPPING
 #include "mach/mt_freqhopping.h"
@@ -128,8 +125,8 @@ static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_2[] = {
 ***************************/
 static int g_gpufreq_dvfs_disable_count;
 
-static unsigned int g_cur_gpu_freq = 455000;
-static unsigned int g_cur_gpu_volt = 100000;
+static unsigned int g_cur_gpu_freq = GPU_DVFS_FREQ4;
+static unsigned int g_cur_gpu_volt = GPU_DVFS_VOLT2;
 static unsigned int g_cur_gpu_idx  = 0xFF;
 
 static bool mt_gpufreq_ready;
@@ -188,7 +185,8 @@ static int  mt_gpufreq_ptpod_disable_idx;
 static void mt_gpu_clock_switch(unsigned int freq_new);
 static void mt_gpu_volt_switch(unsigned int volt_old, unsigned int volt_new);
 
-#define GPU_DEFAULT_TYPE    1
+#define GPU_DEFAULT_MAX_FREQ_MHZ    500
+#define GPU_DEFAULT_TYPE    0
 
 /*************************************************************************************
 * Check GPU DVFS Efuse
@@ -205,15 +203,39 @@ static unsigned int mt_gpufreq_check_dvfs_efuse(void)
 	pr_debug("mt_gpufreq_dvfs_mmpll_spd_bond = 0x%x ([2]=%x, [1:0]=%x)\n",
 		mt_gpufreq_dvfs_mmpll_spd_bond, mmpll_spd_bond_2, mmpll_spd_bond);
 
-	/* No efuse,  use project name to determine GPU table type! */
+	/*
+	   No efuse,  use frequency in device tree to determine GPU table type!
+	   device tree located in kernel\mediatek\mt8173\3.10\arch\arm64\boot\dts
+	*/
 	if (mt_gpufreq_dvfs_mmpll_spd_bond == 0) {
-#if defined(CONFIG_TB8173_P1_PLUS)
-		type = 2;
-#elif defined(CONFIG_TB8173_P1) || defined(CONFIG_TB8173_BLOFELD) || defined(CONFIG_TB8173_BLOFELD)
-		type = 0;
-#else
-		type = GPU_DEFAULT_TYPE;
-#endif
+		static const struct of_device_id gpu_ids[] = {
+			{ .compatible = "mediatek,mt8173-han" },
+			{ /* sentinel */ }
+		};
+
+		struct device_node *node;
+		unsigned int gpu_speed = 0;
+
+		node = of_find_matching_node(NULL, gpu_ids);
+		if (!node) {
+			pr_debug("@%s: find GPU node failed\n", __func__);
+			gpu_speed = GPU_DEFAULT_MAX_FREQ_MHZ;
+		} else {
+			if (!of_property_read_u32(node, "clock-frequency", &gpu_speed))
+				gpu_speed = gpu_speed / 1000 / 1000;
+			else {
+				pr_debug("@%s: missing clock-frequency property, use default GPU level\n", __func__);
+				gpu_speed = GPU_DEFAULT_MAX_FREQ_MHZ;
+			}
+		}
+		pr_info("GPU clock-frequency from DT = %d MHz\n", gpu_speed);
+
+		if (gpu_speed > 600)
+			type = 2;
+		else if (gpu_speed == 600)
+			type = 1;
+		else
+			type = GPU_DEFAULT_TYPE;
 
 		return type;
 	}
@@ -224,11 +246,11 @@ static unsigned int mt_gpufreq_check_dvfs_efuse(void)
 		break;
 
 	case 0b110:
-		type = 0;
+		type = GPU_DEFAULT_TYPE;
 		break;
 
 	default:
-		type = GPU_DEFAULT_TYPE;
+		type = 1;
 		break;
 	}
 
@@ -925,7 +947,7 @@ static unsigned int mt_gpufreq_low_batt_volt_limited_index;  /* Limited frequenc
 #define MT_GPUFREQ_OC_LIMITED_INDEX                 3
 
 /* limit frequency index array */
-static unsigned int mt_gpufreq_power_limited_index_array[MT_GPUFREQ_POWER_LIMITED_MAX_NUM] = {0};
+static unsigned int mt_gpufreq_power_limited_index_array[MT_GPUFREQ_POWER_LIMITED_MAX_NUM];
 
 /************************************************
 * frequency adjust interface for thermal protect
@@ -933,9 +955,8 @@ static unsigned int mt_gpufreq_power_limited_index_array[MT_GPUFREQ_POWER_LIMITE
 /******************************************************
 * parameter: target power
 *******************************************************/
-static int mt_gpufreq_power_throttle_protect(void)
+static void mt_gpufreq_power_throttle_protect(void)
 {
-	int ret = 0;
 	int i = 0;
 	unsigned int limited_index = 0;
 
@@ -956,10 +977,8 @@ static int mt_gpufreq_power_throttle_protect(void)
 	pr_debug("Final limit frequency upper bound to id = %d, frequency = %d\n",
 		g_limited_max_id, mt_gpufreqs[g_limited_max_id].gpufreq_khz);
 
-	if (NULL != g_pGpufreq_power_limit_notify)
+	if (g_pGpufreq_power_limit_notify)
 		g_pGpufreq_power_limit_notify(g_limited_max_id);
-
-	return ret;
 }
 
 #ifdef MT_GPUFREQ_OC_PROTECT
@@ -970,7 +989,7 @@ static void mt_gpufreq_oc_protect(unsigned int limited_index)
 {
 	mutex_lock(&mt_gpufreq_power_lock);
 
-	pr_debug("mt_gpufreq_oc_protect, limited_index = %d\n", limited_index);
+	pr_info("mt_gpufreq_oc_protect, limited_index = %d\n", limited_index);
 
 	mt_gpufreq_power_limited_index_array[MT_GPUFREQ_OC_LIMITED_INDEX] = limited_index;
 	mt_gpufreq_power_throttle_protect();
@@ -1017,7 +1036,7 @@ static void mt_gpufreq_low_batt_volume_protect(unsigned int limited_index)
 {
 	mutex_lock(&mt_gpufreq_power_lock);
 
-	pr_debug("mt_gpufreq_low_batt_volume_protect, limited_index = %d\n", limited_index);
+	pr_info("mt_gpufreq_low_batt_volume_protect, limited_index = %d\n", limited_index);
 
 	mt_gpufreq_power_limited_index_array[MT_GPUFREQ_LOW_BATT_VOLUME_LIMITED_INDEX] = limited_index;
 	mt_gpufreq_power_throttle_protect();
@@ -1065,7 +1084,7 @@ static void mt_gpufreq_low_batt_volt_protect(unsigned int limited_index)
 {
 	mutex_lock(&mt_gpufreq_power_lock);
 
-	pr_debug("mt_gpufreq_low_batt_volt_protect, limited_index = %d\n", limited_index);
+	pr_info("mt_gpufreq_low_batt_volt_protect, limited_index = %d\n", limited_index);
 
 	mt_gpufreq_power_limited_index_array[MT_GPUFREQ_LOW_BATT_VOLT_LIMITED_INDEX] = limited_index;
 	mt_gpufreq_power_throttle_protect();
@@ -1171,7 +1190,7 @@ void mt_gpufreq_thermal_protect(unsigned int limited_power)
 		}
 	}
 
-	pr_debug("Thermal limit frequency upper bound to id = %d, limited_power = %d\n",
+	pr_info("Thermal limit frequency upper bound to id = %d, limited_power = %d\n",
 		mt_gpufreq_power_limited_index_array[MT_GPUFREQ_THERMAL_LIMITED_INDEX], limited_power);
 
 	mt_gpufreq_power_throttle_protect();
@@ -1874,7 +1893,6 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	if (IS_ERR(g_reg_vgpu)) {
 		ret = PTR_ERR(g_reg_vgpu);
-		/*pr_err("Failed to request reg-vgpu: %d\n", ret);*/
 		return ret;
 	}
 
@@ -1886,9 +1904,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	register_early_suspend(&mt_gpufreq_early_suspend_handler);
 #endif
 
-    /**********************
-	* setup gpufreq table
-	***********************/
+    /* setup gpufreq table */
 	if (mt_gpufreq_dvfs_table_type == 2)
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_2, ARRAY_SIZE(mt_gpufreq_opp_tbl_2));
 	else if (mt_gpufreq_dvfs_table_type == 1)
@@ -1898,9 +1914,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	mt_gpufreq_volt_enable_state = 1;
 
-    /**********************
-	* setup initial frequency
-	***********************/
+    /* setup initial frequency */
 	if (mt_gpufreqs[0].gpufreq_khz >= GPU_DVFS_DEFAULT_FREQ) {
 		for (i = 0; i < mt_gpufreqs_num; i++) {
 			if (mt_gpufreqs[i].gpufreq_khz == GPU_DVFS_DEFAULT_FREQ) {
@@ -2225,97 +2239,98 @@ static int __init mt_gpufreq_init(void)
 	mt_gpufreq_dir = proc_mkdir("gpufreq", NULL);
 	if (!mt_gpufreq_dir) {
 		pr_err("mkdir /proc/gpufreq failed\n");
-	} else {
-		mt_entry =
-		proc_create("gpufreq_debug", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-		    &mt_gpufreq_debug_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_debug failed\n");
+		return -ENOMEM;
+	}
 
-		mt_entry =
-		proc_create("gpufreq_limited_power", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-			&mt_gpufreq_limited_power_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_limited_power failed\n");
+	mt_entry =
+	proc_create("gpufreq_debug", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+	    &mt_gpufreq_debug_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_debug failed\n");
+
+	mt_entry =
+	proc_create("gpufreq_limited_power", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+		&mt_gpufreq_limited_power_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_limited_power failed\n");
 
 #ifdef MT_GPUFREQ_OC_PROTECT
-		mt_entry =
-		proc_create("gpufreq_limited_oc_ignore", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-			&mt_gpufreq_limited_oc_ignore_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_limited_oc_ignore failed\n");
+	mt_entry =
+	proc_create("gpufreq_limited_oc_ignore", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+		&mt_gpufreq_limited_oc_ignore_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_limited_oc_ignore failed\n");
 #endif
 
 #ifdef MT_GPUFREQ_LOW_BATT_VOLUME_PROTECT
-		mt_entry =
-		proc_create("gpufreq_limited_low_batt_volume_ignore", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-			&mt_gpufreq_limited_low_batt_volume_ignore_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_limited_low_batt_volume_ignore failed\n");
+	mt_entry =
+	proc_create("gpufreq_limited_low_batt_volume_ignore", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+		&mt_gpufreq_limited_low_batt_volume_ignore_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_limited_low_batt_volume_ignore failed\n");
 #endif
 
 #ifdef MT_GPUFREQ_LOW_BATT_VOLT_PROTECT
-		mt_entry =
-		proc_create("gpufreq_limited_low_batt_volt_ignore", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-			&mt_gpufreq_limited_low_batt_volt_ignore_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_limited_low_batt_volt_ignore failed\n");
+	mt_entry =
+	proc_create("gpufreq_limited_low_batt_volt_ignore", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+		&mt_gpufreq_limited_low_batt_volt_ignore_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_limited_low_batt_volt_ignore failed\n");
 #endif
 
-		mt_entry =
-		proc_create("gpufreq_limited_thermal_ignore", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-			&mt_gpufreq_limited_thermal_ignore_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_limited_thermal_ignore failed\n");
+	mt_entry =
+	proc_create("gpufreq_limited_thermal_ignore", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+		&mt_gpufreq_limited_thermal_ignore_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_limited_thermal_ignore failed\n");
 
-		mt_entry =
-		proc_create("gpufreq_state", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-		    &mt_gpufreq_state_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_state failed\n");
+	mt_entry =
+	proc_create("gpufreq_state", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+	    &mt_gpufreq_state_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_state failed\n");
 
-		mt_entry =
-		proc_create("gpufreq_opp_dump", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-		    &mt_gpufreq_opp_dump_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_opp_dump failed\n");
+	mt_entry =
+	proc_create("gpufreq_opp_dump", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+	    &mt_gpufreq_opp_dump_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_opp_dump failed\n");
 
-		mt_entry =
-		proc_create("gpufreq_power_dump", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-		    &mt_gpufreq_power_dump_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_power_dump failed\n");
+	mt_entry =
+	proc_create("gpufreq_power_dump", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+	    &mt_gpufreq_power_dump_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_power_dump failed\n");
 
-		mt_entry =
-		proc_create("gpufreq_opp_freq", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-		    &mt_gpufreq_opp_freq_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_opp_freq failed\n");
+	mt_entry =
+	proc_create("gpufreq_opp_freq", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+	    &mt_gpufreq_opp_freq_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_opp_freq failed\n");
 
-		mt_entry =
-		proc_create("gpufreq_var_dump", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-		    &mt_gpufreq_var_dump_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_var_dump failed\n");
+	mt_entry =
+	proc_create("gpufreq_var_dump", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+	    &mt_gpufreq_var_dump_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_var_dump failed\n");
 
-		mt_entry =
-		proc_create("gpufreq_volt_enable", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-		    &mt_gpufreq_volt_enable_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_volt_enable failed\n");
+	mt_entry =
+	proc_create("gpufreq_volt_enable", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+	    &mt_gpufreq_volt_enable_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_volt_enable failed\n");
 
-		mt_entry =
-		proc_create("gpufreq_fixed_freq_volt", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-			&mt_gpufreq_fixed_freq_volt_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_fixed_freq_volt failed\n");
+	mt_entry =
+	proc_create("gpufreq_fixed_freq_volt", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+		&mt_gpufreq_fixed_freq_volt_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_fixed_freq_volt failed\n");
 
-		mt_entry =
-		proc_create("gpufreq_input_boost", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
-			&mt_gpufreq_input_boost_fops);
-		if (!mt_entry)
-			pr_err("create /proc/gpufreq/gpufreq_input_boost failed\n");
-	}
+	mt_entry =
+	proc_create("gpufreq_input_boost", S_IRUGO | S_IWUSR | S_IWGRP, mt_gpufreq_dir,
+		&mt_gpufreq_input_boost_fops);
+	if (!mt_entry)
+		pr_err("create /proc/gpufreq/gpufreq_input_boost failed\n");
 
 	ret = platform_driver_register(&mt_gpufreq_pdrv);
 

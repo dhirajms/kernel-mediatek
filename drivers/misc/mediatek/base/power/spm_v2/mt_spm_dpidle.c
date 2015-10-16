@@ -13,7 +13,9 @@
 
 #include <mach/irqs.h>
 #include <mach/mt_secure_api.h>
+#if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mt_cirq.h>
+#endif
 #include "mt_spm_idle.h"
 #include "mt_cpuidle.h"
 #ifdef CONFIG_MTK_WD_KICKER
@@ -35,6 +37,8 @@
  */
 #define DPIDLE_TAG     "[DP] "
 #define dpidle_dbg(fmt, args...)	pr_debug(DPIDLE_TAG fmt, ##args)
+
+#define SPM_BYPASS_SYSPWREQ     0
 
 #define WAKE_SRC_FOR_MD32  0
 
@@ -75,7 +79,10 @@ static unsigned long mcucfg_phys_base;
 #define MP0_AXI_CONFIG_PHYS	(mcucfg_phys_base + 0x2C)
 #define MP1_AXI_CONFIG		(MCUCFG_BASE + 0x22C)
 #define MP1_AXI_CONFIG_PHYS	(mcucfg_phys_base + 0x22C)
+#define MP2_AXI_CONFIG		(MCUCFG_BASE + 0x20C)
+#define MP2_AXI_CONFIG_PHYS	(mcucfg_phys_base + 0x20C)
 #define ACINACTM		(1 << 4)
+#define	ACINACTM_MP2	(0x11)
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 #include <mach/mt_secure_api.h>
@@ -368,6 +375,10 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.mp0_cpu1_wfi_en	= 1,
 	.mp0_cpu2_wfi_en	= 1,
 	.mp0_cpu3_wfi_en	= 1,
+
+#if SPM_BYPASS_SYSPWREQ
+	.syspwreq_mask = 1,
+#endif
 };
 
 struct spm_lp_scen __spm_dpidle = {
@@ -381,6 +392,9 @@ static unsigned int dpidle_log_print_prev_time;
 static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
 	u32 v0, v1;
+#if defined(CONFIG_ARCH_MT6797)
+	u32 v2;
+#endif
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
 		mt_cpu_dormant(CPU_DEEPIDLE_MODE);
@@ -389,9 +403,19 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 		v0 = reg_read(MP0_AXI_CONFIG);
 		v1 = reg_read(MP1_AXI_CONFIG);
 
+#if defined(CONFIG_ARCH_MT6797)
+		v2 = reg_read(MP2_AXI_CONFIG);
+		MCUSYS_SMC_WRITE(MP2_AXI_CONFIG, v2 | ACINACTM_MP2);
+#endif
+
 		/* disable snoop function */
 		MCUSYS_SMC_WRITE(MP0_AXI_CONFIG, v0 | ACINACTM);
 		MCUSYS_SMC_WRITE(MP1_AXI_CONFIG, v1 | ACINACTM);
+
+#if defined(CONFIG_ARCH_MT6797)
+		v2 = reg_read(MP2_AXI_CONFIG);
+		MCUSYS_SMC_WRITE(MP2_AXI_CONFIG, v2 | ACINACTM_MP2);
+#endif
 
 		dpidle_dbg("enter legacy WFI, MP0_AXI_CONFIG=0x%x, MP1_AXI_CONFIG=0x%x\n",
 			   reg_read(MP0_AXI_CONFIG), reg_read(MP1_AXI_CONFIG));
@@ -401,6 +425,10 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 		/* restore MP0_AXI_CONFIG */
 		MCUSYS_SMC_WRITE(MP0_AXI_CONFIG, v0);
 		MCUSYS_SMC_WRITE(MP1_AXI_CONFIG, v1);
+
+#if defined(CONFIG_ARCH_MT6797)
+		MCUSYS_SMC_WRITE(MP2_AXI_CONFIG, v2);
+#endif
 
 		dpidle_dbg("exit legacy WFI, MP0_AXI_CONFIG=0x%x, MP1_AXI_CONFIG=0x%x\n",
 			   reg_read(MP0_AXI_CONFIG), reg_read(MP1_AXI_CONFIG));
@@ -509,8 +537,10 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	spin_lock_irqsave(&__spm_lock, flags);
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
+#endif
 
 #if SPM_AEE_RR_REC
 	aee_rr_rec_deepidle_val(SPM_DEEPIDLE_ENTER_UART_SLEEP);
@@ -574,8 +604,10 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	wr = spm_output_wake_reason(&wakesta, pcmdesc, dump_log);
 
 RESTORE_IRQ:
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
+#endif
 	mt_irq_mask_restore(&mask);
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
@@ -649,8 +681,10 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	spin_lock_irqsave(&__spm_lock, flags);
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
+#endif
 
 	spm_crit2("sleep_deepidle, sec = %u, wakesrc = 0x%x [%u]\n",
 			  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags));
@@ -691,8 +725,10 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	last_wr = __spm_output_wake_reason(&wakesta, pcmdesc, true);
 
 RESTORE_IRQ:
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
+#endif
 	mt_irq_mask_restore(&mask);
 	spin_unlock_irqrestore(&__spm_lock, flags);
 

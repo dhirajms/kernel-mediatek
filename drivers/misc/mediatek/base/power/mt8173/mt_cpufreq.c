@@ -110,8 +110,12 @@ struct regulator *reg_vcore_backup;	/* 0x027A */
 struct regulator *reg_vgpu;	/* 0x??? */
 struct clk *clk_pllca57;
 
+int _mt_cpufreq_pdrv_probed = 0;
+
 
 #endif
+
+int	regulator_vpca53_voltage = 0;
 
 #if 1	/* L318_Need_Related_File Dummy code */
 
@@ -378,8 +382,6 @@ unsigned int func_lv_mask = 0;	/* (FUNC_LV_MODULE | FUNC_LV_CPUFREQ | FUNC_LV_AP
 #define cpufreq_write_mask(addr, mask, val) \
 cpufreq_write(addr, (cpufreq_read(addr) & ~(_BITMASK_(mask))) | _BITS_(mask, val))
 
-#define CPUDVFS_WORKAROUND_FOR_GIT	1	/* TODO: remove this! */
-
 /*=============================================================*/
 /* Local type definition                                       */
 /*=============================================================*/
@@ -444,6 +446,7 @@ bool is_in_cpufreq = 0;
 
 #define CPU_LV_TO_OPP_IDX(lv)   ((lv)-1)	/* cpu_level to opp_idx */
 
+static int system_boost;
 
 static unsigned int read_efuse_speed(enum mt_cpu_dvfs_id id)
 {				/* TODO: remove it latter */
@@ -1810,10 +1813,8 @@ BUG_ON(dds & _BITMASK_(26:24));
 		freqhopping_dvt_dvfs_enable(cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE) ? ARMCA7PLL_ID :
 					    ARMCA15PLL_ID, target_khz);
 #else				/* __KERNEL__ */
-#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 		mt_dfs_armpll(cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE) ? FH_ARMCA7_PLLID :
 			      FH_ARMCA15_PLLID, dds);
-#endif
 #endif				/* ! __KERNEL__ */
 	}
 
@@ -1949,6 +1950,7 @@ static int set_cur_volt_little(struct mt_cpu_dvfs *p, unsigned int mv)
 	}
 #ifdef CONFIG_OF
 	regulator_set_voltage(reg_vpca53, mv * 1000, mv * 1000 + 6250 - 1);
+	regulator_vpca53_voltage = mv;
 #else
 	mt_cpufreq_set_pmic_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VPROC_CA7, VOLT_TO_PMIC_VAL(mv));
 	mt_cpufreq_apply_pmic_cmd(IDX_NM_VPROC_CA7);
@@ -1970,10 +1972,10 @@ static void dump_opp_table(struct mt_cpu_dvfs *p)
 {
 	int i;
 
-	cpufreq_ver("[%s/%d]\n" "cpufreq_oppidx = %d\n", p->name, p->cpu_id, p->idx_opp_tbl);
+	cpufreq_err("[%s/%d]\n" "cpufreq_oppidx = %d\n", p->name, p->cpu_id, p->idx_opp_tbl);
 
 	for (i = 0; i < p->nr_opp_tbl; i++) {
-		cpufreq_ver("\tOP(%d, %d),\n",
+		cpufreq_err("\tOP(%d, %d),\n",
 			    cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i)
 		    );
 	}
@@ -2130,6 +2132,13 @@ static int set_cur_volt_big(struct mt_cpu_dvfs *p, unsigned int mv)
 			mt_cpufreq_apply_pmic_cmd(IDX_NM_VSRAM_CA15L);
 #endif
 			udelay(PMIC_SETTLE_TIME(cur_vproc_mv + MAX_DIFF_VSRAM_VPROC, cur_vproc_mv));
+
+			/* VSRAM -VProc should between 100~200mV.
+				When VSRAM reach lower limit 930mV,
+				(it should be lower if there is no limit)
+				(VSRAM -VProc) will be > 200mV on next round. */
+			if (cur_vsram_mv == CA57_VSRAM_LOWER_LIMIT)
+				break;
 		} while (cur_vproc_mv > mv);
 	}
 
@@ -3985,6 +3994,16 @@ static int _thermal_limited_verify(struct mt_cpu_dvfs *p, int new_opp_idx)
 	return (i > new_opp_idx) ? i : new_opp_idx;
 }
 
+void interactive_boost_cpu(int boost)
+{
+	system_boost = boost;
+
+	if (system_boost && _mt_cpufreq_pdrv_probed) {
+		_mt_cpufreq_set(MT_CPU_DVFS_LITTLE, 0);
+		_mt_cpufreq_set(MT_CPU_DVFS_BIG, 0);
+	}
+}
+
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 {
 	int idx;
@@ -4015,6 +4034,10 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 			new_opp_idx = idx;
 			cpufreq_dbg("%s(): hevc limited freq, idx = %d\n", __func__, new_opp_idx);
 		}
+	}
+
+	if (system_boost) {
+		new_opp_idx = 0;
 	}
 #if defined(CONFIG_CPU_DVFS_DOWNGRADE_FREQ)
 
@@ -4392,14 +4415,16 @@ static unsigned int _mt_cpufreq_get(unsigned int cpu)
 	return cpu_dvfs_get_cur_freq(p);
 }
 
-/*
- * Early suspend
- */
-static bool _allow_dpidle_ctrl_vproc;
-
+/* return _allow_dpidle_ctrl_vproc; */
+#define VPROC_THRESHOLD_TO_DEEPIDLE	990
 bool mt_cpufreq_earlysuspend_status_get(void)
 {
-	return _allow_dpidle_ctrl_vproc;
+	int	ret = 0;
+
+	if (regulator_vpca53_voltage && (regulator_vpca53_voltage < VPROC_THRESHOLD_TO_DEEPIDLE))
+		ret = 1;
+
+	return ret;
 }
 EXPORT_SYMBOL(mt_cpufreq_earlysuspend_status_get);
 
@@ -4434,8 +4459,6 @@ static void _mt_cpufreq_early_suspend(struct early_suspend *h)
 		}
 	}
 
-	_allow_dpidle_ctrl_vproc = true;
-
 	FUNC_EXIT(FUNC_LV_MODULE);
 }
 
@@ -4446,8 +4469,6 @@ static void _mt_cpufreq_late_resume(struct early_suspend *h)
 	int i;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-
-	_allow_dpidle_ctrl_vproc = false;
 
 	for_each_cpu_dvfs(i, p) {
 		if (!cpu_dvfs_is_available(p))
@@ -4697,6 +4718,8 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	ret = cpufreq_register_driver(&_mt_cpufreq_driver);
 	register_hotcpu_notifier(&turbo_mode_cpu_notifier);	/* <-XXX */
 	register_hotcpu_notifier(&extbuck_cpu_notifier);
+
+	_mt_cpufreq_pdrv_probed = 1;
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 

@@ -29,6 +29,10 @@
 
 #include <mach/wd_api.h>
 
+#include <linux/reset-controller.h>
+#include <linux/slab.h>
+#include <linux/reset.h>
+
 void __iomem *toprgu_base = 0;
 int wdt_irq_id = 0;
 #define AP_RGU_WDT_IRQ_ID    wdt_irq_id
@@ -37,6 +41,7 @@ int wdt_irq_id = 0;
 
 static const struct of_device_id rgu_of_match[] = {
 	{.compatible = "mediatek,mt2701-rgu"},
+	{.compatible = "mediatek,mt8127-rgu"},
 	{.compatible = "mediatek,mt8163-rgu"},
 	{.compatible = "mediatek,mt8173-rgu"},
 	{}
@@ -52,6 +57,96 @@ static unsigned int timeout;
 
 static int g_last_time_time_out_value;
 static int g_wdt_enable = 1;
+
+struct toprgu_reset {
+	spinlock_t lock;
+	void __iomem *toprgu_swrst_base;
+	int regofs;
+	struct reset_controller_dev rcdev;
+};
+
+static int toprgu_reset_assert(struct reset_controller_dev *rcdev,
+			      unsigned long id)
+{
+	unsigned int tmp;
+	unsigned long flags;
+	struct toprgu_reset *data = container_of(rcdev, struct toprgu_reset, rcdev);
+
+	spin_lock_irqsave(&data->lock, flags);
+
+	tmp = __raw_readl(data->toprgu_swrst_base + data->regofs);
+	tmp |= BIT(id);
+	tmp |= MTK_WDT_SWSYS_RST_KEY;
+	writel(tmp, data->toprgu_swrst_base + data->regofs);
+
+	spin_unlock_irqrestore(&data->lock, flags);
+
+	return 0;
+}
+
+static int toprgu_reset_deassert(struct reset_controller_dev *rcdev,
+				unsigned long id)
+{
+	unsigned int tmp;
+	unsigned long flags;
+	struct toprgu_reset *data = container_of(rcdev, struct toprgu_reset, rcdev);
+
+	spin_lock_irqsave(&data->lock, flags);
+
+	tmp = __raw_readl(data->toprgu_swrst_base + data->regofs);
+	tmp &= ~BIT(id);
+	tmp |= MTK_WDT_SWSYS_RST_KEY;
+	writel(tmp, data->toprgu_swrst_base + data->regofs);
+
+	spin_unlock_irqrestore(&data->lock, flags);
+
+	return 0;
+}
+
+static int toprgu_reset(struct reset_controller_dev *rcdev,
+			      unsigned long id)
+{
+	int ret;
+
+	ret = toprgu_reset_assert(rcdev, id);
+	if (ret)
+		return ret;
+
+	return toprgu_reset_deassert(rcdev, id);
+}
+
+static struct reset_control_ops toprgu_reset_ops = {
+	.assert = toprgu_reset_assert,
+	.deassert = toprgu_reset_deassert,
+	.reset = toprgu_reset,
+};
+
+static void toprgu_register_reset_controller(struct device_node *np,
+		void __iomem *toprgu_base, int regofs)
+{
+	struct toprgu_reset *data;
+	int ret;
+
+	data = kzalloc(sizeof(*data), GFP_KERNEL);
+	if (!data)
+		return;
+
+	spin_lock_init(&data->lock);
+
+	data->toprgu_swrst_base = toprgu_base;
+	data->regofs = regofs;
+	data->rcdev.owner = THIS_MODULE;
+	data->rcdev.nr_resets = 15;
+	data->rcdev.ops = &toprgu_reset_ops;
+	data->rcdev.of_node = np;
+
+	ret = reset_controller_register(&data->rcdev);
+	if (ret) {
+		pr_err("could not register toprgu reset controller: %d\n", ret);
+		kfree(data);
+		return;
+	}
+}
 
 #ifndef __USING_DUMMY_WDT_DRV__	/* FPGA will set this flag */
 /*
@@ -202,10 +297,16 @@ void wdt_dump_reg(void)
 void wdt_arch_reset(char mode)
 {
 	unsigned int wdt_mode_val;
-	struct device_node *np_rgu;
+	struct device_node *np_rgu = NULL;
+	int i;
 
 	pr_debug("wdt_arch_reset called@Kernel mode =%c\n", mode);
-	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
+
+	for (i = 0; rgu_of_match[i].compatible; i++) {
+		np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[i].compatible);
+		if (np_rgu)
+			break;
+	}
 
 	if (!toprgu_base) {
 		toprgu_base = of_iomap(np_rgu, 0);
@@ -506,6 +607,8 @@ static int mtk_wdt_probe(struct platform_device *dev)
 		__raw_readl(MTK_WDT_MODE), __raw_readl(MTK_WDT_NONRST_REG));
 	pr_debug("mtk_wdt_probe : done MTK_WDT_REQ_MODE(%x)\n", __raw_readl(MTK_WDT_REQ_MODE));
 	pr_debug("mtk_wdt_probe : done MTK_WDT_REQ_IRQ_EN(%x)\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
+
+	toprgu_register_reset_controller(dev->dev.of_node, toprgu_base, 0x18);
 
 	return ret;
 }

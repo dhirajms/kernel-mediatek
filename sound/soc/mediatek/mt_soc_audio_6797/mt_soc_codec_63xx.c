@@ -962,15 +962,14 @@ uint32 ULSampleRateTransform(uint32 SampleRate)
 	case 32000:
 		return 2;
 	case 48000:
-		return 6;	/* use 48k HD */
+		return 3;
 	case 96000:
 		return 4;
 	case 192000:
 		return 5;
 	default:
-		break;
+		return 3;
 	}
-	return 0;
 }
 
 
@@ -1232,6 +1231,17 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		     .rates = SNDRV_PCM_RATE_8000_192000,
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
+	 },
+	{
+	 .name = MT_SOC_CODEC_TXDAI2_NAME,
+	 .ops = &mt6323_aif1_dai_ops,
+	 .playback = {
+		      .stream_name = MT_SOC_DL2_STREAM_NAME,
+		      .channels_min = 1,
+		      .channels_max = 2,
+		      .rates = SNDRV_PCM_RATE_8000_192000,
+		      .formats = SND_SOC_ADV_MT_FMTS,
+		      },
 	 },
 };
 
@@ -2878,8 +2888,17 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 			/* [0] afe enable */
 
 			Ana_Set_Reg(AFE_UL_SRC_CON0_H, (ULSampleRateTransform(SampleRate_VUL1)
-							 << 1), 0x000E);
+							 << 1), 0x7 << 1);
 			/* UL sample rate and mode configure */
+
+			/* fixed 260k path for 8/16/32/48 */
+			if (SampleRate_VUL1 <= 48000) {
+				/* anc ul path src on */
+				Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 1, 0x1 << 1);
+				/* ANC clk pdn release */
+				Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 0, 0x1 << 0);
+			}
+
 			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);
 			/* UL turn on */
 		}
@@ -3022,9 +3041,19 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			Ana_Set_Reg(AFE_UL_SRC_CON0_H, (ULSampleRateTransform(SampleRate_VUL1)
 							 << 1), 0x000E);
 			/* UL sample rate and mode configure */
-			Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x0060, 0xfff0);
+			Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x00e0, 0xfff0);
 			/* 2-wire dmic mode, ch1 and ch2 digital mic ON */
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0003, 0xffff);
+
+			/* use 260k/130/65k@18bit Everest:LP uplink */
+			if (SampleRate_VUL1 <= 48000) {
+				/* use cic out */
+				Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x1 << 4, 0x1 << 4);
+			} else {	/* hires */
+				/* use 4.33MHz mode */
+				Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x1 << 6, 0x1 << 6);
+			}
+
+			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0003, 0xffBf);
 			/* digmic input mode 3.25MHz, select SDM 3-level mode, UL turn on */
 		}
 	} else {
@@ -3234,9 +3263,19 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* [0] afe enable */
 
 			Ana_Set_Reg(AFE_UL_SRC_CON0_H, (ULSampleRateTransform(SampleRate_VUL1)
-							 << 1), 0x000E);
+							 << 1), 0x7 << 1);
 			/* UL sample rate and mode configure */
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);	/* UL turn on */
+
+			/* fixed 260k path for 8/16/32/48 */
+			if (SampleRate_VUL1 <= 48000) {
+				/* anc ul path src on */
+				Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 1, 0x1 << 1);
+				/* ANC clk pdn release */
+				Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 0, 0x1 << 0);
+			}
+
+			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);
+			/* UL turn on */
 		}
 #if 0
 		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0002, 0x2);	/* set DL sine gen table */

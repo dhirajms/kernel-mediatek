@@ -10,13 +10,13 @@
 #include <mach/wd_api.h>
 #include <linux/reboot.h>
 #include "ipanic.h"
-
+#include <asm/system_misc.h>
 
 static u32 ipanic_iv = 0xaabbccdd;
 static spinlock_t ipanic_lock;
 struct ipanic_ops *ipanic_ops;
 typedef int (*fn_next) (void *data, unsigned char *buffer, size_t sz_buf);
-static bool ipanic_enable;
+static bool ipanic_enable = 1;
 
 int __weak ipanic_atflog_buffer(void *data, unsigned char *buffer, size_t sz_buf)
 {
@@ -25,6 +25,12 @@ int __weak ipanic_atflog_buffer(void *data, unsigned char *buffer, size_t sz_buf
 
 int __weak panic_dump_android_log(char *buffer, size_t sz_buf, int type)
 {
+	return 0;
+}
+
+int __weak has_mt_dump_support(void)
+{
+	pr_notice("%s: no mt_dump support!\n", __func__);
 	return 0;
 }
 
@@ -431,7 +437,7 @@ struct aee_oops *ipanic_oops_from_sd(void)
 				oops->android_radio_len = dheader->used;
 				break;
 			case IPANIC_DT_CURRENT_TSK:
-				memcpy(oops->process_path, data, sizeof(struct aee_process_info));
+				memcpy(oops->process_path, data, AEE_PROCESS_NAME_LENGTH - 1);
 				break;
 			case IPANIC_DT_MMPROFILE:
 				oops->mmprofile = data;
@@ -457,6 +463,7 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	int errno;
 	struct ipanic_header *ipanic_hdr;
 
+	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_START);
 	aee_rr_rec_exp_type(2);
 	bust_spinlocks(1);
@@ -527,6 +534,7 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 
 	ipanic_data_to_sd(IPANIC_DT_CURRENT_TSK, 0);
 	ipanic_kick_wdt();
+	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
 	ipanic_klog_region(&dumper);
 	ipanic_data_to_sd(IPANIC_DT_KERNEL_LOG, &dumper);
 	errno = ipanic_header_to_sd(0);
@@ -570,7 +578,7 @@ struct ipanic_header *ipanic_header(void)
 		dheader->type = i;
 		dheader->valid = 0;
 		dheader->used = 0;
-		strncpy(dheader->name, ipanic_dt_ops[i].string, 32);
+		strncpy(dheader->name, ipanic_dt_ops[i].string, 31);
 		if (ipanic_dt_active(i) && ipanic_dt_ops[i].size) {
 			dheader->encrypt = ipanic_dt_encrypt(i);
 			dheader->offset = next_offset + iheader->dhblk;
@@ -606,21 +614,25 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	struct die_args *dargs = (struct die_args *)ptr;
 
 	aee_disable_api();
+	__show_regs(dargs->regs);
+	dump_stack();
 
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_DIE);
 	aee_rr_rec_exp_type(2);
 	mrdump_mini_ke_cpu_regs(dargs->regs);
 	flush_cache_all();
 
-	emergency_restart();
-
 	if (aee_rr_curr_exp_type() == 2)
 		/* No return if mrdump is enable */
 		__mrdump_create_oops_dump(AEE_REBOOT_MODE_KERNEL_OOPS, dargs->regs, "Kernel Oops");
 
+	if (!has_mt_dump_support())
+		emergency_restart();
+
 	smp_send_stop();
 
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_KERNEL_PANIC, "kernel Oops");
+	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
 	ipanic_klog_region(&dumper);
 	ipanic_data_to_sd(IPANIC_DT_KERNEL_LOG, &dumper);
 	ipanic_data_to_sd(IPANIC_DT_CURRENT_TSK, dargs->regs);

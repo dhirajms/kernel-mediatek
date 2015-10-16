@@ -93,7 +93,9 @@ struct mtk_spi {
 	const struct mtk_spi_compatible *dev_comp;
 };
 
+static const struct mtk_spi_compatible mt2701_compat;
 static const struct mtk_spi_compatible mt6589_compat;
+static const struct mtk_spi_compatible mt8127_compat;
 static const struct mtk_spi_compatible mt8135_compat;
 static const struct mtk_spi_compatible mt8163_compat;
 static const struct mtk_spi_compatible mt8173_compat = {
@@ -111,7 +113,9 @@ static const struct mtk_chip_config mtk_default_chip_info = {
 };
 
 static const struct of_device_id mtk_spi_of_match[] = {
+	{ .compatible = "mediatek,mt2701-spi", .data = (void *)&mt2701_compat },
 	{ .compatible = "mediatek,mt6589-spi", .data = (void *)&mt6589_compat },
+	{ .compatible = "mediatek,mt8127-spi", .data = (void *)&mt8127_compat },
 	{ .compatible = "mediatek,mt8135-spi", .data = (void *)&mt8135_compat },
 	{ .compatible = "mediatek,mt8163-spi", .data = (void *)&mt8163_compat },
 	{ .compatible = "mediatek,mt8173-spi", .data = (void *)&mt8173_compat },
@@ -175,22 +179,6 @@ static void mtk_spi_config(struct mtk_spi *mdata,
 		writel(mdata->pad_sel, mdata->base + SPI_PAD_SEL_REG);
 }
 
-static int mtk_spi_prepare_hardware(struct spi_master *master)
-{
-	struct spi_transfer *trans;
-	struct mtk_spi *mdata = spi_master_get_devdata(master);
-	struct spi_message *msg = master->cur_msg;
-
-	trans = list_first_entry(&msg->transfers, struct spi_transfer,
-				 transfer_list);
-	if (!trans->cs_change) {
-		mdata->state = MTK_SPI_IDLE;
-		mtk_spi_reset(mdata);
-	}
-
-	return 0;
-}
-
 static int mtk_spi_prepare_message(struct spi_master *master,
 				   struct spi_message *msg)
 {
@@ -230,11 +218,15 @@ static void mtk_spi_set_cs(struct spi_device *spi, bool enable)
 	struct mtk_spi *mdata = spi_master_get_devdata(spi->master);
 
 	reg_val = readl(mdata->base + SPI_CMD_REG);
-	if (!enable)
+	if (!enable) {
 		reg_val |= SPI_CMD_PAUSE_EN;
-	else
+		writel(reg_val, mdata->base + SPI_CMD_REG);
+	} else {
 		reg_val &= ~SPI_CMD_PAUSE_EN;
-	writel(reg_val, mdata->base + SPI_CMD_REG);
+		writel(reg_val, mdata->base + SPI_CMD_REG);
+		mdata->state = MTK_SPI_IDLE;
+		mtk_spi_reset(mdata);
+	}
 }
 
 static void mtk_spi_prepare_transfer(struct spi_master *master,
@@ -511,7 +503,6 @@ static int mtk_spi_probe(struct platform_device *pdev)
 	master->mode_bits = SPI_CPOL | SPI_CPHA;
 
 	master->set_cs = mtk_spi_set_cs;
-	master->prepare_transfer_hardware = mtk_spi_prepare_hardware;
 	master->prepare_message = mtk_spi_prepare_message;
 	master->transfer_one = mtk_spi_transfer_one;
 	master->can_dma = mtk_spi_can_dma;
@@ -587,14 +578,14 @@ static int mtk_spi_probe(struct platform_device *pdev)
 
 	mdata->sel_clk = devm_clk_get(&pdev->dev, "sel-clk");
 	if (IS_ERR(mdata->sel_clk)) {
-		ret = PTR_ERR(mdata->spi_clk);
+		ret = PTR_ERR(mdata->sel_clk);
 		dev_err(&pdev->dev, "failed to get sel-clk: %d\n", ret);
 		goto err_put_master;
 	}
 
 	mdata->spi_clk = devm_clk_get(&pdev->dev, "spi-clk");
 	if (IS_ERR(mdata->spi_clk)) {
-		ret = PTR_ERR(mdata->parent_clk);
+		ret = PTR_ERR(mdata->spi_clk);
 		dev_err(&pdev->dev, "failed to get spi-clk: %d\n", ret);
 		goto err_put_master;
 	}

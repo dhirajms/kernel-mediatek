@@ -720,7 +720,7 @@ static int msdc_auto_cmd_done(struct msdc_host *host, int events,
 	} else {
 		msdc_reset_hw(host);
 		if (events & MSDC_INT_ACMDCRCERR) {
-			cmd->error = -EILSEQ;
+			cmd->error = -EIO;
 			host->error |= REQ_STOP_EIO;
 		} else if (events & MSDC_INT_ACMDTMO) {
 			cmd->error = -ETIMEDOUT;
@@ -837,6 +837,30 @@ static bool msdc_cmd_done(struct msdc_host *host, int events,
 	return true;
 }
 
+/* When tuning, CMD13 may also get crc error, so use MSDC_PS to get card status */
+static int msdc_wait_card_not_busy(struct msdc_host *host)
+{
+#define MMC_OPS_TIMEOUT_MS      (10 * 60 * 1000) /* 10 minute timeout */
+	unsigned long timeout = jiffies + msecs_to_jiffies(MMC_OPS_TIMEOUT_MS);
+
+	while (1) {
+		if ((readl(host->base + MSDC_PS) & BIT(16)) == 0) { /* check dat0 status */
+			msleep_interruptible(10);
+			dev_err(host->dev, "MSDC_PS: %08x, SDC_STS: %08x\n",
+					readl(host->base + MSDC_PS), readl(host->base + SDC_STS));
+		} else
+			break;
+		/* Timeout if the device never leaves the program state. */
+		if (time_after(jiffies, timeout)) {
+			pr_err("%s: Card stuck in programming state! %s\n",
+					mmc_hostname(host->mmc), __func__);
+			return -ETIMEDOUT;
+		}
+	}
+
+	return 0;
+}
+
 /* It is the core layer's responsibility to ensure card status
  * is correct before issue a request. but host design do below
  * checks recommended.
@@ -846,6 +870,7 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 {
 	/* The max busy time we can endure is 20ms */
 	unsigned long tmo = jiffies + msecs_to_jiffies(20);
+	int ret;
 
 	while ((readl(host->base + SDC_STS) & SDC_STS_CMDBUSY) &&
 			time_before(jiffies, tmo))
@@ -869,6 +894,17 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 			msdc_cmd_done(host, MSDC_INT_CMDTMO, mrq, cmd);
 			return false;
 		}
+
+		/* For CMD6 CRC error, when init card, will not tune, but
+		 * only retry 3 times. in this case, the SDCBSY was cleared
+		 * by msdc_reset_hw(), so need check MSDC_PS
+		 */
+		if (!host->mmc->card) {
+			ret = msdc_wait_card_not_busy(host);
+			if (ret)
+				return false;
+		}
+
 	}
 	return true;
 }
@@ -1330,19 +1366,6 @@ static void msdc_send_stop(struct msdc_host *host)
 	}
 }
 
-/* When tuning, CMD13 may also get crc error, so use MSDC_PS to get card status */
-static void msdc_wait_card_not_busy(struct msdc_host *host)
-{
-	while (1) {
-		if ((readl(host->base + MSDC_PS) & BIT(16)) == 0) { /* check dat0 status */
-			msleep_interruptible(10);
-			dev_dbg(host->dev, "MSDC_PS: %08x, SDC_STS: %08x\n",
-				readl(host->base + MSDC_PS), readl(host->base + SDC_STS));
-		} else
-			break;
-	}
-}
-
 static void msdc_tune_cmdrsp(struct msdc_host *host)
 {
 	u32 orig_rsmpl, orig_cksel;
@@ -1450,6 +1473,7 @@ static void msdc_repeat_request(struct work_struct *work)
 	struct msdc_host *host = container_of(work, struct msdc_host, repeat_req);
 	struct mmc_request *mrq;
 	unsigned long flags;
+	int ret;
 
 	spin_lock_irqsave(&host->lock, flags);
 	mrq = host->repeat_mrq;
@@ -1467,7 +1491,11 @@ static void msdc_repeat_request(struct work_struct *work)
 
 	msdc_reset_mrq(mrq);
 	msdc_send_stop(host);
-	msdc_wait_card_not_busy(host);
+	ret = msdc_wait_card_not_busy(host);
+	if (ret) {
+		mrq->cmd->error = ret;
+		mmc_request_done(host->mmc, mrq);
+	}
 	if (mrq)
 		msdc_ops_request(host->mmc, mrq);
 }
@@ -1576,6 +1604,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		mmc->f_min = host->src_clk_freq / (4 * 4095);
 
 	mmc->caps |= MMC_CAP_ERASE | MMC_CAP_CMD23;
+	mmc->caps |= MMC_CAP_RUNTIME_RESUME;
 	/* MMC core transfer sizes tunable parameters */
 	mmc->max_segs = MAX_BD_NUM;
 	mmc->max_seg_size = BDMA_DESC_BUFLEN;

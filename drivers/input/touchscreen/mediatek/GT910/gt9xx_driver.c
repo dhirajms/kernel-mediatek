@@ -1014,12 +1014,12 @@ static s8 gtp_i2c_test(struct i2c_client *client)
 
 	u8 retry = 0;
 	s8 ret = -1;
-	u8 hw_info = 0;
+	u32 hw_info = 0;
 
 	GTP_DEBUG_FUNC();
 
 	while (retry++ < 5) {
-		ret = i2c_read_bytes(client, GTP_REG_HW_INFO, &hw_info, sizeof(hw_info));
+		ret = i2c_read_bytes(client, GTP_REG_HW_INFO, (u8 *)&hw_info, sizeof(hw_info));
 
 		if ((!ret) && (hw_info == 0x00900600))
 			return ret;
@@ -2311,7 +2311,7 @@ static void tpd_suspend(struct device *h)
 {
 	s32 ret = -1;
 
-	return;
+	/* return; */
 	mutex_lock(&i2c_access);
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
 	disable_irq(touch_irq);
@@ -2340,7 +2340,7 @@ static void tpd_resume(struct device *h)
 {
 	s32 ret = -1;
 
-	return;
+	/*return; */
 	ret = gtp_wakeup_sleep(i2c_client_point);
 
 	if (ret < 0)

@@ -3,6 +3,7 @@
 #include <linux/kernel.h>
 #include <linux/spinlock.h>
 #include <linux/delay.h>
+#include <linux/slab.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -15,7 +16,9 @@
 #include <mach/mt_secure_api.h>
 
 #include <mt-plat/mt_boot.h>
+#if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mt_cirq.h>
+#endif
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mt_io.h>
 
@@ -31,7 +34,7 @@
 #define sodi_warn(fmt, args...)		pr_warn(SODI_TAG fmt, ##args)
 #define sodi_debug(fmt, args...)	pr_debug(SODI_TAG fmt, ##args)
 
-#define SPM_BYPASS_SYSPWREQ         0	/* JTAG is used */
+#define SPM_BYPASS_SYSPWREQ         0
 
 #define LOG_BUF_SIZE					(256)
 #define SODI_LOGOUT_TIMEOUT_CRITERIA	(20)
@@ -77,7 +80,11 @@ static struct pwr_ctrl sodi_ctrl = {
 	.wake_src_md32 = WAKE_SRC_FOR_MD32,
 	.r0_ctrl_en = 1,
 	.r7_ctrl_en = 1,
+#if defined(CONFIG_ARCH_MT6755)
+	.infra_dcm_lock = 1,
+#elif defined(CONFIG_ARCH_MT6797)
 	.infra_dcm_lock = 0, /* set to be 0 if SODI original */
+#endif
 	.wfi_op = WFI_OP_AND,
 
 	/* SPM_AP_STANDBY_CON */
@@ -93,10 +100,10 @@ static struct pwr_ctrl sodi_ctrl = {
 	.scp_req_mask_b = 1, /* bit 21 */
 #endif
 	.lte_mask_b = 0,
-	.md_apsrc1_sel = 0, /* bit 24, set to be 1 for SODI CG mode */
-	.md_apsrc0_sel = 0, /* bit 25, set to be 1 for SODI CG mode */
+	.md_apsrc1_sel = 0, /* bit 24 */
+	.md_apsrc0_sel = 0, /* bit 25 */
 	.conn_mask_b = 1,
-	.conn_apsrc_sel = 0, /* bit 27, set to be 1 for SODI CG mode */
+	.conn_apsrc_sel = 0, /* bit 27 */
 
 	/* SPM_SRC_REQ */
 	.spm_apsrc_req = 0,
@@ -242,14 +249,15 @@ void spm_enable_mmu_smi_async(void)
 
 static void spm_sodi_pre_process(void)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	u32 val;
+#endif
+
 	__spm_pmic_pg_force_on();
 	spm_disable_mmu_smi_async();
 	spm_bypass_boost_gpio_set();
 
 #if defined(CONFIG_ARCH_MT6755)
-	{
-	u32 val;
-
 	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
 					&val,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
@@ -263,7 +271,6 @@ static void spm_sodi_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_SLEEP,
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
-	}
 #endif
 
 	/* set PMIC WRAP table for deepidle power control */
@@ -292,17 +299,16 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 	int need_log_out = 0;
 
 	if (sodi_flags&SODI_FLAG_NO_LOG) {
-		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+		if (wakesta->assert_pc != 0) {
+			sodi_err("PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
+					wakesta->assert_pc, pcmdesc->version, wakesta->r13, wakesta->debug_flag);
+			wr = WR_PCM_ASSERT;
+		}
 	} else if (!(sodi_flags&SODI_FLAG_REDUCE_LOG) || (sodi_flags & SODI_FLAG_RESIDENCY)) {
 		sodi_warn("vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
 				vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 				spm_read(DUMMY1_PWR_CON), pcmdesc->version);
-
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
-		if (wr == WR_PCM_ASSERT) {
-			sodi_err("PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
-					wakesta->assert_pc, pcmdesc->version, wakesta->r13, wakesta->debug_flag);
-		}
 	} else {
 		sodi_logout_curr_time = spm_get_current_time_ms();
 
@@ -347,8 +353,8 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 
 				sodi_err("sodi_cnt = %d, self_refresh_cnt = 0x%x, spm_pc = 0x%0x, r13 = 0x%x, debug_flag = 0x%x\n",
-						wakesta->assert_pc, wakesta->r13, wakesta->debug_flag,
-						logout_sodi_cnt, logout_selfrefresh_cnt);
+						logout_sodi_cnt, logout_selfrefresh_cnt,
+						wakesta->assert_pc, wakesta->r13, wakesta->debug_flag);
 
 				sodi_err("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
@@ -381,8 +387,8 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 
 				sodi_warn("sodi_cnt = %d, self_refresh_cnt = 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
-						wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
-						logout_sodi_cnt, logout_selfrefresh_cnt);
+						logout_sodi_cnt, logout_selfrefresh_cnt,
+						wakesta->timer_out, wakesta->r13, wakesta->debug_flag);
 
 				sodi_warn("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
@@ -400,7 +406,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
-	struct mtk_irq_mask mask;
+	struct mtk_irq_mask *mask;
 	wake_reason_t wr = WR_NONE;
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
@@ -437,10 +443,17 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	mt_irq_mask_all(&mask);
+	mask = kmalloc(sizeof(struct mtk_irq_mask), GFP_ATOMIC);
+	if (!mask) {
+		wr = -ENOMEM;
+		goto UNLOCK_SPM;
+	}
+	mt_irq_mask_all(mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
+#endif
 
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_SLEEP);
 
@@ -463,6 +476,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 
+#if defined(CONFIG_ARCH_MT6797)
 	if (spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) {
 		/* the following masks set to be 1 only for SODI CG mode */
 		pwrctrl->md_apsrc1_sel = 1;
@@ -474,6 +488,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 		pwrctrl->md_apsrc0_sel = 0;
 		pwrctrl->conn_apsrc_sel = 0;
 	}
+#endif
 
 	__spm_set_power_control(pwrctrl);
 
@@ -523,10 +538,14 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	spm_sodi_footprint(SPM_SODI_LEAVE_SPM_FLOW);
 
 RESTORE_IRQ:
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
-	mt_irq_mask_restore(&mask);
+#endif
+	mt_irq_mask_restore(mask);
+	kfree(mask);
 
+UNLOCK_SPM:
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
 

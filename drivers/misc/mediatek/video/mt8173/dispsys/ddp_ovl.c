@@ -11,6 +11,7 @@
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 #include "extd_ddp.h"
 #endif
+#include "mtk_ovl.h"
 
 #ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
 #include "m4u_port.h"
@@ -784,6 +785,9 @@ static int ovl_check_should_reset(DISP_MODULE_ENUM module)
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 		if (ext_disp_is_decouple_mode() == 1)
 			return 1;
+#else
+		if (ovl2mem_is_alive() == 1)
+			return 1;
 #endif
 	}
 
@@ -815,18 +819,6 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 			cmdqRecPoll(handle, disp_addr_convert(DISP_REG_OVL_STA + offset), 0, 0x1);
 		}
 	}
-#ifdef CONFIG_MTK_HDMI_SUPPORT
-	/* warm reset ovl every time we use it avoid ovl1 hang up */
-	if (handle) {
-		if (ext_disp_is_decouple_mode() == 1) {
-			unsigned int offset;
-
-			offset = ovl_index(module) * DISP_OVL_INDEX_OFFSET;
-			DISP_REG_SET(handle, DISP_REG_OVL_RST + offset, 0x1);
-			DISP_REG_SET(handle, DISP_REG_OVL_RST + offset, 0x0);
-		}
-	}
-#endif
 
 	if (pConfig->dst_dirty)
 		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, 0xFF000000, handle);

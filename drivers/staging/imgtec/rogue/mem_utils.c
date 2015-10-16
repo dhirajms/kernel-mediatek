@@ -76,11 +76,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                       exception will be thrown. This applies both to user and
                       kernel space.
 ******************************************************************************/
-#if defined(__KERNEL__)
-IMG_EXPORT void OSDeviceMemCopy(
-#else
 IMG_EXPORT void PVRSRVDeviceMemCopy(
-#endif
         void* pvDst,
         const void* pvSrc,
         size_t uiSize)
@@ -174,11 +170,7 @@ IMG_EXPORT void PVRSRVDeviceMemCopy(
                       exception will be thrown. This applies both to user and
                       kernel space.
 ******************************************************************************/
-#if defined(__KERNEL__)
-IMG_EXPORT void OSDeviceMemSet(
-#else
 IMG_EXPORT void PVRSRVDeviceMemSet(
-#endif
         void *pvDest,
         IMG_UINT8 ui8Value,
         size_t uiSize)
@@ -246,11 +238,7 @@ IMG_EXPORT void PVRSRVDeviceMemSet(
 
 #else /* (defined(__arm64__) || defined(__aarch64__) || defined (PVRSRV_DEVMEM_SAFE_MEMSETCPY)) && !defined(__QNXNTO__) */
 
-#if defined(__KERNEL__)
-IMG_EXPORT void OSDeviceMemCopy(
-#else
 IMG_EXPORT void PVRSRVDeviceMemCopy(
-#endif
         void*       pvDst,
         const void* pvSrc,
         size_t      uiSize)
@@ -258,11 +246,7 @@ IMG_EXPORT void PVRSRVDeviceMemCopy(
 	memcpy(pvDst, pvSrc, uiSize);
 }
 
-#if defined(__KERNEL__)
-IMG_EXPORT void OSDeviceMemSet(
-#else
 IMG_EXPORT void PVRSRVDeviceMemSet(
-#endif
         void *pvDest,
         IMG_UINT8 ui8Value,
         size_t uiSize)

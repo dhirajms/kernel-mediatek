@@ -14,7 +14,7 @@ obj-$(CONFIG_MMC_MTK) += sd.o
 
 obj-$(CONFIG_MMC_MTK) += dbg.o
 obj-$(CONFIG_MMC_MTK) += mt_sd_misc.o
-#obj-$(CONFIG_MMC_MTK) += sdio_autok.o sdio_autok_proc.o ettagent.o
+obj-$(CONFIG_SDIOAUTOK_SUPPORT) += sdio_autok.o sdio_autok_proc.o
 
 # kdump/kpainc interface move to lk
 ifeq ($(CONFIG_MTK_AEE_IPANIC),y)

@@ -259,31 +259,6 @@ static void __heat_refined(int *count)
 static inline void __heat_refined(int *count) {}
 #endif
 
-#ifdef CONFIG_SCHED_HMP
-static void __trace_out(int heavy, int cpu, struct task_struct *p)
-{
-#define TRACEBUF_LEN 128
-	char tracebuf[TRACEBUF_LEN];
-
-#ifdef CONFIG_ARCH_SCALE_INVARIANT_CPU_CAPACITY
-		snprintf(tracebuf, TRACEBUF_LEN, " %s cpu=%d load=%4lu cpucap=%4lu/%4lu pid=%4d name=%s",
-				 heavy ? "Y" : "N",
-				 cpu, p->se.avg.load_avg_ratio,
-				 topology_cpu_capacity(cpu), topology_max_cpu_capacity(cpu),
-				 p->pid, p->comm);
-#else
-		snprintf(tracebuf, TRACEBUF_LEN, " %s cpu=%d load=%4lu pid=%4d name=%s",
-				 heavy ? "Y" : "N",
-				 cpu, p->se.avg.load_avg_ratio,
-				 p->pid, p->comm);
-#endif
-		trace_sched_heavy_task(tracebuf);
-
-		if (unlikely(heavy))
-			trace_sched_task_entity_avg(5, p, &p->se.avg);
-}
-#endif
-
 static unsigned int htask_statistic;
 #ifdef CONFIG_ARCH_SCALE_INVARIANT_CPU_CAPACITY
 #define OVER_L_TH(cpu) ((topology_cpu_capacity(cpu) >= topology_max_cpu_capacity(cpu)) ? 1:0)
@@ -292,51 +267,6 @@ static unsigned int htask_statistic;
 #define OVER_L_TH(cpu) (1)
 #define OVER_B_TH(cpu) (1)
 #endif
-#ifdef CONFIG_SCHED_HMP
-unsigned int sched_get_nr_heavy_task_by_threshold(unsigned int threshold)
-{
-	int cpu;
-	struct task_struct *p;
-	unsigned long flags;
-	unsigned int count = 0;
-	int is_heavy = 0;
-	unsigned int hmp_threshold;
-
-	if (rq_info.init != 1)
-		return 0;
-
-	for_each_online_cpu(cpu) {
-		int bigcore = arch_cpu_is_big(cpu);
-
-		hmp_threshold = bigcore ? threshold * HMP_RATIO : threshold;
-		raw_spin_lock_irqsave(&cpu_rq(cpu)->lock, flags);
-		list_for_each_entry(p, &cpu_rq(cpu)->cfs_tasks, se.group_node) {
-			is_heavy = 0;
-#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
-			if (task_low_priority(p->prio))
-				continue;
-#endif
-			if (p->se.avg.load_avg_ratio >= hmp_threshold)
-				is_heavy = (!bigcore && OVER_L_TH(cpu)) || (bigcore && OVER_B_TH(cpu));
-			count += is_heavy ? 1 : 0;
-			__trace_out(is_heavy, cpu, p);
-		}
-		raw_spin_unlock_irqrestore(&cpu_rq(cpu)->lock, flags);
-	}
-
-	__heat_refined(&count);
-	if (count)
-		htask_statistic++;
-	return count;
-}
-EXPORT_SYMBOL(sched_get_nr_heavy_task_by_threshold);
-
-unsigned int sched_get_nr_heavy_task(void)
-{
-	return sched_get_nr_heavy_task_by_threshold(heavy_task_threshold);
-}
-EXPORT_SYMBOL(sched_get_nr_heavy_task);
-#else
 unsigned int sched_get_nr_heavy_task_by_threshold(unsigned int threshold)
 {
 	return 0;
@@ -348,7 +278,6 @@ unsigned int sched_get_nr_heavy_task(void)
 	return 0;
 }
 EXPORT_SYMBOL(sched_get_nr_heavy_task);
-#endif
 
 void sched_set_heavy_task_threshold(unsigned int val)
 {

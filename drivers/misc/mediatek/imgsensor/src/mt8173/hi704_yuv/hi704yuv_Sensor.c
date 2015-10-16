@@ -3291,6 +3291,20 @@ BOOL HI704_set_param_banding(UINT16 para)
 			HI704_write_cmos_sensor(0x18, 0x30);
 			HI704_write_cmos_sensor(0x10, 0x8c);
 		}
+		break;			
+	case AE_FLICKER_MODE_AUTO:
+		{
+			HI704_write_cmos_sensor(0x03, 0x20);
+			HI704_write_cmos_sensor(0x18, 0x38);
+			HI704_write_cmos_sensor(0x83, 0x00);
+			HI704_write_cmos_sensor(0x84, 0xaf);
+			HI704_write_cmos_sensor(0x85, 0xc8);
+			HI704_write_cmos_sensor(0x88, 0x02);
+			HI704_write_cmos_sensor(0x89, 0xbf);
+			HI704_write_cmos_sensor(0x8a, 0x20);
+			HI704_write_cmos_sensor(0x18, 0x30);
+			HI704_write_cmos_sensor(0x10, 0x9c);
+		}
 		break;
 	default:
 		return KAL_FALSE;
