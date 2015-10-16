@@ -410,6 +410,14 @@ static void __init reset_cpu_topology(void)
 	}
 }
 
+static void __init reset_cpu_capacity(void)
+{
+	unsigned int cpu;
+
+	for_each_possible_cpu(cpu)
+		set_capacity_scale(cpu, SCHED_CAPACITY_SCALE);
+}
+
 void __init init_cpu_topology(void)
 {
 	reset_cpu_topology();
