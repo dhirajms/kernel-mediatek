@@ -52,10 +52,15 @@ static struct irq_work irq_work;
 
 static void cpufreq_sched_try_driver_target(struct cpufreq_policy *policy, unsigned int freq)
 {
-	struct gov_data *gd = policy->governor_data;
+	struct gov_data *gd;
 
 	/* avoid race with cpufreq_sched_stop */
 	if (!down_write_trylock(&policy->rwsem))
+		return;
+
+	gd = policy->governor_data;
+
+	if (!gd)
 		return;
 
 	__cpufreq_driver_target(policy, freq, CPUFREQ_RELATION_L);
@@ -86,7 +91,7 @@ static int cpufreq_sched_thread(void *data)
 				__func__, current->pid);
 	}
 
-	/* main loop of the per-policy kthread */
+	/* main loop of the frequency change kthread */
 	do {
 		struct cpufreq_policy *policy = NULL;
 		unsigned int freq = 0;
