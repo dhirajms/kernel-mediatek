@@ -78,7 +78,6 @@
 #include <linux/context_tracking.h>
 #include <linux/random.h>
 #include <linux/list.h>
-#include <linux/suspend.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
@@ -128,7 +127,6 @@ void (*__initdata late_time_init)(void);
 char __initdata boot_command_line[COMMAND_LINE_SIZE];
 /* Untouched saved command line (eg. for /proc) */
 char *saved_command_line;
-EXPORT_SYMBOL_GPL(saved_command_line);
 /* Command line for parameter parsing */
 static char *static_command_line;
 /* Command line for per-initcall parameter parsing */
@@ -1020,11 +1018,6 @@ static noinline void __init kernel_init_freeable(void)
 
 	(void) sys_dup(0);
 	(void) sys_dup(0);
-
-#ifdef CONFIG_MTK_HIBERNATION
-	/* IPO-H, move here for console ok after hibernaton resume */
-	software_resume();
-#endif
 	/*
 	 * check if there is an early userspace init.  If yes, let it do all
 	 * the work
