@@ -96,6 +96,7 @@ struct _RGX_SERVER_TQ_CONTEXT_ {
 	DLLIST_NODE					sListNode;
 	SYNC_ADDR_LIST			sSyncAddrListFence;
 	SYNC_ADDR_LIST			sSyncAddrListUpdate;
+	ATOMIC_T				hJobId;
 };
 
 /*
@@ -480,7 +481,7 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 	PVRSRV_ERROR eError;
 	PVRSRV_ERROR eError2;
 	IMG_INT32 i32UpdateFenceFD = -1;
-
+	IMG_UINT32 ui32JobId;
 
 	PRGXFWIF_TIMESTAMP_ADDR pPreAddr;
 	PRGXFWIF_TIMESTAMP_ADDR pPostAddr;
@@ -511,6 +512,9 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 #endif
+	PVR_UNREFERENCED_PARAMETER(ui32IntJobRef);
+
+	ui32JobId = OSAtomicIncrement(&psTransferContext->hJobId);
 
 	/* Ensure the string is null-terminated (Required for safety) */
 	szFenceName[31] = '\0';
@@ -766,7 +770,7 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 		                                & pRMWUFOAddr,
 		                                eType,
 		                                ui32ExtJobRef,
-		                                ui32IntJobRef,
+		                                ui32JobId,
 		                                bPDumpContinuous,
 		                                pszCommandName,
 		                                psCmdHelper);
@@ -843,6 +847,7 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 	if (ui323DCmdCount)
 	{
 		RGXFWIF_KCCB_CMD s3DKCCBCmd;
+		IMG_UINT32 ui32FWCtx = FWCommonContextGetFWAddress(psTransferContext->s3DData.psServerCommonContext).ui32Addr;
 
 		/* Construct the kernel 3D CCB command. */
 		s3DKCCBCmd.eCmdType = RGXFWIF_KCCB_CMD_KICK;
@@ -869,16 +874,17 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 		} END_LOOP_UNTIL_TIMEOUT();
 
 #if defined(SUPPORT_GPUTRACE_EVENTS)
-        	RGXHWPerfFTraceGPUEnqueueEvent(psDeviceNode->pvDevice,
-        			ui32ExtJobRef, ui32IntJobRef, "TQ3D");
+		RGXHWPerfFTraceGPUEnqueueEvent(psDeviceNode->pvDevice,
+				ui32FWCtx, ui32JobId, RGX_HWPERF_KICK_TYPE_TQ3D);
 #endif
-			RGX_HWPERF_HOST_ENQ(psTransferContext, OSGetCurrentClientProcessIDKM(),
-					ui32ExtJobRef, ui32IntJobRef, RGX_HWPERF_HOST_ENQ_KICK_TYPE_TQ3D);
+		RGX_HWPERF_HOST_ENQ(psTransferContext, OSGetCurrentClientProcessIDKM(),
+				ui32FWCtx, ui32ExtJobRef, ui32JobId, RGX_HWPERF_KICK_TYPE_TQ3D);
 	}
 
 	if (ui322DCmdCount)
 	{
 		RGXFWIF_KCCB_CMD s2DKCCBCmd;
+		IMG_UINT32 ui32FWCtx = FWCommonContextGetFWAddress(psTransferContext->s2DData.psServerCommonContext).ui32Addr;
 
 		/* Construct the kernel 3D CCB command. */
 		s2DKCCBCmd.eCmdType = RGXFWIF_KCCB_CMD_KICK;
@@ -905,11 +911,11 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 		} END_LOOP_UNTIL_TIMEOUT();
 
 #if defined(SUPPORT_GPUTRACE_EVENTS)
-        	RGXHWPerfFTraceGPUEnqueueEvent(psDeviceNode->pvDevice,
-        			ui32ExtJobRef, ui32IntJobRef, "TQ2D");
+		RGXHWPerfFTraceGPUEnqueueEvent(psDeviceNode->pvDevice,
+				ui32FWCtx, ui32JobId, RGX_HWPERF_KICK_TYPE_TQ2D);
 #endif
-			RGX_HWPERF_HOST_ENQ(psTransferContext, OSGetCurrentClientProcessIDKM(),
-					ui32ExtJobRef, ui32IntJobRef, RGX_HWPERF_HOST_ENQ_KICK_TYPE_TQ2D);
+		RGX_HWPERF_HOST_ENQ(psTransferContext, OSGetCurrentClientProcessIDKM(),
+				ui32FWCtx, ui32ExtJobRef, ui32JobId, RGX_HWPERF_KICK_TYPE_TQ2D);
 	}
 
 	/*
@@ -1125,6 +1131,7 @@ PVRSRV_ERROR PVRSRVRGXKickSyncTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContex
 	RGXFWIF_DM                  eDM;
 	IMG_BOOL                    bPDumpContinuous;
 	IMG_INT32					i32UpdateFenceFD = -1;
+	IMG_UINT32					ui32JobId;
 
 	PRGXFWIF_UFO_ADDR *pauiClientFenceUFOAddress;
 	PRGXFWIF_UFO_ADDR *pauiClientUpdateUFOAddress;
@@ -1133,6 +1140,9 @@ PVRSRV_ERROR PVRSRVRGXKickSyncTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContex
 	/* Android fd sync update info */
 	struct pvr_sync_append_data *psFDFenceData = NULL;
 #endif
+	PVR_UNREFERENCED_PARAMETER(ui32IntJobRef);
+
+	ui32JobId = OSAtomicIncrement(&psTransferContext->hJobId);
 
 	/* Ensure the string is null-terminated (Required for safety) */
 	szFenceName[31] = '\0';
@@ -1224,7 +1234,7 @@ PVRSRV_ERROR PVRSRVRGXKickSyncTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContex
 				      pasServerSyncs,
 				      bPDumpContinuous,
 				      ui32ExtJobRef,
-				      ui32IntJobRef);
+				      ui32JobId);
 
 	if (eError != PVRSRV_OK)
 	{

@@ -57,6 +57,9 @@ typedef IMG_UINT32 (*PFN_GET_MAX_DYNAMIC_POWER)(IMG_UINT32 ui32Freq, IMG_UINT32 
 typedef struct _IMG_OPP_
 {
 	IMG_UINT32			ui32Volt;
+	/*
+	 * Unit of frequency in Hz.
+	 */
 	IMG_UINT32			ui32Freq;
 } IMG_OPP;
 
@@ -72,14 +75,13 @@ typedef struct _IMG_DVFS_DEVICE_CFG_
 {
 	IMG_OPP_TABLE   pasOPPTable;
 	IMG_UINT32      ui32OPPTableSize;
-
 	IMG_UINT32      ui32FreqMin;
 	IMG_UINT32      ui32FreqMax;
 	IMG_UINT32      ui32PollMs;
 	IMG_BOOL        bIdleReq;
 
-	PFN_SYS_DEV_DVFS_SET_FREQUENCY	pfnSetFrequency;
-	PFN_SYS_DEV_DVFS_SET_VOLTAGE	pfnSetVoltage;
+	PFN_SYS_DEV_DVFS_SET_FREQUENCY  pfnSetFrequency;
+	PFN_SYS_DEV_DVFS_SET_VOLTAGE    pfnSetVoltage;
 
 #if defined(CONFIG_DEVFREQ_THERMAL)
 	/*
@@ -93,7 +95,7 @@ typedef struct _IMG_DVFS_DEVICE_CFG_
 
 	/*
 	 * Call back function for getting maximum dynamic power for 100% utilization.
-	 * Input voltage in mV. Frequency specified in same unit as OPP table.
+	 * Input voltage in mV. Frequency specified in Hz
 	 * Output dynamic power in mW.
 	 */
 	PFN_GET_MAX_DYNAMIC_POWER	pfnGetMaxDynamicPower;

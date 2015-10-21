@@ -115,6 +115,7 @@ struct _RGX_SERVER_RENDER_CONTEXT_ {
 	SYNC_ADDR_LIST			sSyncAddrListTAUpdate;
 	SYNC_ADDR_LIST			sSyncAddrList3DFence;
 	SYNC_ADDR_LIST			sSyncAddrList3DUpdate;
+	ATOMIC_T				hJobId;
 };
 
 
@@ -2708,6 +2709,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 	PVRSRV_ERROR			eError = PVRSRV_OK;
 	PVRSRV_ERROR			eError2;
 	IMG_INT32				i32UpdateFenceFD = -1;
+	IMG_UINT32				ui32JobId;
 
 	IMG_UINT32				ui32ClientPRUpdateCount = 0;
 	PRGXFWIF_UFO_ADDR		*pauiClientPRUpdateUFOAddress = NULL;
@@ -2722,7 +2724,6 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 	PRGXFWIF_UFO_ADDR			*pauiClient3DFenceUFOAddress;
 	PRGXFWIF_UFO_ADDR			*pauiClient3DUpdateUFOAddress;
 	PRGXFWIF_UFO_ADDR			uiPRFenceUFOAddress;
-
 
 #if defined(SUPPORT_BUFFER_SYNC)
 	struct pvr_buffer_sync_append_data *psAppendData = NULL;
@@ -2747,6 +2748,10 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 			__func__, i32CheckFenceFD));
 	}
 #endif
+	PVR_UNREFERENCED_PARAMETER(ui32IntJobRef);
+
+	ui32JobId = OSAtomicIncrement(&psRenderContext->hJobId);
+
 	/* Ensure the string is null-terminated (Required for safety) */
 	szFenceName[31] = '\0';
 	*pbCommittedRefCountsTA = IMG_FALSE;
@@ -3029,7 +3034,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 		                                (bKick3D ? NULL : & pRMWUFOAddr),
 		                                RGXFWIF_CCB_CMD_TYPE_TA,
 		                                ui32ExtJobRef,
-		                                ui32IntJobRef,
+		                                ui32JobId,
 		                                bPDumpContinuous,
 		                                "TA",
 		                                asTACmdHelperData);
@@ -3104,7 +3109,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 										NULL,
 										RGXFWIF_CCB_CMD_TYPE_FENCE_PR,
 										ui32ExtJobRef,
-										ui32IntJobRef,
+										ui32JobId,
 										bPDumpContinuous,
 										"3D-PR-Fence",
 										&as3DCmdHelperData[ui323DCmdCount++]);
@@ -3135,7 +3140,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 										NULL,
 										RGXFWIF_CCB_CMD_TYPE_3D_PR,
 										ui32ExtJobRef,
-										ui32IntJobRef,
+										ui32JobId,
 										bPDumpContinuous,
 										"3D-PR",
 										&as3DCmdHelperData[ui323DCmdCount++]);
@@ -3187,7 +3192,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 										& pRMWUFOAddr,
 										RGXFWIF_CCB_CMD_TYPE_3D,
 										ui32ExtJobRef,
-										ui32IntJobRef,
+										ui32JobId,
 										bPDumpContinuous,
 										"3D",
 										&as3DCmdHelperData[ui323DCmdCount++]);
@@ -3249,6 +3254,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 	if (ui32TACmdCount)
 	{
 		RGXFWIF_KCCB_CMD sTAKCCBCmd;
+		IMG_UINT32 ui32FWCtx = FWCommonContextGetFWAddress(psRenderContext->sTAData.psServerCommonContext).ui32Addr;
 
 		/* Construct the kernel TA CCB command. */
 		sTAKCCBCmd.eCmdType = RGXFWIF_KCCB_CMD_KICK;
@@ -3292,10 +3298,10 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 
 #if defined(SUPPORT_GPUTRACE_EVENTS)
 		RGXHWPerfFTraceGPUEnqueueEvent(psRenderContext->psDeviceNode->pvDevice,
-    				ui32ExtJobRef, ui32IntJobRef, "TA3D");
+					ui32FWCtx, ui32JobId, RGX_HWPERF_KICK_TYPE_TA3D);
 #endif
 		RGX_HWPERF_HOST_ENQ(psRenderContext, OSGetCurrentClientProcessIDKM(),
-					ui32ExtJobRef, ui32IntJobRef, RGX_HWPERF_HOST_ENQ_KICK_TYPE_TA3D);
+					ui32FWCtx, ui32ExtJobRef, ui32JobId, RGX_HWPERF_KICK_TYPE_TA3D);
 	}
 	
 	if (ui323DCmdCount)

@@ -609,9 +609,23 @@ PVRSRV_ERROR FWCommonContextAllocate(CONNECTION_DATA *psConnection,
 						  RFW_FWADDR_FLAG_NONE);
 
 #if defined(LINUX)
-	trace_rogue_create_fw_context(OSGetCurrentClientProcessNameKM(),
-								  aszCCBRequestors[eRGXCCBRequestor][REQ_PDUMP_COMMENT],
-								  psServerCommonContext->sFWCommonContextFWAddr.ui32Addr);
+	{
+		IMG_UINT32 ui32FWAddr = 0;
+		switch (eDM) {
+			case RGXFWIF_DM_TA:
+				ui32FWAddr = (IMG_UINT32) ((uintptr_t) IMG_CONTAINER_OF((void *) ((uintptr_t)
+						psServerCommonContext->sFWCommonContextFWAddr.ui32Addr), RGXFWIF_FWRENDERCONTEXT, sTAContext));
+			case RGXFWIF_DM_3D:
+				ui32FWAddr = (IMG_UINT32) ((uintptr_t) IMG_CONTAINER_OF((void *) ((uintptr_t)
+						psServerCommonContext->sFWCommonContextFWAddr.ui32Addr), RGXFWIF_FWRENDERCONTEXT, s3DContext));
+			default:
+				ui32FWAddr = psServerCommonContext->sFWCommonContextFWAddr.ui32Addr;
+		}
+
+		trace_rogue_create_fw_context(OSGetCurrentClientProcessNameKM(),
+									  aszCCBRequestors[eRGXCCBRequestor][REQ_PDUMP_COMMENT],
+									  ui32FWAddr);
+	}
 #endif
 
 	*ppsServerCommonContext = psServerCommonContext;
@@ -1732,7 +1746,8 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 
 	/* avoid uninitialised data for RGXHWPerfInit */
 	psDevInfo->hLockHWPerfModule = NULL;
-	
+	psDevInfo->ui64HWPerfFilter = ui64HWPerfFilter;
+
 	eError = RGXHWPerfInit(psDeviceNode);
 	PVR_LOGG_IF_ERROR(eError, "RGXHWPerfInit", fail);
 

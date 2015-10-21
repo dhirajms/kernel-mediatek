@@ -105,6 +105,7 @@ SrvInitParamInitBOOL(EnableHWPerf, IMG_FALSE);
 SrvInitParamInitUINT32(HWPerfFWBufSizeInKB, 0);	/* Default to server default */
 SrvInitParamInitUINT32(HWPerfFilter0, HW_PERF_FILTER_DEFAULT);
 SrvInitParamInitUINT32(HWPerfFilter1, HW_PERF_FILTER_DEFAULT);
+SrvInitParamInitBOOL(EnableHWPerfHost, IMG_FALSE);
 SrvInitParamInitUINT32(HWPerfHostFilter, HW_PERF_FILTER_DEFAULT);
 SrvInitParamInitBOOL(HWPerfDisableCustomCounterFilter, IMG_FALSE);
 SrvInitParamInitUINT32(EnableAPM, RGX_ACTIVEPM_DEFAULT);
@@ -908,7 +909,8 @@ PVRSRV_ERROR RGXInit(SHARED_DEV_CONNECTION hServices)
 	IMG_BOOL			bEnable2Thrds;	
 	IMG_BOOL            bHWPerfDisableCustomCounterFilter;
 	IMG_BOOL			bEnableHWR;
-	IMG_BOOL			bEnableHWPerf;	
+	IMG_BOOL			bEnableHWPerf;
+	IMG_BOOL			bEnableHWPerfHost;
 	IMG_UINT32			ui32EnableFWContextSwitch;
 	IMG_BOOL			bZeroFreelist;
 	IMG_BOOL			bCheckMlist;
@@ -987,6 +989,7 @@ PVRSRV_ERROR RGXInit(SHARED_DEV_CONNECTION hServices)
 	SrvInitParamGetUINT32(pvParamState, FWContextSwitchProfile, ui32FWContextSwitchProfile);
 
 	SrvInitParamGetBOOL(pvParamState, EnableHWPerf,	bEnableHWPerf);
+	SrvInitParamGetBOOL(pvParamState, EnableHWPerfHost, bEnableHWPerfHost);
 	SrvInitParamGetBOOL(pvParamState, HWPerfDisableCustomCounterFilter, bHWPerfDisableCustomCounterFilter);
 
 	SrvInitParamGetBOOL(pvParamState, EnableHWR, bEnableHWR);
@@ -1128,7 +1131,7 @@ PVRSRV_ERROR RGXInit(SHARED_DEV_CONNECTION hServices)
 	ui32DeviceFlags |= bDisableFEDLogging ? RGXKMIF_DEVICE_STATE_DISABLE_DW_LOGGING_EN : 0;
 	ui32DeviceFlags |= bDustRequestInject? RGXKMIF_DEVICE_STATE_DUST_REQUEST_INJECT_EN : 0;
 
-	ui32DeviceFlags |= bEnableHWPerf ? RGXKMIF_DEVICE_STATE_HWPERF_HOST_EN : 0;
+	ui32DeviceFlags |= bEnableHWPerfHost ? RGXKMIF_DEVICE_STATE_HWPERF_HOST_EN : 0;
 	if (bEnableHWPerf && (ui32HWPerfFilter0 == 0 && ui32HWPerfFilter1 == 0))
 	{
 		ui32HWPerfFilter0 = HW_PERF_FILTER_DEFAULT_ALL_ON;

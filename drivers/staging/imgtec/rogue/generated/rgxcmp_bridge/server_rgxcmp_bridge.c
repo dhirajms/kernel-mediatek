@@ -537,8 +537,8 @@ PVRSRVBridgeRGXKickCDM(IMG_UINT32 ui32DispatchTableEntry,
 					psRGXKickCDMIN->ui32CmdSize,
 					psDMCmdInt,
 					psRGXKickCDMIN->bbPDumpContinuous,
-					psRGXKickCDMIN->ui32ExternalJobReference,
-					psRGXKickCDMIN->ui32InternalJobReference);
+					psRGXKickCDMIN->ui32ExtJobRef,
+					psRGXKickCDMIN->ui32IntJobRef);
 #if defined(PDUMP)
 	PMRUnlock();
 #endif

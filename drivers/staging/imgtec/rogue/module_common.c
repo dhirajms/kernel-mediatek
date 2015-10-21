@@ -58,6 +58,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "process_stats.h"
 #include "module_common.h"
 #include "pvrsrv.h"
+#include "pvr_hwperf.h"
 
 #if defined(SUPPORT_DRM)
 #include "pvr_drm.h"
@@ -73,10 +74,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(SUPPORT_GPUTRACE_EVENTS)
 #include "pvr_gputrace.h"
-#endif
-
-#if defined(SUPPORT_KERNEL_HWPERF) || defined(SUPPORT_SHARED_SLC)
-#include "rgxapi_km.h"
 #endif
 
 #if defined(SUPPORT_KERNEL_SRVINIT)
@@ -513,6 +510,12 @@ int PVRSRVDeviceInit(void)
 	}
 #endif
 
+	error = PVRSRVHWperfCreateDebugFs();
+	if (error != 0)
+	{
+		PVR_DPF((PVR_DBG_WARNING, "PVRCore_Init: failed to initialise HWPerf debugfs (%d)", error));
+	}
+
 	return 0;
 }
 
@@ -526,6 +529,8 @@ int PVRSRVDeviceInit(void)
 *****************************************************************************/
 void PVRSRVDeviceDeinit(void)
 {
+	PVRSRVHWperfDestroyDebugFs();
+
 #if defined(SUPPORT_GPUTRACE_EVENTS)
 	PVRGpuTraceDeInit();
 #endif

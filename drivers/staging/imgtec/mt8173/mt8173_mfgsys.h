@@ -17,6 +17,7 @@
 
 #include "servicesext.h"
 #include "rgxdevice.h"
+
 #include <linux/platform_device.h>
 
 /* control APM is enabled or not  */

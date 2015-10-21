@@ -816,8 +816,6 @@ PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (CONNECTION_DATA       *psConnection,
 	}
 
 #if defined(SUPPORT_GPUTRACE_EVENTS)
-	RGXHWPerfHostSetEventFilter(ui32HWPerfHostFilter);
-
 	/* If built, always setup FTrace consumer thread. */
 	RGXHWPerfFTraceGPUInit(psDeviceNode->pvDevice);
 

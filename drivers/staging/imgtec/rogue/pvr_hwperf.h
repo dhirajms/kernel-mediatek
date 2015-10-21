@@ -1,7 +1,7 @@
-/*************************************************************************/ /*!
-@File           pvr_gputrace.h
-@Title          PVR GPU Trace module common environment interface
+/**************************************************************************/ /*!
+@File
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
+@Description    Header for the HWPerf OS specific initialisations.
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -38,75 +38,17 @@ PURPOSE AND NONINFRINGEMENT; AND (B) IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/ /**************************************************************************/
+*/ /***************************************************************************/
 
-#ifndef PVR_GPUTRACE_H_
-#define PVR_GPUTRACE_H_
+#ifndef __PVR_HWPERF_H__
+#define __PVR_HWPERF_H__
 
-#include "img_types.h"
-#include "rgx_hwperf_km.h"
+#include "rgxdevice.h"
+#include "pvrsrv_error.h"
 
+#if defined(LINUX)
+PVRSRV_ERROR PVRSRVHWperfCreateDebugFs(void);
+void PVRSRVHWperfDestroyDebugFs(void);
+#endif
 
-/******************************************************************************
- Module out-bound API
-******************************************************************************/
-
-/*
-  The device layer of the KM driver defines these two APIs to allow a
-  platform module to set and retrieve the feature's on/off state.
-*/
-extern PVRSRV_ERROR PVRGpuTraceEnabledSet(IMG_BOOL bNewValue);
-extern IMG_BOOL PVRGpuTraceEnabled(void);
-
-
-/******************************************************************************
- Module In-bound API
-******************************************************************************/
-
-typedef enum {
-	PVR_GPUTRACE_SWITCH_TYPE_UNDEF = 0,
-
-	PVR_GPUTRACE_SWITCH_TYPE_BEGIN = 1,
-	PVR_GPUTRACE_SWITCH_TYPE_END = 2
-
-} PVR_GPUTRACE_SWITCH_TYPE;
-
-
-void PVRGpuTraceClientWork(
-		const IMG_UINT32 ui32ExtJobRef,
-		const IMG_UINT32 ui32IntJobRef,
-		const IMG_CHAR* pszKickType);
-
-
-void PVRGpuTraceWorkSwitch(
-		IMG_UINT64 ui64OSTimestamp,
-		const IMG_UINT32 ui32ContextId,
-		const IMG_UINT32 ui32JobId,
-		const IMG_CHAR* pszWorkType,
-		PVR_GPUTRACE_SWITCH_TYPE eSwType);
-
-void PVRGpuTraceUfo(
-		IMG_UINT64 ui64OSTimestamp,
-		const RGX_HWPERF_UFO_EV eEvType,
-		const IMG_UINT32 ui32ExtJobRef,
-		const IMG_UINT32 ui32CtxId,
-		const IMG_UINT32 ui32JobId,
-		const IMG_UINT32 ui32UFOCount,
-		const RGX_HWPERF_UFO_DATA_ELEMENT *puData);
-
-void PVRGpuTraceEventsLost(
-		const RGX_HWPERF_STREAM_ID eStreamId,
-		const IMG_UINT32 ui32LastOrdinal,
-		const IMG_UINT32 ui32CurrOrdinal);
-
-PVRSRV_ERROR PVRGpuTraceInit(void);
-
-
-void PVRGpuTraceDeInit(void);
-
-/* FTrace events callbacks */
-
-void PVRGpuTraceEnableUfoCallback(void);
-void PVRGpuTraceDisableUfoCallback(void);
-
-#endif /* PVR_GPUTRACE_H_ */
+#endif /* __PVR_HWPERF_H__*/

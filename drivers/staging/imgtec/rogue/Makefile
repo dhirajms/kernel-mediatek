@@ -46,6 +46,7 @@ pvrsrvkm-y += process_stats.o
 pvrsrvkm-y += pvr_bridge_k.o
 pvrsrvkm-y += pvr_debug.o
 pvrsrvkm-y += pvr_debugfs.o
+pvrsrvkm-y += pvr_hwperf.o
 pvrsrvkm-y += pvrsrv.o
 pvrsrvkm-y += ra.o
 pvrsrvkm-y += rgx_compat_bvnc.o
