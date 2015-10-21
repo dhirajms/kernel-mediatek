@@ -50,16 +50,6 @@ config MTK_MEM
 	  some debug features. Please see
 	  MTK_MEMCFG.
 
-config MTK_MEMCFG
-	bool "Support enhanced memory configurations"
-	depends on MTK_MEM
-	default n
-	help
-	  MTK_MEMCFG provides debug features such as
-	  platform memory layout information and
-	  fragmentation test tools. The features
-	  cost additional memory.
-
 config MTK_MEMORY_LOWPOWER
 	bool "Support Mediatek memory lowpower technology"
 	default n

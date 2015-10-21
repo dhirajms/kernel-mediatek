@@ -17,4 +17,3 @@ obj-$(CONFIG_OF_RESOLVE)  += resolver.o
 
 CFLAGS_fdt.o = -I$(src)/../../scripts/dtc/libfdt
 CFLAGS_fdt_address.o = -I$(src)/../../scripts/dtc/libfdt
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include

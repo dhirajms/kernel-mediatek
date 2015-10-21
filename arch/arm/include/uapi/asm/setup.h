@@ -149,18 +149,6 @@ struct mem_desc {
 	u64 size;
 };
 
-/* mblock is used by CPU */
-struct mblock {
-	u64 start;
-	u64 size;
-	u32 rank;	/* rank the mblock belongs to */
-};
-
-struct mblock_info {
-	u32 mblock_num;
-	struct mblock mblock[4];
-};
-
 struct dram_info {
 	u32 rank_num;
 	struct mem_desc rank_info[4];

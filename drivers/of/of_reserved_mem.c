@@ -20,7 +20,6 @@
 #include <linux/mm.h>
 #include <linux/sizes.h>
 #include <linux/of_reserved_mem.h>
-#include <mt-plat/mtk_memcfg.h>
 
 #define MAX_RESERVED_REGIONS	16
 static struct reserved_mem reserved_mem[MAX_RESERVED_REGIONS];
@@ -167,14 +166,6 @@ static int __init __reserved_mem_alloc_size(unsigned long node,
 
 	*res_base = base;
 	*res_size = size;
-
-	if (nomap)
-		MTK_MEMCFG_LOG_AND_PRINTK(
-			"[PHY layout]%s   :   0x%08llx - 0x%08llx (0x%llx)\n",
-			uname,
-			(unsigned long long)base,
-			(unsigned long long)base + size - 1,
-			(unsigned long long)size);
 
 	return 0;
 }

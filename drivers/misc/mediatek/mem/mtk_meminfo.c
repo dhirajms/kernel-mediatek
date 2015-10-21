@@ -2,7 +2,6 @@
 #include <asm/setup.h>
 #include <linux/module.h>
 #include <linux/of_fdt.h>
-#include <mt-plat/mtk_memcfg.h>
 #include <mt-plat/mtk_meminfo.h>
 
 #ifdef CONFIG_OF
