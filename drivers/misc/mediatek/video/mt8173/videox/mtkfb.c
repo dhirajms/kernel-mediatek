@@ -34,7 +34,7 @@
 /*#include <mach/dma.h>*/
 /*#include <mach/irqs.h>*/
 #include <linux/dma-mapping.h>
-
+#include <linux/compat.h>
 #include <mt-plat/mt_boot.h>
 
 #include "debug.h"
@@ -53,7 +53,7 @@
 #include "ddp_dump.h"
 #include "display_recorder.h"
 #include "fbconfig_kdebug_rome.h"
-
+#include "compat_mtkfb.h"
 #include "mtk_ovl.h"
 
 #if defined(MTK_ALPS_BOX_SUPPORT)
@@ -1600,6 +1600,278 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 	}
 }
 
+#ifdef CONFIG_COMPAT
+
+static void compat_convert(struct compat_fb_overlay_layer *compat_info,
+			   struct fb_overlay_layer *info)
+{
+	info->layer_id = compat_info->layer_id;
+	info->layer_enable = compat_info->layer_enable;
+	info->src_base_addr = (void *)((unsigned long)(compat_info->src_base_addr));
+	info->src_phy_addr = (void *)((unsigned long)(compat_info->src_phy_addr));
+	info->src_direct_link = compat_info->src_direct_link;
+	info->src_fmt = compat_info->src_fmt;
+	info->src_use_color_key = compat_info->src_use_color_key;
+	info->src_color_key = compat_info->src_color_key;
+	info->src_pitch = compat_info->src_pitch;
+	info->src_offset_x = compat_info->src_offset_x;
+	info->src_offset_y = compat_info->src_offset_y;
+	info->src_width = compat_info->src_width;
+	info->src_height = compat_info->src_height;
+	info->tgt_offset_x = compat_info->tgt_offset_x;
+	info->tgt_width = compat_info->tgt_width;
+	info->tgt_height = compat_info->tgt_height;
+	info->layer_rotation = compat_info->layer_rotation;
+	info->layer_type = compat_info->layer_type;
+	info->video_rotation = compat_info->video_rotation;
+
+	info->isTdshp = compat_info->isTdshp;
+	info->next_buff_idx = compat_info->next_buff_idx;
+	info->identity = compat_info->identity;
+	info->connected_type = compat_info->connected_type;
+
+	info->security = compat_info->security;
+	info->alpha_enable = compat_info->alpha_enable;
+	info->alpha = compat_info->alpha;
+	info->fence_fd = compat_info->fence_fd;
+	info->ion_fd = compat_info->ion_fd;
+}
+
+
+static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
+{
+	struct fb_overlay_layer layerInfo;
+	long ret = 0;
+
+	pr_debug("[FB Driver] mtkfb_compat_ioctl, cmd=0x%08x, cmd nr=0x%08x, cmd size=0x%08x\n", cmd,
+	       (unsigned int)_IOC_NR(cmd), (unsigned int)_IOC_SIZE(cmd));
+
+	switch (cmd) {
+	case MTKFB_GET_FRAMEBUFFER_MVA:
+		{
+			compat_uint_t __user *data32;
+			__u32 data;
+
+			data32 = compat_ptr(arg);
+			data = (__u32) fb_pa;
+			if (put_user(data, data32)) {
+				pr_err("MTKFB_FRAMEBUFFER_MVA failed\n");
+				ret = -EFAULT;
+			}
+			pr_debug("MTKFB_FRAMEBUFFER_MVA success 0x%lx\n", fb_pa);
+			return ret;
+		}
+	case MTKFB_GET_DISPLAY_IF_INFORMATION:
+		{
+			compat_uint_t __user *data32;
+			compat_uint_t displayid = 0;
+
+			data32 = compat_ptr(arg);
+			if (get_user(displayid, data32)) {
+				pr_err("MTKFB_GET_DISPLAY_IF_INFORMATION failed\n");
+				return -EFAULT;
+			}
+			if (displayid > MTKFB_MAX_DISPLAY_COUNT) {
+				pr_err("[FB]: invalid display id:%d\n", displayid);
+				return -EFAULT;
+			}
+			if (displayid == 0) {
+				dispif_info[displayid].displayWidth = primary_display_get_width();
+				dispif_info[displayid].displayHeight = primary_display_get_height();
+
+				dispif_info[displayid].lcmOriginalWidth =
+					primary_display_get_original_width();
+				dispif_info[displayid].lcmOriginalHeight =
+					primary_display_get_original_height();
+				dispif_info[displayid].displayMode =
+					primary_display_is_video_mode() ? 0 : 1;
+			} else {
+				DISPERR("information for displayid: %d is not available now\n",
+				displayid);
+			}
+
+			if (copy_to_user((void __user *)arg,
+				&(dispif_info[displayid]), sizeof(mtk_dispif_info_t))) {
+				pr_err("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+				return -EFAULT;
+			}
+			break;
+		}
+	case MTKFB_POWEROFF:
+		{
+			ret = mtkfb_ioctl(info, MTKFB_POWEROFF, arg);
+			break;
+		}
+
+	case MTKFB_POWERON:
+		{
+			ret = mtkfb_ioctl(info, MTKFB_POWERON, arg);
+			break;
+		}
+	case COMPAT_MTKFB_GET_POWERSTATE:
+		{
+			compat_uint_t __user *data32;
+			int power_state = 0;
+
+			data32 = compat_ptr(arg);
+			if (primary_display_is_sleepd())
+				power_state = 0;
+			else
+				power_state = 1;
+			if (put_user(power_state, data32)) {
+				pr_err("MTKFB_GET_POWERSTATE failed\n");
+				ret = -EFAULT;
+			}
+			pr_debug("MTKFB_GET_POWERSTATE success %d\n", power_state);
+			break;
+		}
+	case COMPAT_MTKFB_CAPTURE_FRAMEBUFFER:
+		{
+			compat_ulong_t __user *data32;
+			unsigned long *pbuf;
+			compat_ulong_t l;
+
+			data32 = compat_ptr(arg);
+			pbuf = compat_alloc_user_space(sizeof(unsigned long));
+			ret = get_user(l, data32);
+			ret |= put_user(l, pbuf);
+			primary_display_capture_framebuffer_ovl(*pbuf, eBGRA8888);
+			break;
+		}
+	case MTKFB_TRIG_OVERLAY_OUT:
+		{
+			arg = (unsigned long)compat_ptr(arg);
+			ret = mtkfb_ioctl(info, MTKFB_TRIG_OVERLAY_OUT, arg);
+			break;
+		}
+	case COMPAT_MTKFB_META_RESTORE_SCREEN:
+		{
+			arg = (unsigned long)compat_ptr(arg);
+			ret = mtkfb_ioctl(info, MTKFB_META_RESTORE_SCREEN, arg);
+			break;
+		}
+
+	case COMPAT_MTKFB_SET_OVERLAY_LAYER:
+		{
+			struct compat_fb_overlay_layer compat_layerInfo;
+
+			MTKFB_LOG(" mtkfb_compat_ioctl():MTKFB_SET_OVERLAY_LAYER\n");
+
+			arg = (unsigned long)compat_ptr(arg);
+			if (copy_from_user(&compat_layerInfo, (void __user *)arg, sizeof(compat_layerInfo))) {
+				MTKFB_LOG("[FB Driver]: copy_from_user failed! line:%d\n",
+					  __LINE__);
+				ret = -EFAULT;
+			} else {
+				primary_disp_input_config input;
+
+				compat_convert(&compat_layerInfo, &layerInfo);
+
+				/* in early suspend mode ,will not update buffer index, info SF by return value */
+				if (primary_display_is_sleepd()) {
+					pr_err("[FB Driver] error, set overlay in early suspend ,skip!\n");
+					return MTKFB_ERROR_IS_EARLY_SUSPEND;
+				}
+
+				memset((void *)&input, 0, sizeof(primary_disp_input_config));
+				_convert_fb_layer_to_disp_input(&layerInfo, &input);
+				primary_display_config_input(&input);
+				primary_display_trigger(1, NULL, 0);
+
+			#if defined(MTK_ALPS_BOX_SUPPORT)
+				MTKFB_LOG("%s COMPAT_MTKFB_SET_OVERLAY_LAYER ext_disp_config_input\n",
+					  __func__);
+				if (factory_mode) {
+					ext_disp_config_input((ext_disp_input_config *) &input);
+					ext_disp_trigger(true, NULL, 0);
+				}
+			#endif
+			}
+		}
+		break;
+
+	case COMPAT_MTKFB_SET_VIDEO_LAYERS:
+		{
+			struct compat_fb_overlay_layer compat_layerInfo[VIDEO_LAYER_COUNT];
+
+			MTKFB_LOG(" mtkfb_compat_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
+
+			if (copy_from_user(&compat_layerInfo, (void __user *)arg, sizeof(compat_layerInfo))) {
+				MTKFB_LOG("[FB Driver]: copy_from_user failed! line:%d\n",
+					  __LINE__);
+				ret = -EFAULT;
+			} else {
+				int32_t i;
+				primary_disp_input_config input;
+
+				for (i = 0; i < VIDEO_LAYER_COUNT; ++i) {
+					compat_convert(&compat_layerInfo[i], &layerInfo);
+					memset((void *)&input, 0, sizeof(primary_disp_input_config));
+					_convert_fb_layer_to_disp_input(&layerInfo, &input);
+					primary_display_config_input(&input);
+
+				#if defined(MTK_ALPS_BOX_SUPPORT)
+					if (factory_mode) {
+						MTKFB_LOG("%s  ext_disp_config_input\n", __func__);
+						ext_disp_config_input((ext_disp_input_config *) &
+								      input);
+					}
+				#endif
+				}
+				primary_display_trigger(1, NULL, 0);
+
+			#if defined(MTK_ALPS_BOX_SUPPORT)
+				if (factory_mode) {
+					MTKFB_LOG("%s ext_disp_trigger\n", __func__);
+					ext_disp_trigger(true, NULL, 0);
+				}
+			#endif
+			}
+		}
+		break;
+	case COMPAT_MTKFB_AEE_LAYER_EXIST:
+		{
+			int dal_en = is_DAL_Enabled();
+			compat_ulong_t __user *data32;
+
+			data32 = compat_ptr(arg);
+			if (put_user(dal_en, data32)) {
+				pr_err("MTKFB_GET_POWERSTATE failed\n");
+				ret = -EFAULT;
+			}
+			break;
+		}
+	case COMPAT_MTKFB_FACTORY_AUTO_TEST:
+		{
+			unsigned long result = 0;
+			compat_ulong_t __user *data32;
+
+			DISPMSG("factory mode: lcm auto test\n");
+			result = mtkfb_fm_auto_test();
+			data32 = compat_ptr(arg);
+			if (put_user(result, data32)) {
+				pr_err("MTKFB_GET_POWERSTATE failed\n");
+				ret = -EFAULT;
+			}
+			break;
+			/*return copy_to_user(argp, &result, sizeof(result)) ? -EFAULT : 0;*/
+		}
+	case MTKFB_META_SHOW_BOOTLOGO:
+		{
+			arg = (unsigned long)compat_ptr(arg);
+			ret = mtkfb_ioctl(info, MTKFB_META_SHOW_BOOTLOGO, arg);
+			break;
+		}
+	default:
+		/* NOTHING DIFFERENCE with standard ioctl calling */
+		arg = (unsigned long)compat_ptr(arg);
+		ret = mtkfb_ioctl(info, cmd, arg);
+		break;
+	}
+
+	return ret;
+}
+#endif
 
 static int mtkfb_pan_display_proxy(struct fb_var_screeninfo *var, struct fb_info *info)
 {
@@ -1667,6 +1939,9 @@ static struct fb_ops mtkfb_ops = {
 	.fb_check_var = mtkfb_check_var,
 	.fb_set_par = mtkfb_set_par,
 	.fb_ioctl = mtkfb_ioctl,
+#ifdef CONFIG_COMPAT
+	.fb_compat_ioctl = mtkfb_compat_ioctl,
+#endif
 #if defined(CONFIG_PM_AUTOSLEEP)
 	.fb_blank = mtkfb_blank,
 #endif

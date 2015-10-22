@@ -143,28 +143,28 @@ typedef enum {
 
 
 typedef struct disp_session_config_t {
-	DISP_SESSION_TYPE type;
+	unsigned int type;
 	unsigned int device_id;
-	DISP_MODE mode;
+	unsigned int mode;
 	unsigned int session_id;
-	unsigned int          present_fence_idx;
-	DISP_OUTPUT_TYPE output_type;
+	unsigned int present_fence_idx;
+	unsigned int output_type;
 } disp_session_config;
 
 typedef struct {
 	unsigned int session_id;
 	unsigned int vsync_cnt;
-	long int vsync_ts;
+	uint64_t vsync_ts;
 } disp_session_vsync_config;
 
 typedef struct disp_input_config_t {
 	unsigned int layer_id;
 	unsigned int layer_enable;
-	DISP_BUFFER_SOURCE buffer_source;
+	unsigned int buffer_source;
 	void *src_base_addr;
 	void *src_phy_addr;
 	unsigned int src_direct_link;
-	DISP_FORMAT src_fmt;
+	unsigned int src_fmt;
 	unsigned int src_use_color_key;
 	unsigned int src_color_key;
 	unsigned int src_pitch;
@@ -173,23 +173,23 @@ typedef struct disp_input_config_t {
 
 	unsigned int tgt_offset_x, tgt_offset_y;
 	unsigned int tgt_width, tgt_height;
-	DISP_ORIENTATION layer_rotation;
-	DISP_LAYER_TYPE layer_type;
-	DISP_ORIENTATION video_rotation;
+	unsigned int layer_rotation;
+	unsigned int layer_type;
+	unsigned int video_rotation;
 
 	unsigned int isTdshp;	/* set to 1, will go through tdshp first, then layer blending, then to color */
 
 	unsigned int next_buff_idx;
 	int identity;
 	int connected_type;
-	DISP_BUFFER_TYPE security;
+	unsigned int security;
 	unsigned int alpha_enable;
 	unsigned int alpha;
 	unsigned int sur_aen;
-	DISP_ALPHA_TYPE src_alpha;
-	DISP_ALPHA_TYPE dst_alpha;
+	unsigned int src_alpha;
+	unsigned int dst_alpha;
 	unsigned int frm_sequence;
-	DISP_YUV_RANGE_ENUM yuv_range;
+	unsigned int yuv_range;
 
 	unsigned int fps;
 	int64_t timestamp;
@@ -198,14 +198,14 @@ typedef struct disp_input_config_t {
 typedef struct disp_output_config_t {
 	void *va;
 	void *pa;
-	DISP_FORMAT fmt;
+	unsigned int fmt;
 	unsigned int x;
 	unsigned int y;
 	unsigned int width;
 	unsigned int height;
 	unsigned int pitch;
 	unsigned int pitchUV;
-	DISP_BUFFER_TYPE security;
+	unsigned int security;
 	unsigned int buff_idx;
 	unsigned int interface_idx;
 	unsigned int frm_sequence;
@@ -319,94 +319,4 @@ typedef struct disp_caps_t {
 #define	DISP_IOCTL_SET_VSYNC_FPS				DISP_IOW(215, unsigned int)
 #define	DISP_IOCTL_GET_PRESENT_FENCE			DISP_IOW(216, disp_present_fence)
 
-
-#ifdef CONFIG_COMPAT
-#include <linux/compat.h>
-#include <linux/uaccess.h>
-
-typedef struct compat_disp_session_config_t {
-	DISP_SESSION_TYPE type;
-	compat_uint_t device_id;
-	DISP_MODE mode;
-	compat_uint_t session_id;
-} compat_disp_session_config;
-
-typedef struct compat_disp_buffer_info_t {
-	/* Session */
-	compat_uint_t session_id;
-	/* Input */
-	compat_uint_t layer_id;
-	compat_uint_t layer_en;
-	compat_int_t ion_fd;
-	compat_uint_t cache_sync;
-	/* Output */
-	compat_uint_t index;
-	compat_int_t fence_fd;
-} compat_disp_buffer_info;
-
-typedef struct compat_disp_input_config_t {
-	compat_int_t layer_id;
-	compat_int_t layer_enable;
-
-	compat_uptr_t src_base_addr;
-	compat_uptr_t src_phy_addr;
-	compat_uint_t src_direct_link;
-	DISP_FORMAT src_fmt;
-	compat_uint_t src_use_color_key;
-	compat_uint_t src_color_key;
-	compat_uint_t src_pitch;
-	compat_uint_t src_offset_x, src_offset_y;
-	compat_uint_t src_width, src_height;
-
-	compat_uint_t tgt_offset_x, tgt_offset_y;
-	compat_uint_t tgt_width, tgt_height;
-	DISP_ORIENTATION layer_rotation;
-	DISP_LAYER_TYPE layer_type;
-	DISP_ORIENTATION video_rotation;
-
-	compat_uint_t isTdshp;	/* set to 1, will go through tdshp first, then layer blending, then to color */
-
-	compat_uint_t next_buff_idx;
-	compat_int_t identity;
-	compat_int_t connected_type;
-	DISP_BUFFER_TYPE security;
-	compat_uint_t alpha_enable;
-	compat_uint_t alpha;
-} compat_disp_input_config;
-
-typedef struct compat_disp_session_input_config_t {
-	compat_uint_t session_id;
-	compat_uint_t config_layer_num;
-	compat_disp_input_config config[MAX_INPUT_CONFIG];
-} compat_disp_session_input_config;
-
-typedef struct {
-	compat_uint_t session_id;
-	compat_uint_t vsync_cnt;
-	compat_long_t vsync_ts;
-} compat_disp_session_vsync_config;
-
-typedef struct compat_disp_session_info_t {
-	compat_uint_t session_id;
-	compat_uint_t maxLayerNum;
-	compat_uint_t isHwVsyncAvailable;
-	DISP_IF_TYPE displayType;
-	compat_uint_t displayWidth;
-	compat_uint_t displayHeight;
-	compat_uint_t displayFormat;
-	DISP_IF_MODE displayMode;
-	compat_uint_t vsyncFPS;
-	compat_uint_t physicalWidth;
-	compat_uint_t physicalHeight;
-	compat_uint_t isConnected;
-} compat_disp_session_info;
-
-#define	COMPAT_DISP_IOCTL_CREATE_SESSION		DISP_IOW(201, compat_disp_session_config)
-#define	COMPAT_DISP_IOCTL_DESTROY_SESSION		DISP_IOW(202, compat_disp_session_config)
-#define	COMPAT_DISP_IOCTL_TRIGGER_SESSION		DISP_IOW(203, compat_disp_session_config)
-#define COMPAT_DISP_IOCTL_PREPARE_INPUT_BUFFER	DISP_IOW(204, compat_disp_buffer_info)
-#define COMPAT_DISP_IOCTL_SET_INPUT_BUFFER		DISP_IOW(206, compat_disp_session_input_config)
-#define	COMPAT_DISP_IOCTL_WAIT_FOR_VSYNC		DISP_IOW(213, compat_disp_session_vsync_config)
-#define	COMPAT_DISP_IOCTL_GET_SESSION_INFO		DISP_IOW(208, compat_disp_session_info)
-#endif /* CONFIG_COMPAT */
 #endif				/* __DISP_SESSION_H */

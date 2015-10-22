@@ -4,18 +4,19 @@
 
 
 obj-$(CONFIG_MTK_FB) += mtkfb_console.o             \
-         disp_assert_layer.o                        \
-         mtkfb.o                                    \
-         mtkfb_vsync.o			    \
-         debug.o                                    \
-         primary_display.o                        \
-         disp_lcm.o                                 \
-         disp_utils.o                               \
-	     mtkfb_fence.o\
-	     mtk_disp_mgr.o\
-	     fbconfig_kdebug_rome.o\
-	     mtk_mira.o \
-	     mtk_ovl.o
+			disp_assert_layer.o         \
+			mtkfb.o                     \
+			mtkfb_vsync.o               \
+			debug.o                     \
+			primary_display.o           \
+			disp_lcm.o                  \
+			disp_utils.o                \
+			mtkfb_fence.o               \
+			mtk_disp_mgr.o              \
+			fbconfig_kdebug_rome.o      \
+			mtk_mira.o                  \
+			mtk_ovl.o                   \
+			compat_mtk_disp_mgr.o
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys   \

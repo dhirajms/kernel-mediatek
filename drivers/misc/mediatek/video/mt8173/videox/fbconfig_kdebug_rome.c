@@ -568,12 +568,30 @@ static int fbconfig_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
+/* compat-ioctl */
+static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	long ret;
+	void __user *data32;
+
+	if (!file->f_op || !file->f_op->unlocked_ioctl)
+		return -ENOTTY;
+
+	data32 = compat_ptr(arg);
+	ret = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)data32);
+	return ret;
+}
+
+/* end CONFIG_COMPAT */
 
 static const struct file_operations fbconfig_fops = {
 	.read = fbconfig_read,
 	.write = fbconfig_write,
 	.open = fbconfig_open,
 	.unlocked_ioctl = fbconfig_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = compat_fbconfig_ioctl,
+#endif
 	.release = fbconfig_release,
 };
 

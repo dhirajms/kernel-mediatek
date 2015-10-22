@@ -32,6 +32,7 @@
 #include <linux/wait.h>
 #include <linux/kthread.h>
 #include <linux/mutex.h>
+#include <linux/compat.h>
 
 #include "mtk_sync.h"
 
@@ -63,6 +64,7 @@
 #include "disp_session.h"
 #include "mtk_ovl.h"
 #include "ddp_mmp.h"
+#include "compat_mtk_disp_mgr.h"
 
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 #include "extd_ddp.h"
@@ -75,7 +77,6 @@
 #include "mtkfb_fence.h"
 
 /*for fence log?*/
-
 typedef enum {
 	PREPARE_INPUT_FENCE,
 	PREPARE_OUTPUT_FENCE,
@@ -2120,10 +2121,105 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	return ret;
 }
 
+#ifdef CONFIG_COMPAT
+const char *_session_compat_ioctl_spy(unsigned int cmd)
+{
+	switch (cmd) {
+	case COMPAT_DISP_IOCTL_SET_INPUT_BUFFER:
+		{
+			return "DISP_IOCTL_SET_INPUT_BUFFER";
+		}
+	case COMPAT_DISP_IOCTL_SET_OUTPUT_BUFFER:
+		{
+			return "DISP_IOCTL_SET_OUTPUT_BUFFER";
+		}
+	default:
+		{
+			return "unknown";
+		}
+	}
+}
+
+static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsigned long arg)
+{
+	long ret = -ENOIOCTLCMD;
+	/*DISPMSG("mtk_disp_mgr_compat_ioctl, cmd=%s, arg=0x%08lx\n", _session_compat_ioctl_spy(cmd), arg);*/
+	switch (cmd) {
+	case COMPAT_DISP_IOCTL_SET_INPUT_BUFFER:
+		{
+			return _compat_ioctl_set_input_buffer(file, arg);
+		}
+	case COMPAT_DISP_IOCTL_SET_OUTPUT_BUFFER:
+		{
+		    return _compat_ioctl_set_output_buffer(file, arg);
+		}
+	case DISP_IOCTL_AAL_GET_HIST:
+	case DISP_IOCTL_AAL_EVENTCTL:
+	case DISP_IOCTL_AAL_INIT_REG:
+	case DISP_IOCTL_AAL_SET_PARAM:
+	case DISP_IOCTL_CREATE_SESSION:
+	case DISP_IOCTL_DESTROY_SESSION:
+	case DISP_IOCTL_TRIGGER_SESSION:
+	case DISP_IOCTL_PREPARE_INPUT_BUFFER:
+	case DISP_IOCTL_PREPARE_OUTPUT_BUFFER:
+	case DISP_IOCTL_GET_SESSION_INFO:
+	case DISP_IOCTL_SET_SESSION_MODE:
+	case DISP_IOCTL_WAIT_FOR_VSYNC:
+	case DISP_IOCTL_SET_VSYNC_FPS:
+	case DISP_IOCTL_GET_PRESENT_FENCE:
+		{
+			void __user *data32;
+
+			data32 = compat_ptr(arg);
+			ret = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)data32);
+			return ret;
+		}
+	case DISP_IOCTL_SET_GAMMALUT:
+	case DISP_IOCTL_SET_CCORR:
+	case DISP_IOCTL_SET_PQPARAM:
+	case DISP_IOCTL_GET_PQPARAM:
+	case DISP_IOCTL_SET_PQINDEX:
+	case DISP_IOCTL_SET_TDSHPINDEX:
+	case DISP_IOCTL_GET_TDSHPINDEX:
+	case DISP_IOCTL_SET_PQ_CAM_PARAM:
+	case DISP_IOCTL_GET_PQ_CAM_PARAM:
+	case DISP_IOCTL_SET_PQ_GAL_PARAM:
+	case DISP_IOCTL_GET_PQ_GAL_PARAM:
+	case DISP_IOCTL_PQ_SET_BYPASS_COLOR:
+	case DISP_IOCTL_PQ_SET_WINDOW:
+	case DISP_IOCTL_OD_CTL:
+	case DISP_IOCTL_WRITE_REG:
+	case DISP_IOCTL_READ_REG:
+	case DISP_IOCTL_MUTEX_CONTROL:
+	case DISP_IOCTL_PQ_GET_TDSHP_FLAG:
+	case DISP_IOCTL_PQ_SET_TDSHP_FLAG:
+	case DISP_IOCTL_PQ_GET_DC_PARAM:
+	case DISP_IOCTL_PQ_SET_DC_PARAM:
+	case DISP_IOCTL_WRITE_SW_REG:
+	case DISP_IOCTL_READ_SW_REG:
+		{
+			ret = primary_display_user_cmd(cmd, arg);
+			break;
+		}
+	default:
+		{
+				DISPERR("[%s]ioctl not supported, 0x%08x\n", __func__, cmd);
+				return -ENOIOCTLCMD;
+		}
+	}
+
+	return ret;
+}
+#endif
+
+
 static const struct file_operations mtk_disp_mgr_fops = {
 	.owner = THIS_MODULE,
 	.mmap = mtk_disp_mgr_mmap,
 	.unlocked_ioctl = mtk_disp_mgr_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = mtk_disp_mgr_compat_ioctl,
+#endif
 	.open = mtk_disp_mgr_open,
 	.release = mtk_disp_mgr_release,
 	.flush = mtk_disp_mgr_flush,
