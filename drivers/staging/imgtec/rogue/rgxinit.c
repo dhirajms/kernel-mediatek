@@ -875,7 +875,9 @@ PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (CONNECTION_DATA       *psConnection,
 
 	/* Setup GPU utilisation stats update callback */
 #if !defined(NO_HARDWARE)
+	psDevInfo->pfnRegisterGpuUtilStats = RGXRegisterGpuUtilStats;
 	psDevInfo->pfnGetGpuUtilStats = RGXGetGpuUtilStats;
+	psDevInfo->pfnUnregisterGpuUtilStats = RGXUnregisterGpuUtilStats;
 #endif
 
 	eError = OSLockCreate(&psDevInfo->hGPUUtilLock, LOCK_TYPE_PASSIVE);

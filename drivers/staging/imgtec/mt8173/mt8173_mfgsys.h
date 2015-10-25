@@ -17,24 +17,11 @@
 
 #include "servicesext.h"
 #include "rgxdevice.h"
-
 #include <linux/platform_device.h>
 
-/* control APM is enabled or not  */
-#define MTK_PM_SUPPORT 1
-
-/* control RD is enabled or not */
-/* RD_POWER_ISLAND only enable with E2 IC, disalbe in E1 IC @2013/9/17 */
-/* #define RD_POWER_ISLAND 1 */
-
-/*  unit ms, timeout interval for DVFS detection */
-#define MTK_DVFS_SWITCH_INTERVAL  300
-
-/*  need idle device before switching DVFS  */
-#define MTK_DVFS_IDLE_DEVICE  0
-
-/* used created thread to handle DVFS switch or not */
-#define MTK_DVFS_CREATE_THREAD  0
+#define MTK_ENABLE_SWAPM 1
+#define MTK_ENABLE_HWAPM 1
+#define MTK_GPU_DVFS 1
 
 #define ENABLE_MTK_MFG_DEBUG 0
 
@@ -44,25 +31,60 @@
 #define mtk_mfg_debug(fmt, args...) do { } while (0)
 #endif
 
-extern struct regulator *g_vgpu;
-extern struct clk *g_mmpll;
+/* freq : khz, volt : uV */
+struct mfgsys_fv_table {
+	u32 freq;
+	u32 volt;
+};
 
-/* extern to be used by PVRCore_Init in RGX DDK module.c  */
-extern int MTKMFGSystemInit(void);
-extern int MTKMFGSystemDeInit(void);
-extern int MTKMFGGetClocks(struct platform_device *pdev);
+struct mtk_mfg_base {
+	struct platform_device *pdev;
 
-extern void MTKSysSetInitialPowerState(void);
-extern void MTKSysRestoreInitialPowerState(void);
+	struct clk **top_clk;
+	void __iomem *reg_base;
+
+	/* mutex protect for set power state */
+	struct mutex set_power_state;
+	bool power_on;
+
+	/* for gpu device freq/volt update */
+	struct mutex set_freq_lock;
+	struct regulator *vgpu;
+	struct clk *mmpll;
+	struct mfgsys_fv_table *fv_table;
+	u32  fv_table_length;
+
+	u32 curr_freq; /* kHz */
+	u32 curr_volt; /* uV  */
+
+	/* for dvfs control*/
+	bool dvfs_enable;
+	int  max_level;
+	int  current_level;
+
+	/* gpu info */
+	u32 gpu_power_index;
+	u32 gpu_power_current;
+	unsigned long gpu_utilisation;
+};
+
+
+/* used in module.c */
+int MTKMFGBaseInit(struct platform_device *pdev);
+int MTKMFGBaseDeInit(struct platform_device *pdev);
+int MTKMFGSystemInit(void);
+int MTKMFGSystemDeInit(void);
 
 /* below register interface in RGX sysconfig.c */
-extern PVRSRV_ERROR MTKSysDevPrePowerState(PVRSRV_DEV_POWER_STATE eNew,
+extern PVRSRV_ERROR MTKDevPrePowerState(PVRSRV_DEV_POWER_STATE eNew,
 					   PVRSRV_DEV_POWER_STATE eCurrent,
 					   IMG_BOOL bForced);
-extern PVRSRV_ERROR MTKSysDevPostPowerState(PVRSRV_DEV_POWER_STATE eNew,
+extern PVRSRV_ERROR MTKDevPostPowerState(PVRSRV_DEV_POWER_STATE eNew,
 					    PVRSRV_DEV_POWER_STATE eCurrent,
 					    IMG_BOOL bForced);
 extern PVRSRV_ERROR MTKSystemPrePowerState(PVRSRV_SYS_POWER_STATE eNew);
 extern PVRSRV_ERROR MTKSystemPostPowerState(PVRSRV_SYS_POWER_STATE eNew);
+extern void MTKSysSetInitialPowerState(void);
+extern void MTKSysRestoreInitialPowerState(void);
 
 #endif /* MT8173_MFGSYS_H*/

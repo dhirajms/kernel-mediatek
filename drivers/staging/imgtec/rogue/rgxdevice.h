@@ -378,6 +378,9 @@ typedef struct _PVRSRV_RGXDEV_INFO_
 	PVRSRV_ERROR (*pfnGetGpuUtilStats) (PVRSRV_DEVICE_NODE *psDeviceNode,
 	                                    IMG_HANDLE hGpuUtilUser,
 	                                    RGXFWIF_GPU_UTIL_STATS *psReturnStats);
+	PVRSRV_ERROR (*pfnRegisterGpuUtilStats) (IMG_HANDLE *phGpuUtilUser);
+	PVRSRV_ERROR (*pfnUnregisterGpuUtilStats) (IMG_HANDLE hGpuUtilUser);
+
 #endif
 
 	POS_LOCK    			hGPUUtilLock;

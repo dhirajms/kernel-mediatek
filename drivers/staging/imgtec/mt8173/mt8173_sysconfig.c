@@ -59,7 +59,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/of_irq.h>
 
 #include <linux/platform_device.h>
-extern struct platform_device *mtkBackupPVRLDMDev;
+extern struct platform_device *sPVRLDMDev;
 #endif
 
 #define RGX_CR_ISP_GRIDOFFSET                             (0x0FA0U)
@@ -155,14 +155,18 @@ add for new DDK 1.1.2550513
 	 */
 	gsRGXTimingInfo.ui32CoreClockSpeed        = RGX_HW_CORE_CLOCK_SPEED;
 	
-	#if MTK_PM_SUPPORT
+#if defined(MTK_ENABLE_SWAPM)
 	gsRGXTimingInfo.bEnableActivePM           = IMG_TRUE;
 	gsRGXTimingInfo.ui32ActivePMLatencyms       = SYS_RGX_ACTIVE_POWER_LATENCY_MS;
 	#else
 	gsRGXTimingInfo.bEnableActivePM           = IMG_FALSE;
 	#endif
 	
+#if defined(MTK_ENABLE_HWAPM)
+	gsRGXTimingInfo.bEnableRDPowIsland        = IMG_TRUE;
+#else
 	gsRGXTimingInfo.bEnableRDPowIsland        = IMG_FALSE;
+#endif
 
 	/*
 	 *Setup RGX specific data
@@ -181,7 +185,7 @@ add for new DDK 1.1.2550513
 		struct resource *irq_res;
 		struct resource *reg_res;
 
-		irq_res = platform_get_resource(mtkBackupPVRLDMDev, IORESOURCE_IRQ, 0);
+		irq_res = platform_get_resource(sPVRLDMDev, IORESOURCE_IRQ, 0);
 
 		if (irq_res)
 		{
@@ -197,7 +201,7 @@ add for new DDK 1.1.2550513
 			return PVRSRV_ERROR_INIT_FAILURE;
 		}
 
-		reg_res = platform_get_resource(mtkBackupPVRLDMDev, IORESOURCE_MEM, 0);
+		reg_res = platform_get_resource(sPVRLDMDev, IORESOURCE_MEM, 0);
 
 		if (reg_res)
 		{
@@ -227,9 +231,9 @@ add for new DDK 1.1.2550513
 	gsDevices[0].aui32PhysHeapID[PVRSRV_DEVICE_PHYS_HEAP_FW_LOCAL] = 0;
 
 	/*  power management on  HW system */
-	#if MTK_PM_SUPPORT
-	gsDevices[0].pfnPrePowerState       =MTKSysDevPrePowerState;
-	gsDevices[0].pfnPostPowerState      =MTKSysDevPostPowerState;
+#if 1 //defined(MTK_ENABLE_SWAPM)
+	gsDevices[0].pfnPrePowerState       =MTKDevPrePowerState;
+	gsDevices[0].pfnPostPowerState      =MTKDevPostPowerState;
 	#else
 	gsDevices[0].pfnPrePowerState       =NULL;
 	gsDevices[0].pfnPostPowerState      =NULL;
@@ -263,7 +267,7 @@ add for new DDK 1.1.2550513
 	gsSysConfig.pasDevices = &gsDevices[0];
 
 	/*  power management on  HW system */
-	#if MTK_PM_SUPPORT
+#if 1 //defined(MTK_ENABLE_SWAPM)
 	gsSysConfig.pfnSysPrePowerState = MTKSystemPrePowerState;
 	gsSysConfig.pfnSysPostPowerState = MTKSystemPostPowerState;
 	#else

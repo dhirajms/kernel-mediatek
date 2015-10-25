@@ -8,4 +8,5 @@ ccflags-y += -include $(srctree)/drivers/staging/imgtec/config_kernel.h \
  -I$(srctree)/drivers/staging/imgtec \
  -I$(srctree)/drivers/staging/imgtec/rogue \
  -I$(srctree)/drivers/staging/imgtec/rogue/hwdefs \
- -I$(srctree)/drivers/staging/imgtec/rogue/hwdefs/km
+ -I$(srctree)/drivers/staging/imgtec/rogue/hwdefs/km \
+ -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)

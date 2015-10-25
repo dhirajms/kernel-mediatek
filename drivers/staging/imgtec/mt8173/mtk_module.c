@@ -57,6 +57,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(SUPPORT_SHARED_SLC)
 #include "rgxapi_km.h"
 #endif
+#include "mt8173_mfgsys.h"
 
 /*
  * DRVNAME is the name we use to register our driver.
@@ -180,7 +181,7 @@ static int PVRSRVDriverProbe(struct platform_device *pDevice)
 
 	if (OSStringCompare(pDevice->name,DEVNAME) != 0)
 	{
-		result = MTKMFGGetClocks(pDevice);
+		result = MTKMFGBaseInit(pDevice);
 		if (result != 0)
 			return result;
 	}
@@ -332,6 +333,9 @@ static int __init PVRCore_Init(void)
 		return error;
 	}
 
+	/* MTK MFG system entry */
+	MTKMFGSystemInit();
+	
 	return 0;
 }
 
@@ -360,6 +364,9 @@ static void __exit PVRCore_Cleanup(void)
 {
 	PVR_TRACE(("PVRCore_Cleanup"));
 
+/* MTK MFG sytem cleanup */
+	MTKMFGSystemDeInit();
+	
 	platform_driver_unregister(&powervr_driver);
 
 	PVRSRVDriverDeinit();
