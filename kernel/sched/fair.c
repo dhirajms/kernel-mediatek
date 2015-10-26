@@ -5075,12 +5075,18 @@ schedtune_cpu_margin(int cpu, unsigned long usage)
 	unsigned long margin;
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
-	boost = schedtune_cpu_boost(cpu);
+	if (usage)
+		boost = schedtune_cpu_boost(cpu);
+	else {
+		boost = 0;
+		schedtune_idle(cpu);
+	}
 #else
 	boost = get_sysctl_sched_cfs_boost();
 #endif
 	if (boost == 0)
 		return 0;
+
 	margin = schedtune_margin(usage, boost);
 
 	return margin;
