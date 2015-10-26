@@ -631,6 +631,7 @@ struct cgroup_subsys schedtune_cgrp_subsys = {
 	.css_alloc	= schedtune_css_alloc,
 	.css_free	= schedtune_css_free,
 	.exit		= schedtune_exit,
+	.allow_attach	= subsys_cgroup_allow_attach,
 	.legacy_cftypes	= files,
 	.early_init	= 1,
 };
