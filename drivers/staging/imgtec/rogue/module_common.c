@@ -115,7 +115,6 @@ MODULE_PARM_DESC(gPMRAllocFail, "When number of PMR allocs reaches"
 EXPORT_SYMBOL(PVRSRVCheckStatus);
 EXPORT_SYMBOL(PVRSRVGetErrorStringKM);
 
-#if defined(SUPPORT_KERNEL_HWPERF)
 #include "rgxapi_km.h"
 EXPORT_SYMBOL(RGXHWPerfConnect);
 EXPORT_SYMBOL(RGXHWPerfDisconnect);
@@ -124,7 +123,6 @@ EXPORT_SYMBOL(RGXHWPerfConfigureAndEnableCounters);
 EXPORT_SYMBOL(RGXHWPerfDisableCounters);
 EXPORT_SYMBOL(RGXHWPerfAcquireData);
 EXPORT_SYMBOL(RGXHWPerfReleaseData);
-#endif
 #endif
 
 DEFINE_MUTEX(gPVRSRVLock);
