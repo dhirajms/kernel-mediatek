@@ -1508,8 +1508,6 @@ UINT_32 kalGetMfpSetting(IN P_GLUE_INFO_T prGlueInfo);
 
 UINT_32 kalWriteToFile(const PUINT_8 pucPath, BOOLEAN fgDoAppend, PUINT_8 pucData, UINT_32 u4Size);
 
-UINT_32 kalCheckPath(const PUINT_8 pucPath);
-
 INT_32 kalReadToFile(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size, PUINT_32 pu4ReadSize);
 
 /*----------------------------------------------------------------------------*/
