@@ -1959,8 +1959,8 @@ void composite_dev_cleanup(struct usb_composite_dev *cdev)
 		kfree(uc);
 	}
 	if (cdev->os_desc_req) {
-		kfree(cdev->os_desc_req->buf);
-		usb_ep_free_request(cdev->gadget->ep0, cdev->os_desc_req);
+		/*kfree(cdev->os_desc_req->buf);*/
+		/*usb_ep_free_request(cdev->gadget->ep0, cdev->os_desc_req);*/
 	}
 	if (cdev->req) {
 		kfree(cdev->req->buf);

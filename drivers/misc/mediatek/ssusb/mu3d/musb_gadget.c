@@ -1612,7 +1612,7 @@ static int musb_gadget_stop(struct usb_gadget *g, struct usb_gadget_driver *driv
 	dev_dbg(musb->controller, "unregistering driver %s\n", driver->function);
 
 	musb->is_active = 0;
-	musb_platform_try_idle(musb, 0);
+	/*musb_platform_try_idle(musb, 0);*/
 	spin_unlock_irqrestore(&musb->lock, flags);
 
 	if (musb->start_mu3d)
