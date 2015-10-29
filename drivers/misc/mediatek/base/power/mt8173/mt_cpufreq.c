@@ -4007,7 +4007,6 @@ void interactive_boost_cpu(int boost)
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 {
 	int idx;
-	unsigned int online_cpu_big = 0, online_cpu_little = 0;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -4020,11 +4019,6 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 											    new_opp_idx));
 		new_opp_idx = p->idx_opp_tbl;
 	}
-
-	if (chip_ver == CHIP_SW_VER_02 && cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE)
-	    && hps_get_num_online_cpus(&online_cpu_little, &online_cpu_big) != -1
-	    && online_cpu_big > 0 && new_opp_idx > 4)
-		new_opp_idx = 4;
 
 	/* HEVC */
 	if (p->limited_freq_by_hevc) {
