@@ -378,7 +378,7 @@ DevmemFree(DEVMEM_MEMDESC *psMemDesc);
 /*
 	DevmemMapToDevice:
 
-	Map an allocation to the device is was allocated from.
+	Map an allocation to the device it was allocated from.
 	This function _must_ be called before any call to 
 	DevmemAcquireDevVirtAddr is made as it binds the allocation
 	to the heap.
@@ -391,6 +391,17 @@ DevmemFree(DEVMEM_MEMDESC *psMemDesc);
 PVRSRV_ERROR DevmemMapToDevice(DEVMEM_MEMDESC *psMemDesc,
 							   DEVMEM_HEAP *psHeap,
 							   IMG_DEV_VIRTADDR *psDevVirtAddr);
+
+/*
+	DevmemMapToDeviceAddress:
+
+	Same as DevmemMapToDevice but the caller chooses the address
+	to map to.
+*/
+IMG_INTERNAL PVRSRV_ERROR
+DevmemMapToDeviceAddress(DEVMEM_MEMDESC *psMemDesc,
+                         DEVMEM_HEAP *psHeap,
+                         IMG_DEV_VIRTADDR sDevVirtAddr);
 
 /*
 	DevmemAcquireDevVirtAddr

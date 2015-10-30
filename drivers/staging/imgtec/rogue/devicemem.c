@@ -325,7 +325,8 @@ _SubAllocImportAlloc(RA_PERARENA_HANDLE hArena,
 	*/
 	eError = _DevmemImportStructDevMap(psHeap,
 									   IMG_TRUE,
-									   psImport);
+									   psImport,
+									   DEVICEMEM_UTILS_NO_ADDRESS);
 	if (eError != PVRSRV_OK)
 	{
 		goto failMap;
@@ -921,6 +922,8 @@ DevmemCreateHeap(DEVMEM_CONTEXT *psCtx,
 	{
 		goto e7;
 	}
+
+	psHeap->eHeapType = DEVMEM_HEAP_TYPE_UNKNOWN;
 
     psHeap->psCtx->uiNumHeaps ++;
     *ppsHeapPtr = psHeap;
@@ -1909,7 +1912,8 @@ DevmemMapToDevice(DEVMEM_MEMDESC *psMemDesc,
 
 	eError = _DevmemImportStructDevMap(psHeap,
 									   bMap,
-									   psImport);
+									   psImport,
+									   DEVICEMEM_UTILS_NO_ADDRESS);
 	if (eError != PVRSRV_OK)
 	{
 		goto failMap;
@@ -1921,6 +1925,101 @@ DevmemMapToDevice(DEVMEM_MEMDESC *psMemDesc,
 	psMemDesc->sDeviceMemDesc.ui32RefCount++;
 
     *psDevVirtAddr = psMemDesc->sDeviceMemDesc.sDevVAddr;
+
+    OSLockRelease(psMemDesc->sDeviceMemDesc.hLock);
+
+#if defined(SUPPORT_PAGE_FAULT_DEBUG)
+	BridgeDevicememHistoryMap(psMemDesc->psImport->hDevConnection,
+						psMemDesc->sDeviceMemDesc.sDevVAddr,
+						psMemDesc->uiAllocSize,
+						psMemDesc->sTraceData.szText);
+#endif
+
+#if defined(PVR_RI_DEBUG)
+	if (psMemDesc->hRIHandle)
+    {
+		 eError = BridgeRIUpdateMEMDESCAddr(psImport->hDevConnection,
+    									   psMemDesc->hRIHandle,
+    									   psImport->sDeviceImport.sDevVAddr);
+		if( eError != PVRSRV_OK)
+		{
+			PVR_DPF((PVR_DBG_ERROR, "%s: call to BridgeRIUpdateMEMDESCAddr failed (eError=%d)", __func__, eError));
+		}
+	}
+#endif
+
+    return PVRSRV_OK;
+
+failMap:
+	_DevmemMemDescRelease(psMemDesc);
+failCheck:
+failParams:
+	OSLockRelease(psMemDesc->sDeviceMemDesc.hLock);
+	PVR_ASSERT(eError != PVRSRV_OK);
+
+failFlags:
+	return eError;
+}
+
+IMG_INTERNAL PVRSRV_ERROR
+DevmemMapToDeviceAddress(DEVMEM_MEMDESC *psMemDesc,
+                         DEVMEM_HEAP *psHeap,
+                         IMG_DEV_VIRTADDR sDevVirtAddr)
+{
+	DEVMEM_IMPORT *psImport;
+	IMG_DEV_VIRTADDR sDevVAddr;
+	PVRSRV_ERROR eError;
+	IMG_BOOL bMap = IMG_TRUE;
+
+	/* Do not try to map unpinned memory */
+	if (psMemDesc->psImport->uiProperties & DEVMEM_PROPERTIES_UNPINNED)
+	{
+		eError = PVRSRV_ERROR_INVALID_MAP_REQUEST;
+		goto failFlags;
+	}
+
+	OSLockAcquire(psMemDesc->sDeviceMemDesc.hLock);
+	if (psHeap == NULL)
+	{
+		eError = PVRSRV_ERROR_INVALID_PARAMS;
+		goto failParams;
+	}
+
+	if (psMemDesc->sDeviceMemDesc.ui32RefCount != 0)
+	{
+		eError = PVRSRV_ERROR_DEVICEMEM_ALREADY_MAPPED;
+		goto failCheck;
+	}
+
+	/* Don't map memory for deferred allocations */
+	if (psMemDesc->psImport->uiFlags & PVRSRV_MEMALLOCFLAG_NO_OSPAGES_ON_ALLOC)
+	{
+		PVR_ASSERT(psMemDesc->psImport->uiProperties & DEVMEM_PROPERTIES_EXPORTABLE);
+		bMap = IMG_FALSE;
+	}
+
+	DEVMEM_REFCOUNT_PRINT("%s (%p) %d->%d",
+					__FUNCTION__,
+					psMemDesc,
+					psMemDesc->sDeviceMemDesc.ui32RefCount,
+					psMemDesc->sDeviceMemDesc.ui32RefCount+1);
+
+	psImport = psMemDesc->psImport;
+	_DevmemMemDescAcquire(psMemDesc);
+
+	eError = _DevmemImportStructDevMap(psHeap,
+									   bMap,
+									   psImport,
+									   sDevVirtAddr.uiAddr);
+	if (eError != PVRSRV_OK)
+	{
+		goto failMap;
+	}
+
+	sDevVAddr.uiAddr = psImport->sDeviceImport.sDevVAddr.uiAddr;
+	sDevVAddr.uiAddr += psMemDesc->uiOffset;
+	psMemDesc->sDeviceMemDesc.sDevVAddr = sDevVAddr;
+	psMemDesc->sDeviceMemDesc.ui32RefCount++;
 
     OSLockRelease(psMemDesc->sDeviceMemDesc.hLock);
 
