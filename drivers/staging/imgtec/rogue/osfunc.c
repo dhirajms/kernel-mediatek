@@ -224,8 +224,7 @@ PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,
 			return PVRSRV_ERROR_UNABLE_TO_SET_CACHE_MODE;
 		}
 	}
-#endif
-#if defined(CONFIG_ARM) || defined(CONFIG_ARM64) || defined (CONFIG_METAG)
+#else
 	{
 		IMG_UINT32 ui32Count;
 		IMG_CPU_PHYADDR sCPUPhysAddrStart, sCPUPhysAddrEnd;

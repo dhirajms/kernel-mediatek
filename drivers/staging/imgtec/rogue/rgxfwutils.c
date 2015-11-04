@@ -495,7 +495,6 @@ PVRSRV_ERROR FWCommonContextAllocate(CONNECTION_DATA *psConnection,
 	psServerCommonContext->eLastResetReason    = RGXFWIF_CONTEXT_RESET_REASON_NONE;
 	psServerCommonContext->ui32LastResetJobRef = 0;
 	psServerCommonContext->ui32ContextID       = psDevInfo->ui32CommonCtxtCurrentID++;
-	dllist_add_to_tail(&(psDevInfo->sCommonCtxtListHead), &(psServerCommonContext->sListNode));
 
 	/* Allocate the client CCB */
 	eError = RGXCreateCCB(psDevInfo,
@@ -627,6 +626,8 @@ PVRSRV_ERROR FWCommonContextAllocate(CONNECTION_DATA *psConnection,
 									  ui32FWAddr);
 	}
 #endif
+	/*Add the node to the list when finalised */
+	dllist_add_to_tail(&(psDevInfo->sCommonCtxtListHead), &(psServerCommonContext->sListNode));
 
 	*ppsServerCommonContext = psServerCommonContext;
 	return PVRSRV_OK;
@@ -648,6 +649,10 @@ fail_alloc:
 
 void FWCommonContextFree(RGX_SERVER_COMMON_CONTEXT *psServerCommonContext)
 {
+
+	/* Remove the context from the list of all contexts. */
+	dllist_remove_node(&psServerCommonContext->sListNode);
+
 	/*
 		Unmap the context itself and then all it's resources
 	*/
@@ -673,8 +678,6 @@ void FWCommonContextFree(RGX_SERVER_COMMON_CONTEXT *psServerCommonContext)
 	/* Destroy the client CCB */
 	RGXDestroyCCB(psServerCommonContext->psClientCCB);
 	
-	/* Remove the context from the list of all contexts. */
-	dllist_remove_node(&psServerCommonContext->sListNode);
 
 	/* Free the FW common context (if there was one) */
 	if (!psServerCommonContext->bCommonContextMemProvided)

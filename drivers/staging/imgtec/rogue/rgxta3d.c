@@ -186,6 +186,7 @@ PVRSRV_ERROR _DestroyTAContext(RGX_SERVER_RC_TA_DATA *psTAData,
 #endif
 	FWCommonContextFree(psTAData->psServerCommonContext);
 	DevmemFwFree(psTAData->psContextStateMemDesc);
+	psTAData->psServerCommonContext = NULL;
 	return PVRSRV_OK;
 }
 
@@ -236,6 +237,7 @@ PVRSRV_ERROR _Destroy3DContext(RGX_SERVER_RC_3D_DATA *ps3DData,
 
 	FWCommonContextFree(ps3DData->psServerCommonContext);
 	DevmemFwFree(ps3DData->psContextStateMemDesc);
+	ps3DData->psServerCommonContext = NULL;
 	return PVRSRV_OK;
 }
 
@@ -3577,10 +3579,18 @@ IMG_BOOL CheckForStalledClientRenderCtxt(PVRSRV_RGXDEV_INFO *psDevInfo)
 
 	dllist_foreach_node(&psDevInfo->sRenderCtxtListHead, psNode, psNext)
 	{
+		IMG_BOOL bTAStalled=IMG_FALSE, b3DStalled = IMG_FALSE;
 		RGX_SERVER_RENDER_CONTEXT *psCurrentServerRenderCtx =
 			IMG_CONTAINER_OF(psNode, RGX_SERVER_RENDER_CONTEXT, sListNode);
-		IMG_BOOL bTAStalled = CheckStalledClientCommonContext(psCurrentServerRenderCtx->sTAData.psServerCommonContext) == PVRSRV_ERROR_CCCB_STALLED;
-		IMG_BOOL b3DStalled = CheckStalledClientCommonContext(psCurrentServerRenderCtx->s3DData.psServerCommonContext) == PVRSRV_ERROR_CCCB_STALLED;
+		if(NULL != psCurrentServerRenderCtx->sTAData.psServerCommonContext)
+		{
+			bTAStalled = CheckStalledClientCommonContext(psCurrentServerRenderCtx->sTAData.psServerCommonContext) == PVRSRV_ERROR_CCCB_STALLED;
+		}
+
+		if(NULL != psCurrentServerRenderCtx->s3DData.psServerCommonContext)
+		{
+			b3DStalled = CheckStalledClientCommonContext(psCurrentServerRenderCtx->s3DData.psServerCommonContext) == PVRSRV_ERROR_CCCB_STALLED;
+		}
 
 		if (bTAStalled || b3DStalled)
 		{

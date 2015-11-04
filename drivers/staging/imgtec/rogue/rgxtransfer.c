@@ -219,6 +219,7 @@ static PVRSRV_ERROR _Destroy2DTransferContext(RGX_SERVER_TQ_2D_DATA *ps2DData,
 
 	/* ... it has so we can free it's resources */
 	FWCommonContextFree(ps2DData->psServerCommonContext);
+	ps2DData->psServerCommonContext = NULL;
 	return PVRSRV_OK;
 }
 
@@ -247,7 +248,7 @@ static PVRSRV_ERROR _Destroy3DTransferContext(RGX_SERVER_TQ_3D_DATA *ps3DData,
 	/* ... it has so we can free it's resources */
 	DevmemFwFree(ps3DData->psFWContextStateMemDesc);
 	FWCommonContextFree(ps3DData->psServerCommonContext);
-
+	ps3DData->psServerCommonContext = NULL;
 	return PVRSRV_OK;
 }
 
@@ -1089,10 +1090,18 @@ IMG_BOOL CheckForStalledClientTransferCtxt(PVRSRV_RGXDEV_INFO *psDevInfo)
 
 	dllist_foreach_node(&psDevInfo->sTransferCtxtListHead, psNode, psNext)
 	{
+		IMG_BOOL bTQ2DStalled = IMG_FALSE, bTQ3DStalled = IMG_FALSE;
 		RGX_SERVER_TQ_CONTEXT *psCurrentServerTransferCtx =
 			IMG_CONTAINER_OF(psNode, RGX_SERVER_TQ_CONTEXT, sListNode);
-		IMG_BOOL bTQ2DStalled = CheckStalledClientCommonContext(psCurrentServerTransferCtx->s2DData.psServerCommonContext) == PVRSRV_ERROR_CCCB_STALLED;
-		IMG_BOOL bTQ3DStalled = CheckStalledClientCommonContext(psCurrentServerTransferCtx->s3DData.psServerCommonContext) == PVRSRV_ERROR_CCCB_STALLED;
+		if(NULL != psCurrentServerTransferCtx->s2DData.psServerCommonContext)
+		{
+			bTQ2DStalled = CheckStalledClientCommonContext(psCurrentServerTransferCtx->s2DData.psServerCommonContext) == PVRSRV_ERROR_CCCB_STALLED;
+		}
+
+		if(NULL != psCurrentServerTransferCtx->s3DData.psServerCommonContext)
+		{
+			bTQ3DStalled = CheckStalledClientCommonContext(psCurrentServerTransferCtx->s3DData.psServerCommonContext) == PVRSRV_ERROR_CCCB_STALLED;
+		}
 
 		if (bTQ2DStalled || bTQ3DStalled)
 		{
