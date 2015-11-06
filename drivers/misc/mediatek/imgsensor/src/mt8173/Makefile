@@ -17,4 +17,3 @@ endef
 $(foreach drv,$(subst $\",,$(CONFIG_CUSTOM_KERNEL_IMGSENSOR)),$(eval $(call FILTER_PROJECT_DRV,$(drv))))
 custom_kernel_imgsensor := $(addsuffix /, $(shell echo $(platform_drv)))
 obj-y += $(custom_kernel_imgsensor)
-$(info imgsensor drv by platform $(platform_drv))

@@ -1,7 +1,6 @@
 # include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 # drivers/cmdq
-$(warning start to build cmdq normal)
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/hv1/$(MTK_PLATFORM)
@@ -11,7 +10,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/hv1
 
 ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
-$(warning start to build cmdq secure)
 	ccflags-y += -I$(srctree)/include
 	ccflags-y += -I$(srctree)/include/trustzone
 

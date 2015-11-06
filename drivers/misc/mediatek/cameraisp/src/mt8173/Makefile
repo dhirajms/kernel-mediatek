@@ -11,4 +11,3 @@ obj-y += camera_isp.o
 obj-y += camera_fdvt.o
 obj-y += camera_sysram.o
 
-$(info cameraisp drv by platform $(platform_drv))

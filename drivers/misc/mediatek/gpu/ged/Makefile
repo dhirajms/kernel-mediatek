@@ -15,9 +15,7 @@ ccflags-y += \
     -I$(MTK_TOP)/include/ \
     -I$(GED_TOP)/include/ \
     -I$(MTK_TOP)/base/power/$(subst ",,$(CONFIG_MTK_PLATFORM))/
-	
-$(info $$CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT is [${CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT}])
-    
+
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
 ccflags-y += -DGED_DVFS_ENABLE \
              -DENABLE_COMMON_DVFS \
