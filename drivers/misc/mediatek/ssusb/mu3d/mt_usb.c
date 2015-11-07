@@ -65,7 +65,7 @@ void connection_work(struct work_struct *data)
 		 (is_on == MU3D_INIT ? "INIT" : (is_on == MU3D_ON ? "ON" : "OFF")),
 		 (is_usb_cable ? "IN" : "OUT"));
 
-	if ((is_usb_cable == true) && (is_on != MU3D_ON) && (musb->usb_mode == CABLE_MODE_NORMAL)) {
+	if ((is_usb_cable == true) && /*(is_on != MU3D_ON)&&*/  (musb->usb_mode == CABLE_MODE_NORMAL)) {
 
 		is_on = MU3D_ON;
 

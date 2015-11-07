@@ -1044,8 +1044,8 @@ static void musb_suspend_work(struct work_struct *data)
 	/* Set SSUSB_IP_SW_RST to avoid power leakage */
 	/* otg//mu3d_setmsk(musb->sif_base, U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST); */
 	/* it will disable xhci at the same time, maybe its not we want, pdw device only here */
-	mu3d_hal_ssusb_dis(musb);
-	ssusb_power_save(musb->ssusb);
+	/*mu3d_hal_ssusb_dis(musb);*/
+	/*ssusb_power_save(musb->ssusb);*/
 
 #ifndef CONFIG_MTK_FPGA
 	/* Let PHY enter savecurrent mode. And turn off CLK. */
