@@ -8,7 +8,6 @@
  *
  */
 
-#define DEBUG 1
 #define pr_fmt(fmt) fmt
 
 #include <linux/workqueue.h>
