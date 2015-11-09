@@ -4670,7 +4670,15 @@ static unsigned int sched_group_energy(struct energy_env *eenv)
 		 * sched_group?
 		 */
 		sd = highest_flag_domain(cpu, SD_SHARE_CAP_STATES);
-		if (sd && sd->parent)
+		if (!sd)
+			/*
+			 * We most probably raced with hotplug; returning a
+			 * wrong energy estimation is better than entering an
+			 * infinite loop.
+			 */
+			break;
+
+		if (sd->parent)
 			sg_shared_cap = sd->parent->groups;
 
 		for_each_domain(cpu, sd) {
