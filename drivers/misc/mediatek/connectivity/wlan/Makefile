@@ -7,6 +7,4 @@ ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
 endif
 ifneq ($(filter "CONSYS_6797",$(CONFIG_MTK_COMBO_CHIP)),)
 	obj-y   +=  gen3/
-else ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
-	obj-y   +=  gen2/
 endif

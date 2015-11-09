@@ -1,5 +1,0 @@
-config MTK_GPT_SCHEME_SUPPORT
-	bool "MTK_GPT_SCHEME_SUPPORT"
-	depends on EFI_PARTITION
-	help
-	  MTK Support for GUID Partition Table

@@ -27,8 +27,5 @@ ifneq ($(CONFIG_ARCH_MT2601),y)
 endif
 	obj-y   +=  combo/
 endif
-ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
-	obj-y   +=  conn_soc/
-endif
 
 obj-y   +=  common_detect/
