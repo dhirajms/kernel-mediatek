@@ -446,7 +446,23 @@ bool is_in_cpufreq = 0;
 
 #define CPU_LV_TO_OPP_IDX(lv)   ((lv)-1)	/* cpu_level to opp_idx */
 
+#define TURBO_CPU               0x1
+#define NORMAL_CPU              0x2
+
 static int system_boost;
+
+static int cpu_model_id(void)
+{
+	u32 devinfo = (get_devinfo_with_index(3) >> 28) & 0xF;
+	cpufreq_info("%s(): cpu_devinfo is = %d\n", __func__, devinfo);
+
+	if (devinfo == TURBO_CPU || devinfo == NORMAL_CPU) {
+		return devinfo;
+	} else {
+		cpufreq_info("%s(): unknown cpu model id\n", __func__);
+		return -1;
+	}
+}
 
 static unsigned int read_efuse_speed(enum mt_cpu_dvfs_id id)
 {				/* TODO: remove it latter */
@@ -454,84 +470,93 @@ static unsigned int read_efuse_speed(enum mt_cpu_dvfs_id id)
 	unsigned int lv = 0;
 
 	if (id == MT_CPU_DVFS_BIG) {
-		efuse = _GET_BITS_VAL_(2:0, get_devinfo_with_index(CPUFREQ_EFUSE_INDEX));
-		switch (efuse) {
-		case 0:
-			lv = CPU_LEVEL_2;	/* default = sloane = [1.6G, 2.0G] */
-#ifdef CONFIG_TB8173_P1
-			lv = CPU_LEVEL_4;	/* p1 = [1.4G, 1.8G] */
-#endif
-#ifdef CONFIG_TB8173_P1_PLUS
-			lv = CPU_LEVEL_2;	/* p1_plus = [1.6G, 2.0G], set to [1.8G, 2.1G] for SB IC */
-#endif
-#ifdef CONFIG_SND_SOC_MT8173_SLOANE
-			lv = CPU_LEVEL_2;	/* sloane = [1.6G, 2.0G] */
-#endif
-#ifdef CONFIG_BX8173_P12
-			lv = CPU_LEVEL_4;	/* bx8173p12 = [1.4G, 1.8G] */
-#endif
-			if (strcmp(CONFIG_ARCH_MTK_PROJECT, "tb8173p1_plus") == 0)
-				lv = CPU_LEVEL_2;	/* p1_plus = [1.6G, 2.0G], set to [1.8G, 2.1G] for SB IC */
-
-			break;
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-			lv = CPU_LEVEL_1;	/* 2.1G, SB */
-			break;
-		case 5:
-			lv = CPU_LEVEL_2;	/* 2.0G */
-			break;
-		case 6:
-			lv = CPU_LEVEL_4;	/* 1.8G */
-			break;
-		case 7:
-		default:
-			cpufreq_err
-			    ("No suitable DVFS table, set to default CPU[%d] level! efuse=0x%x\n",
-			     id, efuse);
-			lv = CPU_LEVEL_4;
-		}
-		if (mt_get_chip_sw_ver() == CHIP_SW_VER_02)
+		if (cpu_model_id() == TURBO_CPU) {
+			lv = CPU_LEVEL_1;
+			cpufreq_info("%s(): cpu 8176A BIG level is %d\n", __func__, lv);
+		} else if (mt_get_chip_sw_ver() == CHIP_SW_VER_02)
 			lv = CPU_LEVEL_5;	/* 1.6G */
-	} else {
-efuse = _GET_BITS_VAL_(29:28, get_devinfo_with_index(CPUFREQ_EFUSE_INDEX));
-		switch (efuse) {
-		case 0:
-			lv = CPU_LEVEL_3;	/* default = sloane = [1.6G, 2.0G] */
+		else {
+			efuse = _GET_BITS_VAL_(2 : 0, get_devinfo_with_index(CPUFREQ_EFUSE_INDEX));
+			switch (efuse) {
+			case 0:
+				lv = CPU_LEVEL_2;	/* default = sloane = [1.6G, 2.0G] */
 #ifdef CONFIG_TB8173_P1
-			lv = CPU_LEVEL_5;	/* p1 = [1.4G, 1.8G] */
+				lv = CPU_LEVEL_4;	/* p1 = [1.4G, 1.8G] */
 #endif
 #ifdef CONFIG_TB8173_P1_PLUS
-			lv = CPU_LEVEL_3;	/* p1_plus = [1.6G, 2.0G], set to [1.8G, 2.1G] for SB IC */
+				lv = CPU_LEVEL_2;	/* p1_plus = [1.6G, 2.0G], set to [1.8G, 2.1G] for SB IC */
 #endif
 #ifdef CONFIG_SND_SOC_MT8173_SLOANE
-			lv = CPU_LEVEL_3;	/* sloane = [1.6G, 2.0G] */
+				lv = CPU_LEVEL_2;	/* sloane = [1.6G, 2.0G] */
 #endif
 #ifdef CONFIG_BX8173_P12
-			lv = CPU_LEVEL_5;	/* bx8173p12 = [1.4G, 1.8G] */
+				lv = CPU_LEVEL_4;	/* bx8173p12 = [1.4G, 1.8G] */
 #endif
-			if (strcmp(CONFIG_ARCH_MTK_PROJECT, "tb8173p1_plus") == 0)
+				if (strcmp(CONFIG_ARCH_MTK_PROJECT, "tb8173p1_plus") == 0)
+					lv = CPU_LEVEL_2;	/* p1_plus = [1.6G, 2.0G], set to [1.8G, 2.1G] for SB IC */
+				break;
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+				lv = CPU_LEVEL_1;	/* 2.1G, SB */
+				break;
+			case 5:
+				lv = CPU_LEVEL_2;	/* 2.0G */
+				break;
+			case 6:
+				lv = CPU_LEVEL_4;	/* 1.8G */
+				break;
+			case 7:
+			default:
+				cpufreq_err
+				    ("No suitable DVFS table, set to default CPU[%d] level! efuse=0x%x\n",
+				     id, efuse);
+				lv = CPU_LEVEL_4;
+			}
+		}
+	} else {
+		if (cpu_model_id() == TURBO_CPU) {
+			lv = CPU_LEVEL_2;
+			cpufreq_info("%s(): cpu 8176A LITTLE level is %d\n", __func__, lv);
+		} else {
+			efuse = _GET_BITS_VAL_(29 : 28, get_devinfo_with_index(CPUFREQ_EFUSE_INDEX));
+			switch (efuse) {
+			case 0:
+				lv = CPU_LEVEL_3;	/* default = sloane = [1.6G, 2.0G] */
+#ifdef CONFIG_TB8173_P1
+				lv = CPU_LEVEL_5;	/* p1 = [1.4G, 1.8G] */
+#endif
+#ifdef CONFIG_TB8173_P1_PLUS
 				lv = CPU_LEVEL_3;	/* p1_plus = [1.6G, 2.0G], set to [1.8G, 2.1G] for SB IC */
-			break;
-		case 1:
-			lv = CPU_LEVEL_1;	/* 1.8G */
-			break;
+#endif
+#ifdef CONFIG_SND_SOC_MT8173_SLOANE
+				lv = CPU_LEVEL_3;	/* sloane = [1.6G, 2.0G] */
+#endif
+#ifdef CONFIG_BX8173_P12
+				lv = CPU_LEVEL_5;	/* bx8173p12 = [1.4G, 1.8G] */
+#endif
+				if (strcmp(CONFIG_ARCH_MTK_PROJECT, "tb8173p1_plus") == 0)
+					lv = CPU_LEVEL_3;	/* p1_plus = [1.6G, 2.0G], set to [1.8G, 2.1G] for SB IC */
+				break;
+			case 1:
+				lv = CPU_LEVEL_1;	/* 1.8G */
+				break;
 
-		case 2:
-			lv = CPU_LEVEL_3;	/* 1.6G */
-			break;
+			case 2:
+				lv = CPU_LEVEL_3;	/* 1.6G */
+				break;
 
-		case 3:
-			lv = CPU_LEVEL_5;	/* 1.4G */
-			break;
+			case 3:
+				lv = CPU_LEVEL_5;	/* 1.4G */
+				break;
 
-		default:
-			cpufreq_err
-			    ("No suitable DVFS table, set to default CPU[%d] level! efuse=0x%x\n",
-			     id, efuse);
-			lv = CPU_LEVEL_5;
+			default:
+				cpufreq_err
+				    ("No suitable DVFS table, set to default CPU[%d] level! efuse=0x%x\n",
+				     id, efuse);
+				lv = CPU_LEVEL_5;
+			}
 		}
 	}
 
