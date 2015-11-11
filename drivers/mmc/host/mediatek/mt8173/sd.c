@@ -649,7 +649,7 @@ static void msdc_dump_dbg_register(struct msdc_host *host)
 
 static void msdc_dump_clock_sts(struct msdc_host *host)
 {
-#ifdef MTK_MSDC_BRINGUP_DEBUG
+#if 0
 	if (!(apmixed_reg_base1 && topckgen_reg_base && pericfg_reg_base)) {
 		pr_err("apmixed_reg_base=%p,topckgen_reg_base=%p,clk_pericfg_base=%p\n",
 			apmixed_reg_base1, topckgen_reg_base, pericfg_reg_base);
@@ -1280,11 +1280,8 @@ void msdc_set_smt(struct msdc_host *host, int set_smt)
 		break;
 
 #endif
-#ifdef CFG_DEV_MSDC2
-		case 3:
-			break;
-#endif
-
+	case 3:
+		break;
 	default:
 		pr_err("error...[%s] host->id out of range!!!\n", __func__);
 		break;
@@ -1636,6 +1633,8 @@ static void msdc_pin_pud(struct msdc_host *host, u32 mode)
 		break;
 
 #endif
+	case 3:
+		break;
 	default:
 		pr_err("error...[%s] host->id out of range!!!\n", __func__);
 		break;
@@ -2353,7 +2352,7 @@ static void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 	u8 clksrc = hw->clk_src;
 
 	if (!hz) {
-		pr_err("msdc%d -> !!! Set<0 Hz>", host->id);
+		pr_err("msdc%d -> !!! Set<0 Hz>\n", host->id);
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
 			host->saved_para.hz = hz;
 #ifdef SDIO_ERROR_BYPASS
@@ -3042,11 +3041,6 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 #else
 		if (host->power_control)
 			host->power_control(host, 1);
-		else
-			ERR_MSG
-			    ("No power control, host_function<0x%x> & Power_domain<%d>",
-			     host->hw->host_function, host->power_domain);
-
 #endif
 		mdelay(10);
 	} else if (host->power_mode != MMC_POWER_OFF && mode == MMC_POWER_OFF) {
@@ -3296,6 +3290,7 @@ static void msdc_pm(pm_message_t state, void *data)
 
 		host->suspend = 1;
 		host->pm_state = state;
+		host->device_powered_up = 0;
 #ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT
 		atomic_set(&host->ot_work.autok_done, 0);
 #endif
@@ -3778,6 +3773,7 @@ static unsigned int msdc_command_start(struct msdc_host *host,
 	else if (opcode == MMC_SELECT_CARD) {
 		resp = (cmd->arg != 0) ? RESP_R1 : RESP_NONE;
 		host->app_cmd_arg = cmd->arg;
+		host->device_powered_up = 1;
 		pr_warn("msdc%d select card<0x%.8x>", host->id, cmd->arg);
 	} else if (opcode == SD_IO_RW_DIRECT || opcode == SD_IO_RW_EXTENDED)
 		resp = RESP_R1;	/* SDIO workaround. */
@@ -4059,8 +4055,9 @@ static unsigned int msdc_command_resp_polling(struct msdc_host *host,
 			}
 		} else if (intsts & MSDC_INT_CMDTMO) {
 			cmd->error = (unsigned int)-ETIMEDOUT;
-			pr_err("[%s]: msdc%d XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
-				__func__, host->id, cmd->opcode, cmd->arg);
+			if (host->device_powered_up)
+				pr_err("[%s]: msdc%d XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>\n",
+					__func__, host->id, cmd->opcode, cmd->arg);
 			if ((cmd->opcode != 52) && (cmd->opcode != 8) && (cmd->opcode != 5)
 			    && (cmd->opcode != 55) && (cmd->opcode != 1))
 				msdc_dump_info(host->id);
@@ -6993,8 +6990,9 @@ static void msdc_dump_trans_error(struct msdc_host *host,
 	}
 #endif
 
-	ERR_MSG("XXX CMD<%d><0x%x> Error<%d> Resp<0x%x>",
-		cmd->opcode, cmd->arg, cmd->error, cmd->resp[0]);
+	if (host->device_powered_up)
+		ERR_MSG("XXX CMD<%d><0x%x> Error<%d> Resp<0x%x>",
+			cmd->opcode, cmd->arg, cmd->error, cmd->resp[0]);
 
 	if (data) {
 		if (host->suspend == 1)
@@ -8052,9 +8050,6 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 #else
 				if (host->power_switch)
 					host->power_switch(host, 1);
-				else
-					ERR_MSG("[%s]msdc%d ERROR: No power switch callback,L%d\n",
-					__func__, host->id, __LINE__);
 #endif
 			}
 			/* wait at least 5ms for 1.8v signal switching in card */
@@ -8330,8 +8325,9 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 			msdc_reset_hw(host->id);
 		} else if (intsts & MSDC_INT_CMDTMO) {
 			cmd->error = (unsigned int)-ETIMEDOUT;
-			ERR_MSG("XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
-				cmd->opcode, cmd->arg);
+			if (host->device_powered_up)
+				ERR_MSG("XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
+					cmd->opcode, cmd->arg);
 			msdc_reset_hw(host->id);
 		}
 		if (intsts & (MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO))
@@ -8588,9 +8584,6 @@ static void msdc_init_hw(struct msdc_host *host)
 	msdc_set_smt(host, 1);
 	msdc_set_driving(host, hw, 0);
 #endif
-
-	pr_err("msdc%d drving<clk %d,cmd %d,dat %d>",
-		host->id, hw->clk_drv, hw->cmd_drv, hw->dat_drv);
 
 	/* write crc timeout detection */
 	sdr_set_field(MSDC_PATCH_BIT0, 1 << 30, 1);
@@ -9071,7 +9064,6 @@ static int msdc_get_rigister_settings(struct msdc_host *host)
 		of_property_read_u8(register_setting_node, "rdata_edge", &host->hw->rdata_edge);
 		of_property_read_u8(register_setting_node, "wdata_edge", &host->hw->wdata_edge);
 	} else {
-		pr_err("[MSDC%d] register_setting is not found in DT.\n", host->id);
 		return 1;
 	}
 /*parse ett*/
@@ -9145,7 +9137,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 		host->hw->flags |= MSDC_EXT_SDIO_IRQ;
 	}
 
-	pr_err("of msdc DT probe %s!, hostId:%d\n", np->name, host->id);
+	pr_err("msdc DT probe %s!, host_id:%d\n", np->name, host->id);
 
 	/* iomap register */
 	host->base = of_iomap(np, 0);
@@ -9153,7 +9145,6 @@ int msdc_of_parse(struct mmc_host *mmc)
 		pr_err("can't of_iomap for msdc!!\n");
 		return -ENOMEM;
 	}
-	pr_err("of_iomap for msdc @ 0x%p\n", host->base);
 
 	/* get irq #  */
 	host->irq = irq_of_parse_and_map(np, 0);
@@ -9254,51 +9245,42 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (gpio_node == NULL) {
 		gpio_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-pctl-a-syscfg");
 		gpio_reg_base = of_iomap(gpio_node, 0);
-		pr_err("of_iomap for gpio base @ 0x%p\n", gpio_reg_base);
 	}
 
 	if (infracfg_ao_node == NULL) {
 		infracfg_ao_node = of_find_compatible_node(NULL, NULL,
 			"mediatek,INFRACFG_AO");
 		infracfg_ao_reg_base = of_iomap(infracfg_ao_node, 0);
-		pr_debug("of_iomap for infracfg_ao base @ 0x%p\n",
-			infracfg_ao_reg_base);
 	}
 	if (infracfg_node == NULL) {
 		infracfg_node = of_find_compatible_node(NULL, NULL,
 			"mediatek,mt8173-infracfg");
 		infracfg_reg_base = of_iomap(infracfg_node, 0);
-		pr_debug("of_iomap for infracfg base @ 0x%p\n", infracfg_reg_base);
 	}
 
 	if (pericfg_node == NULL) {
 		pericfg_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-pericfg");
 		pericfg_reg_base = of_iomap(pericfg_node, 0);
-		pr_debug("of_iomap for pericfg base @ 0x%p\n", pericfg_reg_base);
 	}
 
 	if (emi_node == NULL) {
 		emi_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-dcm");
 		emi_reg_base = of_iomap(emi_node, 8);
-		pr_debug("of_iomap for emi base @ 0x%p\n", emi_reg_base);
 	}
 
 	if (toprgu_node == NULL) {
 		toprgu_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-rgu");
 		toprgu_reg_base = of_iomap(toprgu_node, 0);
-		pr_debug("of_iomap for toprgu base @ 0x%p\n", toprgu_reg_base);
 	}
 
 	if (apmixed_node == NULL) {
 		apmixed_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-apmixedsys");
 		apmixed_reg_base1 = of_iomap(apmixed_node, 0);
-		pr_err("of_iomap for APMIXED base @ 0x%p\n", apmixed_reg_base1);
 	}
 
 	if (topckgen_node == NULL) {
 		topckgen_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-topckgen");
 		topckgen_reg_base = of_iomap(topckgen_node, 0);
-		pr_err("of_iomap for TOPCKGEN base @ 0x%p\n", topckgen_reg_base);
 	}
 
 #ifndef CONFIG_MTK_LEGACY
@@ -9367,7 +9349,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		host->hw->cmdrtactr_sdr200 = 0x3;
 		host->hw->wdatcrctactr_sdr200 = 0x3;
 		host->hw->intdatlatcksel_sdr200 = 0x0;
-		pr_err("platform_data hw:0x%p, is msdc3_hw\n", host->hw);
 	}
 #endif
 
@@ -9435,6 +9416,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->sclk = 0;
 	host->pm_state = PMSG_RESUME;
 	host->suspend = 0;
+	host->device_powered_up = 0;
 #ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT	/* same as CONFIG_SDIOAUTOK_SUPPORT */
 	host->sdio_performance_vcore = 0;
 	INIT_DELAYED_WORK(&(host->set_vcore_workq), sdio_unreq_vcore);

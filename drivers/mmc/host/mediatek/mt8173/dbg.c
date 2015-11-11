@@ -3431,7 +3431,6 @@ int msdc_debug_proc_init(void)
 	prEntry = proc_create("msdc_debug", 0660, NULL, &msdc_proc_fops);
 #endif
 	if (prEntry) {
-		pr_err("[%s]: successfully create /proc/msdc_debug\n", __func__);
 		proc_set_user(prEntry, uid, gid);
 	} else {
 		pr_err("[%s]: failed to create /proc/msdc_debug\n", __func__);
@@ -3442,9 +3441,7 @@ int msdc_debug_proc_init(void)
 #else
 	prEntry = proc_create("msdc_help", 0440, NULL, &msdc_help_fops);
 #endif
-	if (prEntry)
-		pr_err("[%s]: successfully create /proc/msdc_help\n", __func__);
-	else
+	if (!prEntry)
 		pr_err("[%s]: failed to create /proc/msdc_help\n", __func__);
 
 #ifndef USER_BUILD_KERNEL
@@ -3452,9 +3449,7 @@ int msdc_debug_proc_init(void)
 #else
 	prEntry = proc_create("msdc_FT", 0440, NULL, &msdc_FT_fops);
 #endif
-	if (prEntry)
-		pr_err("[%s]: successfully create /proc/msdc_FT\n", __func__);
-	else
+	if (!prEntry)
 		pr_err("[%s]: failed to create /proc/msdc_FT\n", __func__);
 
 #ifdef ONLINE_TUNING_DVTTEST
@@ -3463,9 +3458,7 @@ int msdc_debug_proc_init(void)
 #else
 	prEntry = proc_create("msdc_DVT", 0440, NULL, &msdc_DVT_fops);
 #endif
-	if (prEntry)
-		pr_err("[%s]: successfully create /proc/msdc_DVT\n", __func__);
-	else
+	if (!prEntry)
 		pr_err("[%s]: failed to create /proc/msdc_DVT\n", __func__);
 #endif
 
@@ -3477,7 +3470,6 @@ int msdc_debug_proc_init(void)
 #endif
 	if (tune) {
 		proc_set_user(tune, uid, gid);
-		pr_err("[%s]: successfully create /proc/msdc_tune\n", __func__);
 	} else {
 		pr_err("[%s]: failed to create /proc/msdc_tune\n", __func__);
 	}
@@ -3486,9 +3478,7 @@ int msdc_debug_proc_init(void)
 #else
 	tune_flag = proc_create("msdc_tune_flag", 0440, NULL, &msdc_tune_flag_fops);
 #endif
-	if (tune_flag)
-		pr_err("[%s]: successfully create /proc/msdc_tune_flag\n", __func__);
-	else
+	if (!tune_flag)
 		pr_err("[%s]: failed to create /proc/msdc_tune_flag\n", __func__);
 #ifdef MSDC_HQA
 #ifndef USER_BUILD_KERNEL
@@ -3498,7 +3488,6 @@ int msdc_debug_proc_init(void)
 #endif
 	if (voltage_flag) {
 		proc_set_user(voltage_flag, uid, gid);
-		pr_err("[%s]: successfully create /proc/msdc_voltage_flag\n", __func__);
 	} else {
 		pr_err("[%s]: failed to create /proc/msdc_voltage_flag\n", __func__);
 	}

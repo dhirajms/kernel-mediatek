@@ -1234,6 +1234,7 @@ struct msdc_host {
 #endif
 	struct work_struct			work_tune; /* new thread tune */
 	struct mmc_request			*mrq_tune; /* backup host->mrq */
+	bool device_powered_up;
 };
 
 struct tag_msdc_hw_para {
