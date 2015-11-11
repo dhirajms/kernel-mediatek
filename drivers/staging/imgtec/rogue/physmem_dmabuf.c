@@ -74,6 +74,65 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/slab.h>
 #include <linux/dma-buf.h>
 #include <linux/scatterlist.h>
+#include <linux/version.h>
+
+/*
+ * dma_buf_ops
+ *
+ * These are all returning errors if used.
+ * The point is to prevent anyone outside of our driver from importing
+ * and using our dmabuf.
+ */
+
+static int PVRDmaBufOpsAttach(struct dma_buf *psDmaBuf, struct device *psDev,
+                           struct dma_buf_attachment *psAttachment)
+{
+	return -ENOSYS;
+}
+
+static struct sg_table *PVRDmaBufOpsMap(struct dma_buf_attachment *psAttachment,
+                                      enum dma_data_direction eDirection)
+{
+	/* Attach hasn't been called yet */
+	return ERR_PTR(-EINVAL);
+}
+
+static void PVRDmaBufOpsUnmap(struct dma_buf_attachment *psAttachment,
+                           struct sg_table *psTable,
+                           enum dma_data_direction eDirection)
+{
+}
+
+static void PVRDmaBufOpsRelease(struct dma_buf *psDmaBuf)
+{
+	PMR *psPMR = (PMR *) psDmaBuf->priv;
+
+	PMRUnrefPMR(psPMR);
+}
+
+static void *PVRDmaBufOpsKMap(struct dma_buf *psDmaBuf, unsigned long uiPageNum)
+{
+	return ERR_PTR(-ENOSYS);
+}
+
+static int PVRDmaBufOpsMMap(struct dma_buf *psDmaBuf, struct vm_area_struct *psVMA)
+{
+	return -ENOSYS;
+}
+
+static const struct dma_buf_ops sPVRDmaBufOps =
+{
+	.attach        = PVRDmaBufOpsAttach,
+	.map_dma_buf   = PVRDmaBufOpsMap,
+	.unmap_dma_buf = PVRDmaBufOpsUnmap,
+	.release       = PVRDmaBufOpsRelease,
+	.kmap_atomic   = PVRDmaBufOpsKMap,
+	.kmap          = PVRDmaBufOpsKMap,
+	.mmap          = PVRDmaBufOpsMMap,
+};
+
+/* end of dma_buf_ops */
+
 
 typedef struct _PMR_DMA_BUF_DATA_
 {
@@ -604,6 +663,78 @@ PhysmemGetDmaBuf(PMR *psPMR)
 }
 
 PVRSRV_ERROR
+PhysmemExportDmaBuf(CONNECTION_DATA *psConnection,
+                    PVRSRV_DEVICE_NODE *psDevNode,
+                    PMR *psPMR,
+                    IMG_INT *piFd)
+{
+	struct dma_buf *psDmaBuf;
+	IMG_DEVMEM_SIZE_T uiPMRSize;
+	PVRSRV_ERROR eError;
+	IMG_INT iFd;
+
+	PMRRefPMR(psPMR);
+
+	eError = PMR_LogicalSize(psPMR, &uiPMRSize);
+	if (eError != PVRSRV_OK)
+	{
+		goto fail_pmr_ref;
+	}
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0))
+	{
+		DEFINE_DMA_BUF_EXPORT_INFO(sDmaBufExportInfo);
+
+		sDmaBufExportInfo.priv  = psPMR;
+		sDmaBufExportInfo.ops   = &sPVRDmaBufOps;
+		sDmaBufExportInfo.size  = uiPMRSize;
+		sDmaBufExportInfo.flags = O_RDWR;
+
+		psDmaBuf = dma_buf_export(&sDmaBufExportInfo);
+	}
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0))
+	psDmaBuf = dma_buf_export(psPMR, &sPVRDmaBufOps,
+	                          uiPMRSize, O_RDWR, NULL);
+#else
+	psDmaBuf = dma_buf_export(psPMR, &sPVRDmaBufOps,
+	                          uiPMRSize, O_RDWR);
+#endif
+
+	if (IS_ERR_OR_NULL(psDmaBuf))
+	{
+		PVR_DPF((PVR_DBG_ERROR,
+		         "%s: dma_buf_export failed (err=%ld)",
+		         __func__,
+		         PTR_ERR(psDmaBuf)));
+		eError = PVRSRV_ERROR_OUT_OF_MEMORY;
+		goto fail_pmr_ref;
+	}
+
+	iFd = dma_buf_fd(psDmaBuf, O_RDWR);
+	if (iFd < 0)
+	{
+		PVR_DPF((PVR_DBG_ERROR,
+		         "%s: dma_buf_fd failed (err=%d)",
+		         __func__,
+		         iFd));
+		eError = PVRSRV_ERROR_OUT_OF_MEMORY;
+		goto fail_dma_buf;
+	}
+
+	*piFd = iFd;
+	return PVRSRV_OK;
+
+fail_dma_buf:
+	dma_buf_put(psDmaBuf);
+
+fail_pmr_ref:
+	PMRUnrefPMR(psPMR);
+
+	PVR_ASSERT(eError != PVRSRV_OK);
+	return eError;
+}
+
+PVRSRV_ERROR
 PhysmemImportDmaBuf(CONNECTION_DATA *psConnection,
 		    PVRSRV_DEVICE_NODE *psDevNode,
 		    IMG_INT fd,
@@ -617,7 +748,7 @@ PhysmemImportDmaBuf(CONNECTION_DATA *psConnection,
 	struct drm_file *psFilePriv;
 #endif
 	struct device *psDev;
-	PMR *psPMR;
+	PMR *psPMR = NULL;
 	struct dma_buf_attachment *psAttachment;
 	struct dma_buf *psDmaBuf;
 	PHYS_HEAP *psHeap;
@@ -646,23 +777,29 @@ PhysmemImportDmaBuf(CONNECTION_DATA *psConnection,
 		goto fail_dma_buf_get;
 	}
 
-	if (g_psDmaBufHash)
+	if (psDmaBuf->ops == &sPVRDmaBufOps)
+	{
+		/* We exported this dma_buf, so we can just get its PMR */
+		psPMR = (PMR *) psDmaBuf->priv;
+	}
+	else if (g_psDmaBufHash)
 	{
 		/* We have a hash table so check if we've seen this dmabuf before */
 		psPMR = (PMR *) HASH_Retrieve(g_psDmaBufHash, (uintptr_t) psDmaBuf);
-		if (psPMR)
-		{
-			/* Reuse the PMR we already created */
-			PMRRefPMR(psPMR);
+	}
 
-			*ppsPMRPtr = psPMR;
-			*puiSize = psDmaBuf->size;
-			*puiAlign = PAGE_SIZE;
+	if (psPMR)
+	{
+		/* Reuse the PMR we already created */
+		PMRRefPMR(psPMR);
 
-			dma_buf_put(psDmaBuf);
+		*ppsPMRPtr = psPMR;
+		*puiSize = psDmaBuf->size;
+		*puiAlign = PAGE_SIZE;
 
-			return PVRSRV_OK;
-		}
+		dma_buf_put(psDmaBuf);
+
+		return PVRSRV_OK;
 	}
 
 	psAttachment = dma_buf_attach(psDmaBuf, psDev);

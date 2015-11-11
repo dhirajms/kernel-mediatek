@@ -70,6 +70,50 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
  
 static IMG_INT
+PVRSRVBridgePhysmemExportDmaBuf(IMG_UINT32 ui32DispatchTableEntry,
+					  PVRSRV_BRIDGE_IN_PHYSMEMEXPORTDMABUF *psPhysmemExportDmaBufIN,
+					  PVRSRV_BRIDGE_OUT_PHYSMEMEXPORTDMABUF *psPhysmemExportDmaBufOUT,
+					 CONNECTION_DATA *psConnection)
+{
+	PMR * psPMRInt = NULL;
+
+
+
+
+
+	PMRLock();
+
+
+				{
+					/* Look up the address from the handle */
+					psPhysmemExportDmaBufOUT->eError =
+						PVRSRVLookupHandle(psConnection->psHandleBase,
+											(void **) &psPMRInt,
+											psPhysmemExportDmaBufIN->hPMR,
+											PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
+					if(psPhysmemExportDmaBufOUT->eError != PVRSRV_OK)
+					{
+						PMRUnlock();
+						goto PhysmemExportDmaBuf_exit;
+					}
+				}
+
+
+	psPhysmemExportDmaBufOUT->eError =
+		PhysmemExportDmaBuf(psConnection, OSGetDevData(psConnection),
+					psPMRInt,
+					&psPhysmemExportDmaBufOUT->iFd);
+	PMRUnlock();
+
+
+
+
+PhysmemExportDmaBuf_exit:
+
+	return 0;
+}
+
+static IMG_INT
 PVRSRVBridgePhysmemImportDmaBuf(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_IN_PHYSMEMIMPORTDMABUF *psPhysmemImportDmaBufIN,
 					  PVRSRV_BRIDGE_OUT_PHYSMEMIMPORTDMABUF *psPhysmemImportDmaBufOUT,
@@ -143,6 +187,9 @@ PVRSRV_ERROR DeinitDMABUFBridge(void);
  */
 PVRSRV_ERROR InitDMABUFBridge(void)
 {
+
+	SetDispatchTableEntry(PVRSRV_BRIDGE_DMABUF, PVRSRV_BRIDGE_DMABUF_PHYSMEMEXPORTDMABUF, PVRSRVBridgePhysmemExportDmaBuf,
+					NULL, bUseLock);
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_DMABUF, PVRSRV_BRIDGE_DMABUF_PHYSMEMIMPORTDMABUF, PVRSRVBridgePhysmemImportDmaBuf,
 					NULL, bUseLock);

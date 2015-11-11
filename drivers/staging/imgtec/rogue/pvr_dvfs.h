@@ -63,8 +63,6 @@ typedef struct _IMG_OPP_
 	IMG_UINT32			ui32Freq;
 } IMG_OPP;
 
-typedef const IMG_OPP* IMG_OPP_TABLE;
-
 typedef struct _IMG_DVFS_GOVERNOR_CFG_
 {
 	IMG_UINT32			ui32UpThreshold;
@@ -73,7 +71,7 @@ typedef struct _IMG_DVFS_GOVERNOR_CFG_
 
 typedef struct _IMG_DVFS_DEVICE_CFG_
 {
-	IMG_OPP_TABLE   pasOPPTable;
+	IMG_OPP        *pasOPPTable;
 	IMG_UINT32      ui32OPPTableSize;
 	IMG_UINT32      ui32FreqMin;
 	IMG_UINT32      ui32FreqMax;
@@ -87,7 +85,7 @@ typedef struct _IMG_DVFS_DEVICE_CFG_
 	/*
 	 * Call back function for getting static power.
 	 * Input voltage and temperature specified in mV and Celsius respectively.
-	 * If temperature is set to INT_MAX, system (platform) layer needs to 
+	 * If temperature is set to INT_MAX, system (platform) layer needs to
 	 * retrieve the temperature from thermal zone that the device belongs to.
 	 * Output static power in mW.
 	 */

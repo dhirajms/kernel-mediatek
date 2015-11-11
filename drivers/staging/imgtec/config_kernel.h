@@ -1,4 +1,4 @@
-#define RGX_FW_FILENAME "rgx.fw"
+#define RGX_FW_FILENAME "rgx.fw.signed"
 #define LINUX 
 #define PVR_BUILD_DIR "mt8173_android"
 #define PVR_BUILD_TYPE "release"

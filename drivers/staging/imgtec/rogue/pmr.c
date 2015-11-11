@@ -9,7 +9,7 @@
                 (higher software levels provide an abstraction above that
                 to deal with dividing this down into smaller manageable units).
                 Importantly, this module knows nothing of virtual memory, or
-                of MMUs etc., with one excuseable exception.  We have the
+                of MMUs etc., with one excusable exception.  We have the
                 concept of a "page size", which really means nothing in
                 physical memory, but represents a "contiguity quantum" such
                 that the higher level modules which map this memory are able
@@ -141,7 +141,7 @@ struct _PMR_
     */
     /*
        Physical address translation (device <> cpu) is done on a per device
-       basis which means we need the physcial heap info
+       basis which means we need the physical heap info
     */
     PHYS_HEAP *psPhysHeap;
 
@@ -219,7 +219,7 @@ struct _PMR_
        the flags given at allocation time) and return them to any
        caller of PMR_Flags().  The intention of these flags is that
        the ones stored here are used to represent permissions, such
-       that noone is able to map a PMR in a mode in which they are not
+       that no one is able to map a PMR in a mode in which they are not
        allowed, e.g. writeable for a read-only PMR, etc. */
     PMR_FLAGS_T uiFlags;
 
@@ -330,6 +330,12 @@ _PMRCreate(PMR_SIZE_T uiLogicalSize,
 		OSDivide64(uiChunkSize, (1<< uiLog2ContiguityGuarantee), &ui32Remainder);
 		if (ui32Remainder)
 		{
+			PVR_DPF((PVR_DBG_ERROR,
+					"%s: Bad chunk size, must be a multiple of the contiguity "
+					"(uiChunkSize = 0x%llx, uiLog2ContiguityGuarantee = %u)",
+					__FUNCTION__,
+					(unsigned long long) uiChunkSize,
+					uiLog2ContiguityGuarantee));
 			return PVRSRV_ERROR_PMR_BAD_CHUNK_SIZE;
 		}
 	}
@@ -1364,7 +1370,7 @@ PMR_ReadBytes(PMR *psPMR,
 										  &bValid);
 		/* 
 			Copy till either then end of the
-			chunk or end end of the buffer
+			chunk or end of the buffer
 		*/
 		uiBytesToCopy = MIN(uiBufSz - uiBytesCopied, ui32Remain);
 
@@ -1536,7 +1542,7 @@ PMR_WriteBytes(PMR *psPMR,
 
 		/* 
 			Copy till either then end of the
-			chunk or end end of the buffer
+			chunk or end of the buffer
 		*/
 		uiBytesToCopy = MIN(uiBufSz - uiBytesCopied, ui32Remain);
 
