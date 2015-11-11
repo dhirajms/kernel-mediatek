@@ -193,7 +193,7 @@ void *OSMapPhysToLin(IMG_CPU_PHYADDR BasePAddr, size_t ui32Bytes, IMG_UINT32 ui3
 IMG_BOOL OSUnMapPhysToLin(void *pvLinAddr, size_t ui32Bytes, IMG_UINT32 ui32Flags);
 
 
-void OSCPUOperation(PVRSRV_CACHE_OP eCacheOp);
+PVRSRV_ERROR OSCPUOperation(PVRSRV_CACHE_OP eCacheOp);
 
 void OSFlushCPUCacheRangeKM(void *pvVirtStart,
 							void *pvVirtEnd,

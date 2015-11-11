@@ -145,7 +145,7 @@ PVRSRV_ERROR PVRSRVRGXDestroyKickSyncContextKM(RGX_SERVER_KICKSYNC_CONTEXT * psK
 
 	/* Check if the FW has finished with this resource ... */
 	eError = RGXFWRequestCommonContextCleanUp(psKickSyncContext->psDeviceNode,
-	                                          FWCommonContextGetFWAddress(psKickSyncContext->psServerCommonContext),
+	                                          psKickSyncContext->psServerCommonContext,
 	                                          psKickSyncContext->psSync,
 	                                          RGXFWIF_DM_3D);
 

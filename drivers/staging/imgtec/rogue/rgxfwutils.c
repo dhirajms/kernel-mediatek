@@ -3040,8 +3040,15 @@ PVRSRV_ERROR RGXScheduleCommand(PVRSRV_RGXDEV_INFO 	*psDevInfo,
 	if ((eKCCBType == RGXFWIF_DM_3D) || (eKCCBType == RGXFWIF_DM_2D) || (eKCCBType == RGXFWIF_DM_CDM))
 	{
 		/* This handles the no operation case */
-		OSCPUOperation(psData->uiCacheOp);
-		psData->uiCacheOp = PVRSRV_CACHE_OP_NONE;
+		if (OSCPUOperation(psData->uiCacheOp) == PVRSRV_OK)
+		{
+			psData->uiCacheOp = PVRSRV_CACHE_OP_NONE;
+		}
+		else
+		{
+			PVR_DPF((PVR_DBG_ERROR, "RGXScheduleCommand: OSCPUOperation failed"));
+			PVR_ASSERT(0);
+		}
 	}
 
 #if defined (SUPPORT_VALIDATION)
@@ -3535,14 +3542,22 @@ fail_command:
 	RGXRequestCommonContextCleanUp
 */
 PVRSRV_ERROR RGXFWRequestCommonContextCleanUp(PVRSRV_DEVICE_NODE *psDeviceNode,
-											  PRGXFWIF_FWCOMMONCONTEXT psFWCommonContextFWAddr,
+											  RGX_SERVER_COMMON_CONTEXT *psServerCommonContext,
 											  PVRSRV_CLIENT_SYNC_PRIM *psSyncPrim,
 											  RGXFWIF_DM eDM)
 {
 	RGXFWIF_KCCB_CMD			sRCCleanUpCmd = {0};
 	PVRSRV_ERROR				eError;
+	PRGXFWIF_FWCOMMONCONTEXT	psFWCommonContextFWAddr;
 
-	PDUMPCOMMENT("Common ctx cleanup Request DM%d [context = 0x%08x]", eDM, psFWCommonContextFWAddr.ui32Addr);
+	psFWCommonContextFWAddr = FWCommonContextGetFWAddress(psServerCommonContext);
+
+	PDUMPCOMMENT("Common ctx cleanup Request DM%d [context = 0x%08x]",
+					eDM, psFWCommonContextFWAddr.ui32Addr);
+	PDUMPCOMMENT("Wait for CCB to be empty before common ctx cleanup");
+
+	RGXCCBPDumpDrainCCB(FWCommonContextGetClientCCB(psServerCommonContext), IMG_FALSE);
+
 
 	/* Setup our command data, the cleanup call will fill in the rest */
 	sRCCleanUpCmd.uCmdData.sCleanupData.uCleanupData.psContext = psFWCommonContextFWAddr;

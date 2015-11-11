@@ -149,7 +149,7 @@ PVRSRV_ERROR _DestroyTAContext(RGX_SERVER_RC_TA_DATA *psTAData,
 
 	/* Check if the FW has finished with this resource ... */
 	eError = RGXFWRequestCommonContextCleanUp(psDeviceNode,
-											  FWCommonContextGetFWAddress(psTAData->psServerCommonContext),
+											  psTAData->psServerCommonContext,
 											  psCleanupSync,
 											  RGXFWIF_DM_TA);
 	if (eError == PVRSRV_ERROR_RETRY)
@@ -199,7 +199,7 @@ PVRSRV_ERROR _Destroy3DContext(RGX_SERVER_RC_3D_DATA *ps3DData,
 
 	/* Check if the FW has finished with this resource ... */
 	eError = RGXFWRequestCommonContextCleanUp(psDeviceNode,
-											  FWCommonContextGetFWAddress(ps3DData->psServerCommonContext),
+											  ps3DData->psServerCommonContext,
 											  psCleanupSync,
 											  RGXFWIF_DM_3D);
 	if (eError == PVRSRV_ERROR_RETRY)

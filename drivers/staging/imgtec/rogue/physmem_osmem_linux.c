@@ -1385,7 +1385,14 @@ _ApplyOSPagesAttribute(struct page **ppsPage,
 
 			IMG_UINT32 ui32Idx;
 
-			if (uiNumPages < PVR_DIRTY_PAGECOUNT_FLUSH_THRESHOLD)
+			eError = PVRSRV_ERROR_RETRY;
+			if (uiNumPages >= PVR_DIRTY_PAGECOUNT_FLUSH_THRESHOLD)
+			{
+				/* May fail so fallback to range-based flush */
+				eError = OSCPUOperation(PVRSRV_CACHE_OP_FLUSH);
+			}
+
+			if (eError != PVRSRV_OK)
 			{
 				for (ui32Idx = 0; ui32Idx < uiNumPages;  ++ui32Idx)
 				{
@@ -1415,14 +1422,12 @@ _ApplyOSPagesAttribute(struct page **ppsPage,
 
 					kunmap(ppsPage[ui32Idx]);
 				}
+
+				eError = PVRSRV_OK;
 			}
-			else
-			{
-				OSCPUOperation(PVRSRV_CACHE_OP_FLUSH);
-			}
-		}			
+		}
 	}
-	
+
 	return eError;
 }
 

@@ -203,7 +203,7 @@ static PVRSRV_ERROR _Destroy2DTransferContext(RGX_SERVER_TQ_2D_DATA *ps2DData,
 
 	/* Check if the FW has finished with this resource ... */
 	eError = RGXFWRequestCommonContextCleanUp(psDeviceNode,
-											  FWCommonContextGetFWAddress(ps2DData->psServerCommonContext),
+											  ps2DData->psServerCommonContext,
 											  psCleanupSync,
 											  RGXFWIF_DM_2D);
 	if (eError == PVRSRV_ERROR_RETRY)
@@ -231,7 +231,7 @@ static PVRSRV_ERROR _Destroy3DTransferContext(RGX_SERVER_TQ_3D_DATA *ps3DData,
 
 	/* Check if the FW has finished with this resource ... */
 	eError = RGXFWRequestCommonContextCleanUp(psDeviceNode,
-											  FWCommonContextGetFWAddress(ps3DData->psServerCommonContext),
+											  ps3DData->psServerCommonContext,
 											  psCleanupSync,
 											  RGXFWIF_DM_3D);
 	if (eError == PVRSRV_ERROR_RETRY)
