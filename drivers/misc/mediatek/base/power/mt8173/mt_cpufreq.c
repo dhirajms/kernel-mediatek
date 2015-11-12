@@ -4023,10 +4023,8 @@ void interactive_boost_cpu(int boost)
 {
 	system_boost = boost;
 
-	if (system_boost && _mt_cpufreq_pdrv_probed) {
+	if (system_boost && _mt_cpufreq_pdrv_probed)
 		_mt_cpufreq_set(MT_CPU_DVFS_LITTLE, 0);
-		_mt_cpufreq_set(MT_CPU_DVFS_BIG, 0);
-	}
 }
 
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
