@@ -101,7 +101,7 @@ TZ_RESULT kree_register_sharedmem(KREE_SESSION_HANDLE session,
 	p[1].value.a = size;
 	p[2].mem.buffer = map_p;
 	if (map_p != NULL)
-		p[2].mem.size = ((*(uint32_t *)map_p)+1)*sizeof(uint32_t);
+		p[2].mem.size = ((*(uint64_t *)map_p)+1)*sizeof(uint64_t);
 	else
 		p[2].mem.size = 0;
 	ret = KREE_TeeServiceCall(session, TZCMD_MEM_SHAREDMEM_REG,
