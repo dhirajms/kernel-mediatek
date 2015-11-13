@@ -504,8 +504,8 @@ int m4u_map_16M(m4u_domain_t *m4u_domain, unsigned int mva, unsigned long pa, un
 	}
 
 	mva &= F_PGD_PA_SUPERSECTION_MSK;
-	if (pa > 0xffffffffL)
-		padscpt = (unsigned int)pa & (F_PTE_PA_SMALL_MSK | F_PGD_BIT32_BIT);
+	if (gM4U_4G_DRAM_Mode)
+		padscpt = (unsigned int)(pa & F_PGD_PA_SUPERSECTION_MSK) | F_PGD_BIT32_BIT;
 	else
 		padscpt = (unsigned int)pa & F_PGD_PA_SUPERSECTION_MSK;
 
@@ -548,8 +548,8 @@ int m4u_map_1M(m4u_domain_t *m4u_domain, unsigned int mva, unsigned long pa, uns
 	}
 
 	mva &= F_PGD_PA_SECTION_MSK;
-	if (pa > 0xffffffffL)
-		padscpt = (unsigned int)pa & (F_PTE_PA_SMALL_MSK | F_PGD_BIT32_BIT);
+	if (gM4U_4G_DRAM_Mode)
+		padscpt = (unsigned int)(pa & F_PGD_PA_SECTION_MSK) | F_PGD_BIT32_BIT;
 	else
 		padscpt = (unsigned int)pa & F_PGD_PA_SECTION_MSK;
 
@@ -585,8 +585,8 @@ int m4u_map_64K(m4u_domain_t *m4u_domain, unsigned int mva, unsigned long pa, un
 	}
 
 	mva &= F_PTE_PA_LARGE_MSK;
-	if (pa > 0xffffffffL)
-		padscpt = (unsigned int)pa & (F_PTE_PA_SMALL_MSK | F_PTE_BIT32_BIT);
+	if (gM4U_4G_DRAM_Mode)
+		padscpt = (unsigned int)(pa & F_PTE_PA_LARGE_MSK) | F_PTE_BIT32_BIT;
 	else
 		padscpt = (unsigned int)pa & F_PTE_PA_LARGE_MSK;
 
@@ -653,8 +653,8 @@ int m4u_map_4K(m4u_domain_t *m4u_domain, unsigned int mva, unsigned long pa, uns
 	}
 
 	mva &= F_PTE_PA_SMALL_MSK;
-	if (pa > 0xffffffffL)
-		padscpt = (unsigned int)pa & (F_PTE_PA_SMALL_MSK | F_PTE_BIT32_BIT);
+	if (gM4U_4G_DRAM_Mode)
+		padscpt = (unsigned int)(pa & F_PTE_PA_SMALL_MSK) | F_PTE_BIT32_BIT;
 	else
 		padscpt = (unsigned int)pa & F_PTE_PA_SMALL_MSK;
 

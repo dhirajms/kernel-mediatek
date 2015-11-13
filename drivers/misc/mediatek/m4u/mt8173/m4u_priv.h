@@ -72,6 +72,7 @@ extern void smp_inner_dcache_flush_all(void);
 
 extern void show_pte(struct mm_struct *mm, unsigned long addr);
 
+extern int gM4U_4G_DRAM_Mode;
 
 struct m4u_device {
 	struct miscdevice dev;
