@@ -1393,7 +1393,7 @@ static int m4u_sec_init(unsigned int u4NonSecPa,
 	TZ_RESULT ret;
 
 	param[0].value.a = u4NonSecPa;
-	param[0].value.b = L2_enable;
+	param[0].value.b = gM4U_4G_DRAM_Mode;
 	param[1].value.a = 1;
 	paramTypes = TZ_ParamTypes2(TZPT_VALUE_INPUT,
 					TZPT_VALUE_OUTPUT);
@@ -1989,9 +1989,12 @@ static int m4u_probe(struct platform_device *pdev)
 		}
 
 		m4u_domain_init(gM4uDev, &gMvaNode_unknown);
+	}
 
-#ifdef M4U_TEE_SERVICE_ENABLE
-		if (!m4u_tee_en) {
+	m4u_hw_init(gM4uDev, pdev->id);
+
+#ifdef M4U_TEE_SERVICE_ENABLE /*TEE initial */
+	if (0 == pdev->id && !m4u_tee_en) {
 			m4u_buf_info_t *pMvaInfo;
 			unsigned int mva = 0;
 			unsigned int securitymemorysize = 0;
@@ -2010,12 +2013,8 @@ static int m4u_probe(struct platform_device *pdev)
 				pMvaInfo->mva = mva;
 			}
 			M4UMSG("reserve sec  sz 0x%x mva 0x%x\n",  securitymemorysize,  mva);
-		}
-#endif
 	}
-
-	m4u_hw_init(gM4uDev, pdev->id);
-
+#endif
 	M4UINFO("m4u_probe 3 finish...\n");
 
 	return 0;
