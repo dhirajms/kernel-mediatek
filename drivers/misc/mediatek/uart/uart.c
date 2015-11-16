@@ -1093,11 +1093,8 @@ static int mtk_uart_vfifo_create(struct mtk_uart *uart)
 		return err;
 	}
 
-	MSG_RAW("[UART%2d] create\n", uart->nport);
-
 	for (idx = uart->nport * 2; idx < uart->nport * 2 + 2; idx++) {
 		vfifo = &mtk_uart_vfifo_port[idx];
-		MSG_RAW("[UART%2d] idx=%2d\n", uart->nport, idx);
 		if (vfifo->size) {
 			vfifo->addr = dma_alloc_coherent(uart->port.dev, vfifo->size, &vfifo->dmahd, GFP_DMA);
 			/* MSG_RAW("Address: virt = 0x%p, phys = 0x%llx\n", vfifo->addr, vfifo->dmahd); */
