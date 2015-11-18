@@ -97,24 +97,12 @@
 	/* Connectivity */
 	mediatek,connectivity-combo {
 		compatible = "mediatek,connectivity-combo";
-		/*gpio_combo_ldo_en_pin = <&pio 0xffff 0>;	/*0) GPIO_COMBO_LDO_EN_PIN */
-		/*gpio_combo_pmuv28_en_pin = <&pio 0xffff 0>;	/* 1) GPIO_COMBO_PMUV28_EN_PIN */
-		gpio_combo_pmu_en_pin = <&pio 69 0>;		/* 2) GPIO_COMBO_PMU_EN_PIN */
-		gpio_combo_rst_pin = <&pio 38 0>;		/* 3) GPIO_COMBO_RST_PIN pin */
-		/*gpio_combo_bgf_eint_pin = <&pio 0xffff 0>;	/* 4) GPIO_COMBO_BGF_EINT_PIN */
-		gpio_wifi_eint_pin = <&pio 2 0>;		/* 5) GPIO_WIFI_EINT_PIN */
-		/*gpio_all_eint_pin = <&pio 0xffff 0>;		/* 6) GPIO_ALL_EINT_PIN */
-		gpio_combo_urxd_pin = <&pio 117 0>;		/* 7) GPIO_COMBO_URXD_PIN */
-		gpio_combo_utxd_pin = <&pio 118 0>;		/* 8) GPIO_COMBO_UTXD_PIN */
-		gpio_pcm_daiclk_pin = <&pio 33 0>;		/* 9) GPIO_PCM_DAICLK_PIN */
-		gpio_pcm_daipcmin_pin = <&pio 34 0>;		/* 10) GPIO_PCM_DAIPCMIN_PIN */
-		gpio_pcm_daipcmout_pin = <&pio 35 0>;		/* 11) GPIO_PCM_DAIPCMOUT_PIN */
-		gpio_pcm_daisync_pin = <&pio 36 0>;		/* 12) GPIO_PCM_DAISYNC_PIN */
-		/*gpio_combo_i2s_ck_pin = <&pio 0xffff 0>;	/* 13) GPIO_COMBO_I2S_CK_PIN */
-		/*gpio_combo_i2s_ws_pin = <&pio 0xffff 0>;	/* 14) GPIO_COMBO_I2S_WS_PIN */
-		/*gpio_combo_i2s_dat_pin = <&pio 0xffff 0>;	/* 15) GPIO_COMBO_I2S_DAT_PIN */
-		/*gpio_gps_sync_pin = <&pio 0xffff 0>;		/* 16) GPIO_GPS_SYNC_PIN */
-		gpio_gps_lna_pin = <&pio6397 17 0>;		/* 17) GPIO_GPS_LNA_PIN is ext pin on 6397 */
+		gpio_combo_pmu_en_pin = <&pio 69 0>;		/* GPIO_COMBO_PMU_EN_PIN */
+		gpio_combo_rst_pin = <&pio 38 0>;		/* GPIO_COMBO_RST_PIN pin */
+		gpio_wifi_eint_pin = <&pio 2 0>;		/* GPIO_WIFI_EINT_PIN */
+		gpio_combo_urxd_pin = <&pio 117 0>;		/* GPIO_COMBO_URXD_PIN */
+		gpio_combo_utxd_pin = <&pio 118 0>;		/* GPIO_COMBO_UTXD_PIN */
+		gpio_gps_lna_pin = <&pio6397 17 0>;		/* GPIO_GPS_LNA_PIN is ext pin on 6397 */
 		pinctrl-names = "gpio_pmu_en_pull_dis",
 			"gpio_pmu_en_in_pulldown",
 			"gpio_rst_pull_dis",
@@ -124,10 +112,6 @@
 			"gpio_urxd_gpio_in_pullup",
 			"gpio_urxd_gpio_in_pull_dis",
 			"gpio_utxd_uart_pull_dis",
-			"gpio_pcm_daiclk_pull_dis",
-			"gpio_pcm_daipcmin_pull_dis",
-			"gpio_pcm_daipcmout_pull_dis",
-			"gpio_pcm_daisync_pull_dis",
 			"gpio_gps_lna_pull_dis";
 		pinctrl-0 = <&pcfg_combo_pmu_en_pull_dis_cfgs>;
 		pinctrl-1 = <&pcfg_combo_pmu_en_in_pulldown_cfgs>;
@@ -138,11 +122,7 @@
 		pinctrl-6 = <&pcfg_combo_urxd_gpio_in_pullup_cfgs>;
 		pinctrl-7 = <&pcfg_combo_urxd_gpio_in_pull_dis_cfgs>;
 		pinctrl-8 = <&pcfg_combo_utxd_uart_pull_dis_cfgs>;
-		pinctrl-9 = <&pcfg_combo_pcm_daiclk_pull_dis_cfgs>;
-		pinctrl-10 = <&pcfg_combo_pcm_daipcmin_pull_dis_cfgs>;
-		pinctrl-11 = <&pcfg_combo_pcm_daipcmout_pull_dis_cfgs>;
-		pinctrl-12 = <&pcfg_combo_pcm_daisync_pull_dis_cfgs>;
-		pinctrl-13 = <&pcfg_combo_gps_lna_pull_dis_cfgs>;
+		pinctrl-9 = <&pcfg_combo_gps_lna_pull_dis_cfgs>;
 		interrupt-parent = <&pio>;
 		interrupts = < 2 IRQ_TYPE_LEVEL_LOW >;	/* WIFI EINT num is 1 active low level-sensitive */
 	};
@@ -676,47 +656,11 @@
 		};
 	};
 
-	pcfg_combo_pcm_daiclk_pull_dis_cfgs:cfg_gpio33_mode3_pull_dis {
-		combo_pins {
-			pinmux = <MT8173_PIN_33_DAICLK__FUNC_PCM0_CLK>;
-			bias-disable;
-		};
-	};
-
-	pcfg_combo_pcm_daipcmin_pull_dis_cfgs:cfg_gpio34_mode3_pull_dis {
-		combo_pins {
-			pinmux = <MT8173_PIN_34_DAIPCMIN__FUNC_PCM0_DI>;
-			bias-disable;
-		};
-	};
-
-	pcfg_combo_pcm_daipcmout_pull_dis_cfgs:cfg_gpio35_mode3_pull_dis {
-		combo_pins {
-			pinmux = <MT8173_PIN_35_DAIPCMOUT__FUNC_PCM0_DO>;
-			bias-disable;
-		};
-	};
-
-	pcfg_combo_pcm_daisync_pull_dis_cfgs:cfg_gpio36_mode3_pull_dis {
-		combo_pins {
-			pinmux = <MT8173_PIN_36_DAISYNC__FUNC_PCM0_SYNC>;
-			bias-disable;
-		};
-	};
-
 	state_default:pinctrl {
 		/* ++++++ Connectivity GPIO configs ++++++ */
 		combo_wifi_eint_pins {
 			pinmux = <MT8173_PIN_2_EINT2__FUNC_GPIO2>;
 			bias-pull-up;
-		};
-
-		combo_pcm_pins {
-			pinmux = <MT8173_PIN_33_DAICLK__FUNC_MRG_CLK>,
-				   <MT8173_PIN_34_DAIPCMIN__FUNC_MRG_DI>,
-				   <MT8173_PIN_35_DAIPCMOUT__FUNC_MRG_DO>,
-				   <MT8173_PIN_36_DAISYNC__FUNC_MRG_SYNC>;
-			bias-disable;
 		};
 		/* ----- Connectivity GPIO configs ----- */
 	};
