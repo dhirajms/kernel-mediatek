@@ -87,7 +87,6 @@ obj-$(CONFIG_THERMAL)   += thermal/
 endif
 
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
-obj-$(CONFIG_MTK_FMRADIO) += fmradio/
 obj-$(CONFIG_MTK_ATF_LOGGER)	+= atf_log/
 obj-$(CONFIG_MTK_MLOG) += mlog/
 obj-$(CONFIG_MTK_EMI_BWL)	+= emi_bwl/
