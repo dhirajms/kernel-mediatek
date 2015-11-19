@@ -1033,7 +1033,8 @@ static void musb_suspend_work(struct work_struct *data)
 	mu3d_dbg(K_INFO, "%s active_ep=%d, clk_on=%d\n", __func__, musb->active_ep,
 		 musb->is_clk_on);
 
-	/* otg//if (musb->is_clk_on == 1) { */
+	if (musb->is_clk_on == 1) {
+		mu3d_dbg(K_ERR, "%s \n", __func__);
 	/*
 	 * Note: musb_save_context() _MUST_ be called _BEFORE_ mtu3d_suspend_noirq().
 	 * Because when mtu3d_suspend_noirq() resets the SSUSB IP, All MAC regs can _NOT_ be read and be reset to
@@ -1044,15 +1045,15 @@ static void musb_suspend_work(struct work_struct *data)
 	/* Set SSUSB_IP_SW_RST to avoid power leakage */
 	/* otg//mu3d_setmsk(musb->sif_base, U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST); */
 	/* it will disable xhci at the same time, maybe its not we want, pdw device only here */
-	/*mu3d_hal_ssusb_dis(musb);*/
-	/*ssusb_power_save(musb->ssusb);*/
+		mu3d_hal_ssusb_dis(musb);
+		ssusb_power_save(musb->ssusb);
 
 #ifndef CONFIG_MTK_FPGA
 	/* Let PHY enter savecurrent mode. And turn off CLK. */
 	/* otg//u3phy->u3p_ops->usb_phy_savecurrent(u3phy, musb->is_clk_on); */
 	musb->is_clk_on = 0;
 #endif
-	/* otg//} */
+	}
 }
 
 /* Only used to provide driver mode change events */
