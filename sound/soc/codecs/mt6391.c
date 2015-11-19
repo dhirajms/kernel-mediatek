@@ -667,7 +667,7 @@ static void mt6391_spk_auto_trim_offset(struct mt6391_priv *codec_data)
 	} while (retry_count--);
 
 	if (likely(wait_for_ready))
-		pr_notice("%s done retry_count = %d\n", __func__, retry_count);
+		pr_debug("%s done retry_count = %d\n", __func__, retry_count);
 	else
 		pr_warn("%s fail\n", __func__);
 
@@ -837,7 +837,7 @@ static void mt6391_turn_on_headphone_amp(struct mt6391_priv *codec_data)
 	pr_debug("%s\n", __func__);
 
 	if (codec_data->device_power[MT6391_DEV_OUT_HEADSETL]) {
-		pr_info("%s turn on already\n", __func__);
+		pr_debug("%s turn on already\n", __func__);
 		return;
 	}
 
@@ -898,7 +898,7 @@ static void mt6391_turn_off_headphone_amp(struct mt6391_priv *codec_data)
 	pr_debug("%s\n", __func__);
 
 	if (codec_data->device_power[MT6391_DEV_OUT_HEADSETL]) {
-		pr_info("%s still on\n", __func__);
+		pr_debug("%s still on\n", __func__);
 		return;
 	}
 
@@ -931,7 +931,7 @@ static void mt6391_turn_on_voice_amp(struct mt6391_priv *codec_data)
 	int gain = codec_data->device_volume[MT6391_VOL_HSOUTL];
 
 	if (codec_data->device_power[MT6391_DEV_OUT_EARPIECEL]) {
-		pr_info("%s turn on already\n", __func__);
+		pr_debug("%s turn on already\n", __func__);
 		return;
 	}
 
@@ -983,7 +983,7 @@ static void mt6391_turn_on_voice_amp(struct mt6391_priv *codec_data)
 static void mt6391_turn_off_voice_amp(struct mt6391_priv *codec_data)
 {
 	if (codec_data->device_power[MT6391_DEV_OUT_EARPIECEL]) {
-		pr_info("%s still on\n", __func__);
+		pr_debug("%s still on\n", __func__);
 		return;
 	}
 
@@ -1021,7 +1021,7 @@ static void mt6391_turn_on_speaker_amp(struct mt6391_priv *codec_data)
 	pr_debug("%s\n", __func__);
 
 	if (codec_data->device_power[MT6391_DEV_OUT_SPEAKERL]) {
-		pr_info("%s turn on already\n", __func__);
+		pr_debug("%s turn on already\n", __func__);
 		return;
 	}
 
@@ -1105,7 +1105,7 @@ static void mt6391_turn_off_speaker_amp(struct mt6391_priv *codec_data)
 	pr_debug("%s\n", __func__);
 
 	if (codec_data->device_power[MT6391_DEV_OUT_SPEAKERL]) {
-		pr_info("%s still on\n", __func__);
+		pr_debug("%s still on\n", __func__);
 		return;
 	}
 
@@ -1149,7 +1149,7 @@ static void mt6391_turn_on_headset_speaker_amp(struct mt6391_priv *codec_data)
 	pr_debug("%s\n", __func__);
 
 	if (codec_data->device_power[MT6391_DEV_OUT_SPEAKER_HEADSET_L]) {
-		pr_info("%s turn on already\n", __func__);
+		pr_debug("%s turn on already\n", __func__);
 		return;
 	}
 
@@ -1242,7 +1242,7 @@ static void mt6391_turn_off_headset_speaker_amp(struct mt6391_priv *codec_data)
 	pr_debug("%s\n", __func__);
 
 	if (codec_data->device_power[MT6391_DEV_OUT_SPEAKER_HEADSET_L]) {
-		pr_info("%s still on\n", __func__);
+		pr_debug("%s still on\n", __func__);
 		return;
 	}
 
@@ -2671,8 +2671,6 @@ static int mt6391_codec_probe(struct snd_soc_codec *codec)
 {
 	struct mt6391_priv *codec_data = snd_soc_codec_get_drvdata(codec);
 
-	pr_info("%s\n", __func__);
-
 	codec_data->codec = codec;
 
 #if defined(USE_MT6397_REGMAP)
@@ -2783,11 +2781,11 @@ static int mt6391_dev_probe(struct platform_device *pdev)
 	struct mt6391_priv *codec_data;
 	int ret;
 
-	pr_notice("%s dev name %s\n", __func__, dev_name(dev));
+	pr_debug("%s dev name %s\n", __func__, dev_name(dev));
 
 	if (dev->of_node) {
 		dev_set_name(dev, "%s", MT6397_CODEC_NAME);
-		pr_notice("%s set dev name %s\n", __func__, dev_name(dev));
+		pr_debug("%s set dev name %s\n", __func__, dev_name(dev));
 	}
 
 	codec_data = devm_kzalloc(dev, sizeof(struct mt6391_priv), GFP_KERNEL);
