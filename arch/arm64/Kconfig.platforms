@@ -46,6 +46,38 @@ config ARCH_MEDIATEK
 	help
 	  Support for Mediatek MT65xx & MT81xx ARMv8 SoCs
 
+config ARCH_MT6735
+        bool "MediaTek MT6735"
+        select GENERIC_TIME
+        select GENERIC_CLOCKEVENTS
+        select ARCH_HAS_CPUFREQ
+        select ARM_AMBA
+        select CPU_V7
+        select HAVE_SMP
+        select NEED_MACH_MEMORY_H
+        select IRQ_DOMAIN
+        select IRQ_DOMAIN_DEBUG
+        select GENERIC_SCHED_CLOCK
+        select MTK_SYSTRACKER
+        select MTK_SYS_CIRQ
+        select MTK_EIC
+        select ARMV7_COMPAT
+        select ARMV7_COMPAT_CPUINFO
+        select CPU_IDLE
+        select PINCTRL
+        select PINCTRL_MT6735
+        select MFD_SYSCON
+        select MTK_BASE_POWER
+        select MTK_GIC
+        select ARM64_ERRATUM_845719
+        select ARM64_ERRATUM_836870
+        select MTK_IRQ_NEW_DESIGN
+        select MTK_IRQ_NEW_DESIGN_DEBUG
+        select MTK_POWER_GS
+        select MTK_CPU_STRESS
+        help
+          This enable support for MediaTek MT6735
+
 config MACH_MT6757
 	bool "MediaTek MT6757"
 	select GENERIC_TIME
