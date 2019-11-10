@@ -1,0 +1,1605 @@
+
+/dts-v1/;
+
+#include "mt6735.dtsi"
+#include "cust.dtsi"
+#include <dt-bindings/lcm/hx8392a_dsi_cmd.dtsi>
+
+/ {
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0 0x40000000 0 0x1F000000>;
+	};
+	// modify@zte.com.cn 20160121 modify for feature 96001 begin
+	led0:led@0 {
+		compatible = "mediatek,red";
+		//led_mode = <0>;
+		led_mode = <3>;
+		// data = <1>;
+		data = <2>;
+		pwm_config = <0 0 0 0 0>;
+	};
+	led1:led@1 {
+		compatible = "mediatek,green";
+		//led_mode = <0>;
+		led_mode = <3>;
+		data = <1>;
+		pwm_config = <0 0 0 0 0>;
+	};
+	// modify@zte.com.cn 20160121 modify for feature 96001 end
+	led2:led@2 {
+		compatible = "mediatek,blue";
+		led_mode = <0>;
+		data = <1>;
+		pwm_config = <0 0 0 0 0>;
+	};
+	led3:led@3 {
+		compatible = "mediatek,jogball-backlight";
+		led_mode = <0>;
+		data = <1>;
+		pwm_config = <0 0 0 0 0>;
+	};
+	led4:led@4 {
+		compatible = "mediatek,keyboard-backlight";
+		led_mode = <0>;
+		data = <1>;
+		pwm_config = <0 0 0 0 0>;
+	};
+	led5:led@5 {
+		compatible = "mediatek,button-backlight";
+		led_mode = <0>;
+		data = <1>;
+		pwm_config = <0 0 0 0 0>;
+	};
+	led6:led@6 {
+		compatible = "mediatek,lcd-backlight";
+		led_mode = <5>;
+		data = <1>;
+		pwm_config = <0 0 0 0 0>;
+	};
+	vibrator0:vibrator@0 {
+		compatible = "mediatek,vibrator";
+		vib_timer = <25>;
+		vib_limit = <9>;
+		vib_vol= <6>; /*modify@zte.com.cn at 20160328*/
+	};
+ /* liupeng sensor standardization */
+		cust_accel2@1 {
+		compatible = "mediatek,lis2dh12";  //"mediatek,mc3410"
+		i2c_num	= <2>;
+		i2c_addr = <0x18 0 0 0>;  //0x4c
+		direction = <5>;  //0
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <0>;
+		is_batch_supported = <0>;
+		};
+
+		cust_accel@0 {
+		compatible = "mediatek,lis2ds12";
+		i2c_num	= <2>;
+		i2c_addr = <0x1E 0 0 0>;
+		direction = <4>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <0>;
+		is_batch_supported = <0>;
+		pinctrl-names = "default", "lis2ds12_eint_as_int";  
+		pinctrl-0 = <&LIS2DS12_pins_default>;
+                pinctrl-1 = <&LIS2DS12_pins_eint_int>;
+		status="okay";
+		};
+ /* liupeng sensor standardization */
+		cust_alsps@0 {
+		/*	modify@zte.com.cn 201601014 begin*/
+		//	compatible = "mediatek,cm36652";
+		/*	modify@zte.com.cn 201601014 end*/
+		compatible = "mediatek,alsps";
+		i2c_num	= <2>;
+		i2c_addr = <0x49 0 0 0>;
+		polling_mode_ps = <0>;
+		polling_mode_als = <1>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		als_level = <0 328 861 1377 3125 7721 7767 12621 23062 28430 33274 47116 57694 57694 65535>;
+		als_value = <0 133 304 502 1004 2005 3058 5005 8008 10010 12000 16000 20000 20000 20000 20000>;
+		ps_threshold_high		=  <26>;
+		ps_threshold_low		=  <21>;
+		is_batch_supported_ps	= <0>;
+		is_batch_supported_als	= <0>;
+		};
+		//modify@zte.com.cn 20160120 begin
+	/*	cust_mag@0 {
+		compatible				= "mediatek,akm09911";
+		i2c_num					= <2>;
+		i2c_addr				= <0x0D 0 0 0>;
+		direction				= <1>;
+		power_id				= <0xffff>;
+		power_vol				= <0>;
+		is_batch_supported			= <0>;
+		};*/
+		
+		cust_mag@0 {
+		compatible				= "mediatek,qmcX983";
+		i2c_num					= <2>;
+		i2c_addr				= <0x2C 0 0 0>;
+		direction				= <7>;
+		power_id				= <0xffff>;
+		power_vol				= <0>;
+		is_batch_supported			= <0>;
+		};
+		//modify@zte.com.cn 20160120 end
+		cust_gyro@0 {
+		compatible				= "mediatek,itg1010";
+		i2c_num					= <2>;
+		i2c_addr				= <0x68 0 0 0>;
+		direction				= <3>;
+		power_id				= <0xffff>;
+		power_vol				= <0>;
+		firlen					= <0>;
+		is_batch_supported			= <0>;
+		};
+};
+
+
+&mtkfb {
+	reg = <0x7e000000 0x1000000>;
+};
+
+/* sensor gpio standization */
+&pio {
+	alsps_intpin_cfg: alspspincfg {
+
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO65__FUNC_GPIO65>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+
+	alsps_intpin_default: alspsdefaultcfg {
+
+	};
+
+	gyro_intpin_cfg: gyropincfg {
+
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO67__FUNC_GPIO67>;
+			slew-rate = <0>;
+			bias-pull-down = <00>;
+		};
+	};
+
+	gyro_intpin_default: gyrodefaultcfg {
+
+	};
+};
+&alsps {
+	pinctrl-names = "pin_default", "pin_cfg";
+	pinctrl-0 = <&alsps_intpin_default>;
+	pinctrl-1 = <&alsps_intpin_cfg>;
+	status = "okay";
+
+};
+/* modify@zte.com.cn 20160315 begin */
+/* modify@zte.com.cn 20160408 begin */
+/*			
+&pio {	
+	     lcmbias_pins_default: default {	
+	     };	
+	     lcmbias_pins_state_enable_output0: enableoutput0 {	
+	         pins_cmd_dat {	
+		                 pins = <PINMUX_GPIO119__FUNC_GPIO119>;	
+			         slew-rate = <1>;	
+	                         output-low;	
+			       };	
+	     };	
+	     lcmbias_pins_state_enable_output1: enableoutput1 {	
+	          pins_cmd_dat {	
+	                         pins = <PINMUX_GPIO119__FUNC_GPIO119>;	
+			         slew-rate = <1>;	
+		                 output-high;	
+			        };
+	     };	
+};
+
+&lcmbias {
+		pinctrl-names =  "default", "state_enable_output0", "state_enable_output1";
+		pinctrl-0 = <&lcmbias_pins_default>;
+		pinctrl-1 = <&lcmbias_pins_state_enable_output0>;
+		pinctrl-2 = <&lcmbias_pins_state_enable_output1>;	
+		status = "okay";	
+};	
+*/
+/* modify@zte.com.cn 20160408 end */
+/* modify@zte.com.cn 20160315 end */
+&gyro {
+	pinctrl-names = "pin_default", "pin_cfg";
+	pinctrl-0 = <&gyro_intpin_default>;
+	pinctrl-1 = <&gyro_intpin_cfg>;
+	status = "okay";
+
+};
+/* sensor end */
+&accdet {
+		accdet-mic-vol = <7>;
+		headset-mode-setting = <0x500 0x200 1 0x1F0 0x800 0x800 0x20>;
+		accdet-plugout-debounce = <20>;
+		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
+		/*modify@zte.com.cn 20160114 begin*/
+        	accdet-mic-mode = <1>;
+		/*modify@zte.com.cn 20160114 end*/
+		/*0--MD_MAX--UP_MAX--DW_MAX*/
+		headset-three-key-threshold = <0 80 220 500>;
+		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
+		headset-four-key-threshold = <0 58 121 192 450>;
+		/*modify@zte.com.cn 20160114 begin*/
+		pinctrl-names = "default", "state_eint_as_int","state_gpio_output0", "state_gpio_output1";  
+		pinctrl-0 = <&ACCDET_pins_default>;
+        	pinctrl-1 = <&ACCDET_pins_eint_int>;
+		pinctrl-2 = <&awb155_pins_gpio_output0>;
+		pinctrl-3 = <&awb155_pins_gpio_output1>;
+       		status = "okay";
+		/*modify@zte.com.cn 20160114 end*/
+};
+&touch {
+    /*modify@zte.com.cn 20160908 start*/
+	tpd-resolution = <720 1280>;
+    /*modify@zte.com.cn 20160908 end*/
+	 //modify@zte.com.cn 20160530 begin
+	use-tpd-button = <1>; // 0
+	tpd-key-num = <3>;
+	tpd-key-local= <139 172 158 0>;
+	//tpd-key-dim-local = <90 883 100 40 230 883 100 40 370 883 100 40 0 0 0 0>;
+	//modify@zte.com.cn at 20160617 begin
+	//tpd-key-dim-local = <90 1500 100 40 230 1500 100 40 370 1500 100 40 0 0 0 0>;
+	tpd-key-dim-local = <120 1350 100 40 360 1350 100 40 600 1350 100 40 0 0 0 0>; 
+	//modify@zte.com.cn at 20160617 end
+	 //modify@zte.com.cn 20160530 end 
+	tpd-max-touch-num = <5>;
+	tpd-filter-enable = <1>;
+	tpd-filter-pixel-density = <124>;
+	tpd-filter-custom-prameters = <0 0 0 0 0 0 0 0 0 0 0 0>;
+	tpd-filter-custom-speed = <0 0 0>;
+	pinctrl-names = "default", "state_eint_as_int", "state_eint_output0", "state_eint_output1",
+		"state_rst_output0", "state_rst_output1";
+	pinctrl-0 = <&CTP_pins_default>;
+	pinctrl-1 = <&CTP_pins_eint_as_int>;
+	pinctrl-2 = <&CTP_pins_eint_output0>;
+	pinctrl-3 = <&CTP_pins_eint_output1>;
+	pinctrl-4 = <&CTP_pins_rst_output0>;
+	pinctrl-5 = <&CTP_pins_rst_output1>;
+	status = "okay";
+};
+&pio {
+	CTP_pins_default: eint0default {
+	};
+	CTP_pins_eint_as_int: eint@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO10__FUNC_GPIO10>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+	CTP_pins_eint_output0: eintoutput0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO10__FUNC_GPIO10>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	CTP_pins_eint_output1: eintoutput1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO10__FUNC_GPIO10>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	CTP_pins_rst_output0: rstoutput0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO62__FUNC_GPIO62>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	CTP_pins_rst_output1: rstoutput1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO62__FUNC_GPIO62>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+/* TOUCH end */
+/* AUDIO GPIO standardization */
+&audgpio {
+	pinctrl-names = "default", "audpmicclk-mode0", "audpmicclk-mode1", "audi2s1-mode0", "audi2s1-mode1", "extamp-pullhigh", "extamp-pulllow", "extamp2-pullhigh", "extamp2-pulllow", "rcvspk-pullhigh", "rcvspk-pulllow";
+	pinctrl-0 = <&AUD_pins_default>;
+	pinctrl-1 = <&AUD_pins_pmicclk_mode0>;
+	pinctrl-2 = <&AUD_pins_pmicclk_mode1>;
+	pinctrl-3 = <&AUD_pins_i2s1_mode0>;
+	pinctrl-4 = <&AUD_pins_i2s1_mode1>;
+	pinctrl-5 = <&AUD_pins_extamp_high>;
+	pinctrl-6 = <&AUD_pins_extamp_low>;
+	pinctrl-7 = <&AUD_pins_extamp2_high>;
+	pinctrl-8 = <&AUD_pins_extamp2_low>;
+	pinctrl-9 = <&AUD_pins_rcvspk_high>;
+	pinctrl-10 = <&AUD_pins_rcvspk_low>;
+	status = "okay";
+};
+&pio {
+	AUD_pins_default: audiodefault {
+	};
+	AUD_pins_pmicclk_mode0: pmicclkmode0 {
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO143__FUNC_GPIO143>;
+		};
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO144__FUNC_GPIO144>;
+		};
+		pins_cmd2_dat {
+			pins = <PINMUX_GPIO145__FUNC_GPIO145>;
+		};
+	};
+	AUD_pins_pmicclk_mode1: pmicclkmode1 {
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO143__FUNC_AUD_CLK_MOSI>;
+		};
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO144__FUNC_AUD_DAT_MISO>;
+		};
+		pins_cmd2_dat {
+			pins = <PINMUX_GPIO145__FUNC_AUD_DAT_MOSI>;
+		};
+	};
+	AUD_pins_i2s1_mode0: audi2s1mode0 {
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO78__FUNC_GPIO78>;
+		};
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO79__FUNC_GPIO79>;
+		};
+		pins_cmd2_dat {
+			pins = <PINMUX_GPIO80__FUNC_GPIO80>;
+		};
+	};
+	AUD_pins_i2s1_mode1: audi2s1mode1 {
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO78__FUNC_I2S0_DI>;
+		};
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO79__FUNC_I2S0_LRCK>;
+		};
+		pins_cmd2_dat {
+			pins = <PINMUX_GPIO80__FUNC_I2S0_BCK>;
+		};
+	};
+	AUD_pins_extamp_high: audexamphigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO129__FUNC_GPIO129>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	AUD_pins_extamp_low: audexamplow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO129__FUNC_GPIO129>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+	AUD_pins_extamp2_high: audexam2phigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO128__FUNC_GPIO128>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	AUD_pins_extamp2_low: audexamp2low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO128__FUNC_GPIO128>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+	AUD_pins_rcvspk_high: audrcvspkhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO120__FUNC_GPIO120>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	AUD_pins_rcvspk_low: audrcvspklow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO120__FUNC_GPIO120>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+};
+/* AUDIO end */
+/* CAMERA GPIO standardization */
+&pio {
+	camera_pins_cam0_rst0: cam0@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO44__FUNC_GPIO44>;/*GPIO_CAMERA_CMRST_PIN*/
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+	camera_pins_cam0_rst1: cam0@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO44__FUNC_GPIO44>;/*GPIO_CAMERA_CMRST_PIN*/
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam0_pnd0: cam0@2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO7__FUNC_GPIO7>;/*GPIO_CAMERA_CMPDN_PIN*/
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam0_pnd1: cam0@3 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO7__FUNC_GPIO7>;/*GPIO_CAMERA_CMPDN_PIN*/
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam1_rst0: cam1@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO11__FUNC_GPIO11>;/*GPIO_CAMERA_CMRST1_PIN*/
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+	camera_pins_cam1_rst1: cam1@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO11__FUNC_GPIO11>;/*GPIO_CAMERA_CMRST1_PIN*/
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam1_pnd0: cam1@2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO12__FUNC_GPIO12>;/*GPIO_CAMERA_CMPDN1_PIN*/
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam1_pnd1: cam1@3 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO12__FUNC_GPIO12>;/*GPIO_CAMERA_CMPDN1_PIN*/
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam_ldo0_0: cam@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO68__FUNC_GPIO68>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam_ldo0_1: cam@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO68__FUNC_GPIO68>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_default: camdefault {
+
+	};
+};
+
+&kd_camera_hw1 {
+	pinctrl-names = "default", "cam0_rst0", "cam0_rst1", "cam0_pnd0", "cam0_pnd1",
+	"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1",
+	"cam_ldo0_0", "cam_ldo0_1";
+	pinctrl-0 = <&camera_pins_default>;
+	pinctrl-1 = <&camera_pins_cam0_rst0>;
+	pinctrl-2 = <&camera_pins_cam0_rst1>;
+	pinctrl-3 = <&camera_pins_cam0_pnd0>;
+	pinctrl-4 = <&camera_pins_cam0_pnd1>;
+	pinctrl-5 = <&camera_pins_cam1_rst0>;
+	pinctrl-6 = <&camera_pins_cam1_rst1>;
+	pinctrl-7 = <&camera_pins_cam1_pnd0>;
+	pinctrl-8 = <&camera_pins_cam1_pnd1>;
+	pinctrl-9 = <&camera_pins_cam_ldo0_0>;
+	pinctrl-10 = <&camera_pins_cam_ldo0_1>;
+	status = "okay";
+
+};
+/* CAMERA GPIO end */
+
+/* CONSYS GPIO standardization */
+&pio {
+	consys_pins_default: default {
+
+	};
+
+	gpslna_pins_init: gpslna@0 {
+
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO79__FUNC_GPIO79>;
+			slew-rate = <0>;
+			bias-disable;
+			output-low;
+		};
+	};
+
+	gpslna_pins_oh: gpslna@1 {
+
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO79__FUNC_GPIO79>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	gpslna_pins_ol: gpslna@2 {
+
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO79__FUNC_GPIO79>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+};
+
+&consys {
+	pinctrl-names = "default", "gps_lna_state_init", "gps_lna_state_oh", "gps_lna_state_ol";
+	pinctrl-0 = <&consys_pins_default>;
+	pinctrl-1 = <&gpslna_pins_init>;
+	pinctrl-2 = <&gpslna_pins_oh>;
+	pinctrl-3 = <&gpslna_pins_ol>;
+	status = "okay";
+
+};
+/* CONSYS end */
+
+/* mmc start */
+&mmc0 {
+		clk_src = /bits/ 8 <MSDC50_CLKSRC_400MHZ>;
+		bus-width = <8>;
+		max-frequency = <200000000>;
+		cap-mmc-highspeed;
+		msdc-sys-suspend;
+		mmc-ddr-1_8v;
+		mmc-hs200-1_8v;
+		mmc-hs400-1_8v;
+		non-removable;
+		pinctl = <&mmc0_pins_default>;
+		register_setting = <&mmc0_register_setting_default>;
+		host_function = /bits/ 8 <MSDC_EMMC>;
+		bootable;
+		status = "okay";
+};
+
+&mmc1 {
+		clk_src = /bits/ 8 <MSDC30_CLKSRC_200MHZ>;
+		bus-width = <4>;
+		max-frequency = <200000000>;
+		msdc-sys-suspend;
+		cap-sd-highspeed;
+		sd-uhs-sdr12;
+		sd-uhs-sdr25;
+		sd-uhs-sdr50;
+		sd-uhs-sdr104;
+		sd-uhs-ddr50;
+		pinctl = <&mmc1_pins_default>;
+		pinctl_sdr104 = <&mmc1_pins_sdr104>;
+		pinctl_sdr50 = <&mmc1_pins_sdr50>;
+		pinctl_ddr50 = <&mmc1_pins_ddr50>;
+		register_setting = <&mmc1_register_setting_default>;
+		host_function = /bits/ 8 <MSDC_SD>;
+		/*modify@zte.com.cn 20160109 begin*/
+		cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+		/*modify@zte.com.cn 20160109 end*/
+		cd-gpios = <&pio 5 0>;
+		status = "okay";
+};
+
+&pio {
+	mmc0_pins_default: mmc0@default {
+			pins_cmd {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_rst {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_ds {
+				drive-strength = /bits/ 8 <2>;
+			};
+	};
+
+	mmc0_register_setting_default: mmc0@register_default {
+		dat0rddly      = /bits/ 8 <0>;
+		dat1rddly      = /bits/ 8 <0>;
+		dat2rddly      = /bits/ 8 <0>;
+		dat3rddly      = /bits/ 8 <0>;
+		dat4rddly      = /bits/ 8 <0>;
+		dat5rddly      = /bits/ 8 <0>;
+		dat6rddly      = /bits/ 8 <0>;
+		dat7rddly      = /bits/ 8 <0>;
+		datwrddly      = /bits/ 8 <0>;
+		cmdrrddly      = /bits/ 8 <0>;
+		cmdrddly       = /bits/ 8 <0>;
+		cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+
+		ett-hs200-cells = <12>;
+		ett-hs200-default = <OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_INT_DAT_LATCH_CK_SEL 0x0
+			OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_CKGEN_MSDC_DLY_SEL   0x0
+			OFFSET_MSDC_PATCH_BIT1	MSDC_PB1_CMD_RSP_TA_CNTR      0x1
+			OFFSET_MSDC_IOCON		MSDC_IOCON_RSPL               0x0
+			OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_CMDRDLY        0x7
+			OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_CMDRRDLY       0xb
+			OFFSET_MSDC_PATCH_BIT1		MSDC_PB1_WRDAT_CRCS_TA_CNTR   0x1
+			OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_DATWRDLY       0xb
+			OFFSET_MSDC_IOCON			MSDC_IOCON_W_D0SPL            0x0
+			OFFSET_MSDC_DAT_RDDLY0		MSDC_DAT_RDDLY0_D0            0x7
+			OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_DATRRDLY       0x9
+			OFFSET_MSDC_IOCON		MSDC_IOCON_R_D_SMPL           0x0>;
+
+		ett-hs400-cells = <8>;
+		ett-hs400-default = <OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_INT_DAT_LATCH_CK_SEL	0x0
+			OFFSET_MSDC_PATCH_BIT0		MSDC_PB0_CKGEN_MSDC_DLY_SEL		0x0
+			OFFSET_EMMC50_PAD_DS_TUNE	MSDC_EMMC50_PAD_DS_TUNE_DLY1	0x2
+			OFFSET_EMMC50_PAD_DS_TUNE	MSDC_EMMC50_PAD_DS_TUNE_DLY3	0x10
+			OFFSET_MSDC_PATCH_BIT1			MSDC_PB1_CMD_RSP_TA_CNTR	0x1
+			OFFSET_MSDC_IOCON		MSDC_IOCON_RSPL				0x0
+			OFFSET_MSDC_PAD_TUNE0			MSDC_PAD_TUNE0_CMDRDLY		0x6
+			OFFSET_MSDC_PAD_TUNE0		MSDC_PAD_TUNE0_CMDRRDLY		0x6>;
+	};
+
+	mmc1_pins_default: mmc1@default {
+			pins_cmd {
+				drive-strength = /bits/ 8 <5>;//<3>   modify@zte.com.cn 20160516
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <5>;//<3>   modify@zte.com.cn 20160516
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <5>;//<3>   modify@zte.com.cn 20160516
+			};
+	};
+
+	mmc1_pins_sdr104: mmc1@sdr104 {
+			pins_cmd {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <3>;
+			};
+	};
+
+	mmc1_pins_sdr50: mmc1@sdr50 {
+			pins_cmd {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <3>;
+			};
+	};
+
+	mmc1_pins_ddr50: mmc1@ddr50 {
+			pins_cmd {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <3>;
+			};
+	};
+
+	mmc1_register_setting_default: mmc1@register_default {
+				dat0rddly      = /bits/ 8 <0>;
+				dat1rddly      = /bits/ 8 <0>;
+				dat2rddly      = /bits/ 8 <0>;
+				dat3rddly      = /bits/ 8 <0>;
+				datwrddly      = /bits/ 8 <0>;
+				cmdrrddly      = /bits/ 8 <0>;
+				cmdrddly       = /bits/ 8 <0>;
+				cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+				rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+				wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+	};
+};
+/* mmc end */
+
+/* NFC GPIO standardization */
+&pio {
+	nfc_default: default {
+
+	};
+
+	nfc_ven_high: state_ven_high {
+	    pins_cmd_dat {
+		pins = <PINMUX_GPIO4__FUNC_GPIO4>;
+		slew-rate = <1>;
+		output-high;
+	    };
+	};
+
+	nfc_ven_low: state_ven_low {
+	    pins_cmd_dat {
+		pins = <PINMUX_GPIO4__FUNC_GPIO4>;
+		slew-rate = <1>;
+		output-low;
+	    };
+	};
+
+	nfc_rst_high: state_rst_high {
+	    pins_cmd_dat {
+		pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+		slew-rate = <1>;
+		output-high;
+	    };
+	};
+
+	nfc_rst_low: state_rst_low {
+	    pins_cmd_dat {
+		pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+		slew-rate = <1>;
+		output-low;
+	    };
+	};
+
+	nfc_eint_high: state_eint_high {
+	    pins_cmd_dat {
+		pins = <PINMUX_GPIO1__FUNC_GPIO1>;
+		slew-rate = <1>;
+		output-high;
+	    };
+	};
+
+	nfc_eint_low: state_eint_low {
+	    pins_cmd_dat {
+		pins = <PINMUX_GPIO1__FUNC_GPIO1>;
+		slew-rate = <1>;
+		output-low;
+	    };
+	};
+
+	nfc_irq_init: state_irq_init {
+	    pins_cmd_dat {
+		pins = <PINMUX_GPIO2__FUNC_GPIO2>;
+		slew-rate = <0>;
+		bias-pull-down = <00>;
+	    };
+	};
+};
+
+&nfc {
+	pinctrl-names = "default", "ven_high", "ven_low", "rst_high", "rst_low", "eint_high", "eint_low", "irq_init";
+	pinctrl-0 = <&nfc_default>;
+	pinctrl-1 = <&nfc_ven_high>;
+	pinctrl-2 = <&nfc_ven_low>;
+	pinctrl-3 = <&nfc_rst_high>;
+	pinctrl-4 = <&nfc_rst_low>;
+	pinctrl-5 = <&nfc_eint_high>;
+	pinctrl-6 = <&nfc_eint_low>;
+	pinctrl-7 = <&nfc_irq_init>;
+	status = "okay";
+};
+/* NFC end */
+
+/* USB GPIO Kernal Standardization start */
+&pio {
+	usb_default: usb_default {
+	};
+
+	gpio0_mode1_iddig: iddig_irq_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO0__FUNC_IDDIG>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+
+	gpio83_mode2_drvvbus: drvvbus_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO83__FUNC_GPIO83>;
+			slew-rate = <1>;
+			bias-pull-down = <00>;
+		};
+	};
+
+	gpio83_mode2_drvvbus_low: drvvbus_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO83__FUNC_GPIO83>;
+			slew-rate = <1>;
+			output-low;
+			bias-pull-down = <00>;
+		};
+	};
+
+	gpio83_mode2_drvvbus_high: drvvbus_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO83__FUNC_GPIO83>;
+			slew-rate = <1>;
+			output-high;
+			bias-pull-down = <00>;
+		};
+	};
+};
+
+&usb0 {
+	iddig_gpio = <0 1>;
+	pinctrl-names = "usb_default", "iddig_irq_init", "drvvbus_init", "drvvbus_low", "drvvbus_high";
+	pinctrl-0 = <&usb_default>;
+	pinctrl-1 = <&gpio0_mode1_iddig>;
+	pinctrl-2 = <&gpio83_mode2_drvvbus>;
+	pinctrl-3 = <&gpio83_mode2_drvvbus_low>;
+	pinctrl-4 = <&gpio83_mode2_drvvbus_high>;
+	status = "okay";
+};
+//modify@zte.com.cn 20160114 begin
+/* ACCDET GPIO Standardization ACC mode use */
+&pio {
+	ACCDET_pins_default:eint6default {
+	};
+	ACCDET_pins_eint_int:eint@6 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO6__FUNC_GPIO6>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+	awb155_pins_gpio_output0:gpio@output0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO120__FUNC_GPIO120>;
+			slew-rate = <1>;
+			output-low;
+			bias-pull-down = <00>;
+		};
+	};
+
+	awb155_pins_gpio_output1:gpio@output1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO120__FUNC_GPIO120>;
+			slew-rate = <1>;
+			output-high;
+			bias-pull-down = <00>;
+		};
+	};
+};
+&pio {
+		LIS2DS12_pins_default:eint@default {
+		};
+		LIS2DS12_pins_eint_int:eint@66 {
+			pins_cmd_dat {
+				pins = <PINMUX_GPIO66__FUNC_GPIO66>;
+				slew-rate = <0>;
+				bias-disable;
+				};
+			};
+};
+/* ACCDET END */
+//modify@zte.com.cn 20160114 end
+/* USB GPIO Kernal Standardization end */
+/*modify@zte.com.cn 20160331 begin*/
+		&bat_meter {
+			/* cust_battery_meter.h */
+			/* ADC resistor  */
+			r_bat_sense = <4 >;
+			r_i_sense = <4 >;
+			r_charger_1 = <330 >;
+			r_charger_2 = <39 >;
+			temperature_t0 = <110 >;
+			temperature_t1 = <0 >;
+			temperature_t2 = <25 >;
+			temperature_t3 = <50 >;
+			temperature_t = <255 >;	/* this should be fixed, never change the value */
+			fg_meter_resistance = <0 >;
+			/*qiantao@wind-mobi.con 20160121 begin */
+			/*modify@zte.com.cn 20160322 begin*/
+			/* Qmax for 0mA */
+			q_max_pos_50 = <3843 >;
+			q_max_pos_25 = <3862 >;
+			q_max_pos_0 = <3801 >;
+			q_max_neg_10 = <3744 >;
+			/* Qmax for 400mA, said high current */
+			q_max_pos_50_h_current = <3771 >;
+			q_max_pos_25_h_current = <3777>;
+			q_max_pos_0_h_current = <3502 >;
+			q_max_neg_10_h_current = <2088 >;
+			/*modify@zte.com.cn 20160322 end*/
+			/*qiantao@wind-mobi.con 20160121 begin */
+			/* Discharge percentage, 1: D5, 0: D2 */
+			oam_d5 = <1 >;
+			/*modify@zte.com.cn 20160121 end*/
+			change_tracking_point = <1 >;
+			/* SW OCV tracking setting */
+			cust_tracking_point = <1 >;
+			/*modify@zte.com.cn 20160223 begin*/
+			cust_r_sense = <56 >;
+			/*modify@zte.com.cn 20160223 end*/
+			cust_hw_cc = <0 >;
+			aging_tuning_value = <103 >;
+			cust_r_fg_offset = <0 >;
+			ocv_board_compesate = <0 >;
+			r_fg_board_base = <1000 >;
+			r_fg_board_slope = <1000 >;
+			/*modify@zte.com.cn 20160323 begin*/
+			car_tune_value = <80 >;
+			/*modify@zte.com.cn 20160323 end*/
+
+			/* HW Fuel gague  */
+			current_detect_r_fg = <10 >;	/* Unit: mA */
+			minerroroffset = <1000 >;
+			fg_vbat_average_size = <18 >;
+			r_fg_value = <10 >;	/* Unit: mOhm */
+
+			cust_poweron_delta_capacity_tolrance = <30 >;
+			cust_poweron_low_capacity_tolrance = <5 >;
+			cust_poweron_max_vbat_tolrance = <90 >;
+			cust_poweron_delta_vbat_tolrance = <30 >;
+			cust_poweron_delta_hw_sw_ocv_capacity_tolrance = <10 >;
+
+			/* Fixed battery temperature */
+			fixed_tbat_25 = <0 >;
+			/* Dynamic change wake up period of battery thread when suspend */
+			vbat_normal_wakeup = <3600 >;	/* Unit: mV */
+			vbat_low_power_wakeup = <3500 >;	/* Unit: mV */
+			normal_wakeup_period = <5400 >;	/* Unit: second */
+			low_power_wakeup_period = <300 >;	/* Unit: second */
+			close_poweroff_wakeup_period = <30 >;	/* Unit: second */
+			/*qiantao@wind-mobi.con 20160121 begin */
+			rbat_pull_up_r = <61900 >;
+			rbat_pull_up_volt = <1800 >;
+			/*qiantao@wind-mobi.con 20160121 end */
+
+			batt_temperature_table_num = <17 >;
+			batt_temperature_table = <
+			 (-20)  483954
+			 (-15)  360850
+			 (-10)  271697
+			 (-5)   206463
+			   0    158214
+			   5    122259
+			  10    95227
+			  15    74730
+			  20    59065
+			  25    47000
+			  30    37643
+			  35    30334
+			  40    24591
+			  45    20048
+			  50    16433
+			  55    13539
+			  60    11210 >;
+			/*modify@zte.com.cn 20160121 begin*/
+			battery_profile_t0_num = <100 >;
+			battery_profile_t0 = <0	 4346
+			    2	4320
+			    3	4296
+			    5	4275
+			    6	4256
+			    8	4238
+			    9   4221
+			    11  4204
+			    12  4188
+			    14  4170
+			    15  4156
+			    17  4138
+			    18  4122
+			    20  4108
+			    22  4095
+			    23  4081
+			    25  4063
+			    26  4037
+			    28  4011
+			    29  3988
+			    31  3969
+			    32  3955
+			    34  3942
+			    35  3932
+			    37  3922
+			    38  3912
+			    40  3903
+			    42  3892
+			    43  3882
+			    45  3873
+			    46  3864
+			    48  3856
+			    49  3848
+			    51  3841
+			    52  3833
+			    54  3826
+			    55  3820
+			    57  3814
+			    58  3809
+			    60  3806
+			    62  3802
+			    63  3797
+			    65  3795
+			    66  3792
+			    68  3790
+			    69  3786
+			    71  3783
+			    72  3780
+			    74  3777
+			    75  3772
+			    77  3768
+			    78  3763
+			    80  3757
+			    82  3750
+			    83  3744
+			    85  3731
+			    86  3727
+			    88  3719
+			    89  3712
+			    91  3705
+			    92  3698
+			    94  3691
+			    95  3675
+			    97  3629
+			    98  3565
+			    100 3445
+			    100 3283
+			    100 3283>;
+		  battery_profile_t1_num = <100 >;
+			battery_profile_t1 = <0	4336 
+			    2	4311 
+			    3	4289
+			    5	4269
+			    6	4254
+			    8	4237
+			    9	4220
+			    11  4205
+			    12  4190
+			    14  4174
+			    15  4159
+			    17  4143
+			    18  4127
+			    20  4111
+			    21  4098
+			    23  4086
+			    24  4077
+			    26  4061
+			    27  4035
+			    29  4006
+			    30  3985
+			    32  3970
+			    33  3957
+			    35  3946
+			    36  3937
+			    38  3927
+			    39  3917
+			    41  3906
+			    42  3894
+			    44  3883
+			    45  3872
+			    47  3863
+			    48  3854
+			    50  3847
+			    52  3839
+			    53  3833
+			    55  3825
+			    56  3820
+			    58  3814
+			    59  3808
+			    61  3804
+			    62  3799
+			    64  3795
+			    65  3791
+			    67  3788
+			    68  3786
+			    70  3783
+			    71  3781
+			    73  3778
+			    74  3775
+			    76  3771
+			    77  3767
+			    79  3763
+			    80  3758
+			    82  3752
+			    83  3745
+			    85  3737
+			    86  3729
+			    88  3718
+			    89  3708
+			    91  3703
+			    92  3699
+			    94  3694
+			    95  3684
+			    97  3649
+			    98  3577
+			    100 3460
+			    100 3222>;
+			battery_profile_t2_num = <100 >;
+			battery_profile_t2 = <0	  4345 
+			    1	4323
+			    3	4303
+			    4	4285
+			    6	4268
+			    7	4251
+			    9	4234
+			    10  4218
+			    12  4201
+			    13  4185
+			    15  4169
+			    16  4154
+			    18  4138
+			    19  4122
+			    21  4106
+			    22  4091
+			    24  4078
+			    25  4071
+			    27  4058
+			    28  4033
+			    30  4008
+			    31  3991
+			    33  3980
+			    34  3974
+			    36  3968
+			    37  3958
+			    39  3947
+			    40  3933
+			    42  3918
+			    43  3901
+			    45  3885
+			    46  3872
+			    48  3862
+			    49  3853
+			    51  3845
+			    52  3838
+			    54  3831
+			    55  3825
+			    57  3819
+			    58  3814
+			    60  3808
+			    61  3804
+			    63  3799
+			    64  3795
+			    66  3791
+			    67  3787
+			    69  3784
+			    70  3780
+			    72  3775
+			    73  3771
+			    75  3766
+			    76  3761
+			    78  3755
+			    79  3750
+			    81  3745
+			    82  3740
+			    84  3732
+			    85  3723
+			    87  3716
+			    88  3705
+			    89  3695
+			    91  3693
+			    92  3691
+			    94  3688
+			    95  3679
+			    97  3631
+			    98  3548
+			    100 3414 >;
+			battery_profile_t3_num = <100 >;
+			battery_profile_t3 = <0	  4340
+			    1	4321
+			    3	4302
+			    4	4285
+			    6	4269
+			    7   4252
+			    9	4234
+			    10  4218
+			    12  4201
+			    13  4186
+			    15  4169
+			    16  4153
+			    18  4138
+			    19  4122
+			    21  4106
+			    22  4091
+			    24  4077
+			    25  4061
+			    27  4048
+			    28  4034
+			    30  4021
+			    31  4008
+			    33  3995
+			    34  3981
+			    36  3968
+			    37  3957
+			    39  3945
+			    40  3933
+			    42  3920
+			    43  3903
+			    45  3884
+			    46  3872
+			    48  3861
+			    49  3852
+			    51  3845
+			    52  3838
+			    54  3829
+			    55  3822
+			    57  3818
+			    58  3813
+			    60  3808
+			    61  3803
+			    63  3798
+			    64  3794
+			    66  3790
+			    67  3786
+			    69  3783
+			    70  3778
+			    72  3768
+			    73  3758
+			    75  3750
+			    76  3746
+			    78  3740
+			    79  3734
+			    81  3729
+			    82  3724
+			    84  3717
+			    85  3707
+			    87  3698
+			    88  3688
+			    90  3679
+			    91  3676
+			    93  3674
+			    94  3671
+			    96  3653
+			    97  3594
+			    99  3507
+			    100 3357>;       
+			r_profile_t0_num = <100 >;
+			r_profile_t0 = <1308   4346
+			    1308   4320
+			    1300   4296
+			    1290   4275
+			    1275   4256
+			    1265   4238
+			    1250   4221
+			    1238   4204
+			    1228   4188
+			    1210   4170
+			    1205   4156
+			    1188   4138
+			    1178   4122
+			    1170   4108
+			    1165   4095
+			    1160   4081
+			    1145   4063
+			    1118   4037
+			    1090   4011
+			    1070   3988
+			    1053   3969
+			    1053   3955
+			    1048   3942
+			    1045   3932
+			    1043   3922
+			    1040   3912
+			    1038   3903
+			    1033   3892
+			    1033   3882
+			    1030   3873
+			    1028   3864
+			    1030   3856
+			    1030   3848
+			    1033   3841
+			    1030   3833
+			    1035   3826
+			    1038   3820
+			    1043   3814
+			    1050   3809
+			    1058   3806
+			    1065   3802
+			    1070   3797
+			    1083   3795
+			    1098   3792
+			    1110   3790
+			    1118   3786
+			    1130   3783
+			    1145   3780
+			    1163   3777
+			    1175   3772
+			    1195   3768
+			    1218   3763
+			    1235   3757
+			    1258   3750
+			    1290   3744
+			    1308   3731
+			    1350   3727
+			    1390   3719
+			    1435   3712
+			    1480   3705
+			    1545   3698
+			    1615   3691
+			    1695   3675
+			    1735   3629
+			    1818   3565
+			    1908   3445
+			    1503   3283
+			    1503   3283>;
+			r_profile_t1_num = <100 >;
+			r_profile_t1 = <690   4336
+			    690   4311
+			    685   4289
+			    680   4269
+			    678   4254
+			    665   4237
+			    650   4220
+			    648   4205
+			    640   4190
+			    630   4174
+			    625   4159
+			    618   4143
+			    613   4127
+			    605   4111
+			    603   4098
+			    603   4086
+			    610   4077
+			    608   4061
+			    590   4035
+			    568   4006
+			    558   3985
+			    550   3970
+			    545   3957
+			    543   3946
+			    540   3937
+			    538   3927
+			    530   3917
+			    525   3906
+			    518   3894
+			    510   3883
+			    505   3872
+			    505   3863
+			    505   3854
+			    505   3847
+			    505   3839
+			    505   3833
+			    505   3825
+			    508   3820
+			    510   3814
+			    510   3808
+			    515   3804
+			    518   3799
+			    520   3795
+			    520   3791
+			    525   3788
+			    533   3786
+			    535   3783
+			    543   3781
+			    548   3778
+			    553   3775
+			    558   3771
+			    565   3767
+			    573   3763
+			    580   3758
+			    590   3752
+			    600   3745
+			    613   3737
+			    630   3729
+			    645   3718
+			    663   3708
+			    688   3703
+			    723   3699
+			    765   3694
+			    825   3684
+			    903   3649
+			    990   3577
+			    1155  3460
+			    1155  3400 >;
+
+			r_profile_t2_num = <100 >;
+			r_profile_t2 = <240   4345
+			    240   4323
+			    239   4303
+			    240   4285
+			    240   4268
+			    239   4251
+			    238   4234
+			    237   4218
+			    237   4201
+			    238   4185
+			    239   4169
+			    241   4154
+			    244   4138
+			    246   4122
+			    246   4106
+			    246   4091
+			    248   4078
+			    257   4071
+			    258   4058
+			    251   4033
+			    251   4008
+			    254   3991
+			    258   3980
+			    265   3974
+			    269   3968
+			    267   3958
+			    268   3947
+			    269   3933
+			    263   3918
+			    251   3901
+			    241   3885
+			    236   3872
+			    233   3862
+			    231   3853
+			    230   3845
+			    230   3838
+			    232   3831
+			    232   3825
+			    232   3819
+			    233   3814
+			    233   3808
+			    234   3804
+			    234   3799
+			    234   3795
+			    236   3791
+			    238   3787
+			    239   3784
+			    240   3780
+			    239   3775
+			    237   3771
+			    234   3766
+			    233   3761
+			    231   3755
+			    232   3750
+			    234   3745
+			    236   3740
+			    236   3732
+			    236   3723
+			    239   3716
+			    239   3705
+			    239   3695
+			    241   3693
+			    245   3691
+			    251   3688
+			    260   3679
+			    259   3631
+			    271   3548
+			    300   3414 >;
+			r_profile_t3_num = <100 >;
+			r_profile_t3 = <175   4340
+			    175   4321
+			    175   4302
+			    173   4285
+			    175   4269
+			    178   4252
+			    173   4234
+			    175   4218
+			    173   4201
+			    178   4186
+			    173   4169
+			    173   4153
+			    178   4138
+			    175   4122
+			    175   4106
+			    172   4091
+			    178   4077
+			    175   4061
+			    180   4048
+			    178   4034
+			    183   4021
+			    185   4008
+			    183   3995
+			    178   3981
+			    183   3968
+			    193   3957
+			    195   3945
+			    195   3933
+			    198   3920
+			    193   3903
+			    175   3884
+			    175   3872
+			    173   3861
+			    173   3852
+			    175   3845
+			    178   3838
+			    173   3829
+			    170   3822
+			    178   3818
+			    175   3813
+			    175   3808
+			    178   3803
+			    175   3798
+			    178   3794
+			    178   3790
+			    183   3786
+			    185   3783
+			    185   3778
+			    175   3768
+			    175   3758
+			    173   3750
+			    175   3746
+			    175   3740
+			    175   3734
+			    175   3729
+			    180   3724
+			    180   3717
+			    178   3707
+			    175   3698
+			    175   3688
+			    168   3679
+			    173   3676
+			    178   3674
+			    190   3671
+			    185   3653
+			    185   3594
+			    203   3507
+			    220   3357 >;
+		};
+	/*modify@zte.com.cn 20160331 end*/
+	
+	/*modify@zte.com.cn 20160309 begin*/
+		&bat_comm {
+			/* cust_charging.h */
+			/* stop charging while in talking mode */
+			stop_charging_in_takling = <1 >;
+			talking_recharge_voltage = <3800 >;
+			talking_sync_time = <60 >;
+
+			/* Battery Temperature Protection */
+			mtk_temperature_recharge_support = <1 >;
+			/*modify@zte.com.cn 20160121 begin*/
+			max_charge_temperature = <45 >;
+			max_charge_temperature_minus_x_degree = <42 >;
+			/*modify@zte.com.cn 20160121 end*/
+			min_charge_temperature = <0 >;
+			min_charge_temperature_plus_x_degree = <6 >;
+			err_charge_temperature = <0xff >;
+
+			/* Linear Charging Threshold */
+			v_pre2cc_thres = <3400 >;	/* unit: mV */
+			v_cc2topoff_thres = <4050 >;
+			recharging_voltage = <4110 >;
+			charging_full_current = <100 >;	/* unit: mA */
+
+			/* Charging Current Setting */
+			config_usb_if = <0 >;
+			usb_charger_current_suspend = <0 >;	/* Unit: 0.01 mA */
+			usb_charger_current_unconfigured = <7000 >;	/* Unit: 0.01 mA */
+			usb_charger_current_configured = <50000 >;	/* Unit: 0.01 mA */
+			usb_charger_current = <50000 >;	/* Unit: 0.01 mA */
+			/*modify@zte.com.cn 20160127 begin */
+			/*modify@zte.com.cn 20160301 begin*/
+			ac_charger_current = <125000 >;	/* Unit: 0.01 mA */
+			/*modify@zte.com.cn 20160301 end*/
+			/*modify@zte.com.cn 20160121 end*/
+			non_std_ac_charger_current = <50000 >;	/* Unit: 0.01 mA */
+			charging_host_charger_current = <65000 >;	/* Unit: 0.01 mA */
+			apple_0_5a_charger_current = <50000 >;	/* Unit: 0.01 mA */
+			apple_1_0a_charger_current = <65000 >;	/* Unit: 0.01 mA */
+			apple_2_1a_charger_current = <80000 >;	/* Unit: 0.01 mA */
+
+			/* charger error check */
+			bat_low_temp_protect_enable = <1 >;/*modify@zte.com.cn*/
+			v_charger_enable = <0 >;	/* 1:on , 0:off */
+			v_charger_max = <6500 >;	/* unit: mV */
+			v_charger_min = <4400 >;
+
+			/*  Tracking TIME */
+			onehundred_percent_tracking_time = <10 >;	/* Unit: second */
+			npercent_tracking_time = <20 >;	/* Unit: second */
+			sync_to_real_tracking_time = <60 >;	/* Unit: second */
+			v_0percent_tracking = <3450 >;	/* Unit: mV */
+
+			/* High battery support */
+			high_battery_voltage_support = <1>;/*modify@zte.com.cn*/
+		};
+		/*modify@zte.com.cn 20160309 end*/
